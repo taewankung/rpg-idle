@@ -1,0 +1,1099 @@
+/* ============================================
+   Fantasy Idle MMORPG - Main Stylesheet
+   ============================================ */
+
+:root {
+    /* Colors */
+    --bg-dark: #0d1117;
+    --bg-panel: #161b22;
+    --bg-card: #1c2333;
+    --bg-hover: #252d3a;
+    --border-color: #30363d;
+    --text-primary: #e6edf3;
+    --text-secondary: #8b949e;
+    --text-muted: #6e7681;
+
+    /* Fantasy Colors */
+    --gold: #ffd700;
+    --gold-dark: #b8860b;
+    --red-hp: #e74c3c;
+    --blue-mp: #3498db;
+    --green-heal: #2ecc71;
+    --purple-rare: #9b59b6;
+    --orange-legendary: #e67e22;
+    --cyan-mythic: #00d4ff;
+
+    /* Rarity Colors */
+    --rarity-common: #9e9e9e;
+    --rarity-uncommon: #4caf50;
+    --rarity-rare: #2196f3;
+    --rarity-epic: #9c27b0;
+    --rarity-legendary: #ff9800;
+    --rarity-mythic: #00bcd4;
+
+    /* Layout */
+    --header-height: 50px;
+    --footer-height: 35px;
+    --panel-width: 260px;
+    --border-radius: 8px;
+    --gap: 8px;
+}
+
+/* Reset & Base */
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Sarabun', sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow: hidden;
+    user-select: none;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* ============================================
+   Game Container
+   ============================================ */
+#game-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* ============================================
+   Header
+   ============================================ */
+#game-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: var(--header-height);
+    padding: 0 16px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border-bottom: 2px solid var(--gold-dark);
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.game-title {
+    font-family: 'MedievalSharp', cursive;
+    font-size: 1.4rem;
+    color: var(--gold);
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.game-subtitle {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    background: var(--bg-card);
+    padding: 2px 8px;
+    border-radius: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.resource {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    background: var(--bg-card);
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+}
+
+.resource.gold { color: var(--gold); }
+.resource.gems { color: var(--cyan-mythic); }
+.resource.exp { color: var(--green-heal); }
+
+.btn-header {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s;
+}
+
+.btn-header:hover {
+    background: var(--bg-hover);
+    border-color: var(--gold-dark);
+}
+
+/* ============================================
+   Main Content Layout
+   ============================================ */
+#main-content {
+    display: flex;
+    flex: 1;
+    gap: var(--gap);
+    padding: var(--gap);
+    overflow: hidden;
+    height: calc(100vh - var(--header-height) - var(--footer-height));
+}
+
+#panel-left,
+#panel-right {
+    width: var(--panel-width);
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+
+#panel-center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+}
+
+/* ============================================
+   Panels
+   ============================================ */
+.panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 12px;
+}
+
+.panel-title {
+    font-family: 'MedievalSharp', cursive;
+    font-size: 1rem;
+    color: var(--gold);
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* ============================================
+   Character Panel
+   ============================================ */
+#character-info {
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.char-avatar {
+    font-size: 3rem;
+    margin-bottom: 4px;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+.char-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--gold);
+}
+
+.char-class {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.char-level {
+    font-size: 0.85rem;
+    color: var(--cyan-mythic);
+    margin: 4px 0;
+}
+
+/* Progress Bars */
+.progress-bar {
+    position: relative;
+    height: 18px;
+    background: var(--bg-dark);
+    border-radius: 9px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: 9px;
+    transition: width 0.3s ease;
+}
+
+.exp-bar .progress-fill {
+    background: linear-gradient(90deg, #2196f3, #00bcd4);
+}
+
+.hp-fill {
+    background: linear-gradient(90deg, #c0392b, #e74c3c);
+}
+
+.enemy-hp {
+    background: linear-gradient(90deg, #8e44ad, #c0392b);
+}
+
+.progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    white-space: nowrap;
+}
+
+/* Stats */
+#character-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 6px;
+    background: var(--bg-card);
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+.stat-label {
+    color: var(--text-secondary);
+}
+
+.stat-value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* ============================================
+   Skills Panel
+   ============================================ */
+#skills-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.skill-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: var(--bg-card);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+
+.skill-item:hover {
+    border-color: var(--gold-dark);
+    background: var(--bg-hover);
+}
+
+.skill-item.on-cooldown {
+    opacity: 0.6;
+}
+
+.skill-cooldown-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    transition: width 0.1s linear;
+}
+
+.skill-icon {
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+
+.skill-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.skill-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.skill-level {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+}
+
+/* ============================================
+   Tab Navigation
+   ============================================ */
+#tab-nav {
+    display: flex;
+    gap: 4px;
+    margin-bottom: var(--gap);
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 8px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    color: var(--text-secondary);
+    font-family: 'Sarabun', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tab-btn:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+}
+
+.tab-btn.active {
+    color: var(--gold);
+    background: var(--bg-panel);
+    border-bottom-color: var(--bg-panel);
+    border-top: 2px solid var(--gold);
+}
+
+.tab-content {
+    display: none;
+    flex: 1;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+    padding: 12px;
+    overflow-y: auto;
+}
+
+.tab-content.active {
+    display: flex;
+    flex-direction: column;
+}
+
+/* ============================================
+   Battle Arena
+   ============================================ */
+.zone-selector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.btn-zone {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-zone:hover {
+    background: var(--bg-hover);
+    border-color: var(--gold-dark);
+}
+
+.zone-info {
+    text-align: center;
+}
+
+.zone-name {
+    display: block;
+    font-family: 'MedievalSharp', cursive;
+    font-size: 1.1rem;
+    color: var(--gold);
+}
+
+.zone-level {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.battle-arena {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 20px;
+    background: var(--bg-card);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    margin-bottom: 12px;
+    min-height: 180px;
+}
+
+.battle-entity {
+    text-align: center;
+    flex: 1;
+    max-width: 180px;
+}
+
+.entity-avatar {
+    font-size: 3.5rem;
+    margin-bottom: 6px;
+}
+
+.player-side .entity-avatar {
+    animation: playerIdle 2s ease-in-out infinite;
+}
+
+.enemy-side .entity-avatar {
+    animation: enemyIdle 2s ease-in-out infinite;
+}
+
+@keyframes playerIdle {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(3px); }
+}
+
+@keyframes enemyIdle {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(-3px); }
+}
+
+.entity-avatar.attacking {
+    animation: attack 0.3s ease-out !important;
+}
+
+@keyframes attack {
+    0% { transform: translateX(0) scale(1); }
+    50% { transform: translateX(30px) scale(1.1); }
+    100% { transform: translateX(0) scale(1); }
+}
+
+.entity-avatar.hit {
+    animation: hit 0.3s ease-out !important;
+}
+
+@keyframes hit {
+    0% { transform: translateX(0); filter: brightness(1); }
+    25% { transform: translateX(-8px); filter: brightness(2); }
+    50% { transform: translateX(5px); filter: brightness(0.8); }
+    100% { transform: translateX(0); filter: brightness(1); }
+}
+
+.entity-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.battle-vs {
+    font-size: 2rem;
+    position: relative;
+}
+
+.battle-effects {
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.damage-number {
+    position: absolute;
+    font-weight: 700;
+    font-size: 1.1rem;
+    animation: damageFloat 1s ease-out forwards;
+    pointer-events: none;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    white-space: nowrap;
+}
+
+.damage-number.player-dmg {
+    color: var(--red-hp);
+}
+
+.damage-number.enemy-dmg {
+    color: var(--gold);
+}
+
+.damage-number.crit {
+    font-size: 1.5rem;
+    color: #ff6b6b;
+}
+
+.damage-number.heal {
+    color: var(--green-heal);
+}
+
+@keyframes damageFloat {
+    0% { opacity: 1; transform: translateY(0) translateX(-50%); }
+    100% { opacity: 0; transform: translateY(-40px) translateX(-50%); }
+}
+
+/* Battle Controls */
+.battle-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.btn-battle {
+    padding: 6px 16px;
+    background: linear-gradient(135deg, #1a5276, #2471a3);
+    border: 1px solid #2980b9;
+    border-radius: 6px;
+    color: white;
+    font-family: 'Sarabun', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-battle:hover {
+    background: linear-gradient(135deg, #2471a3, #2e86c1);
+    box-shadow: 0 0 10px rgba(41, 128, 185, 0.3);
+}
+
+.battle-speed {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.btn-speed {
+    padding: 3px 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-secondary);
+    font-family: 'Sarabun', sans-serif;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-speed.active {
+    background: var(--gold-dark);
+    color: white;
+    border-color: var(--gold);
+}
+
+/* Battle Log */
+.battle-log-container {
+    flex: 1;
+    min-height: 0;
+}
+
+.battle-log-container h3 {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+#battle-log {
+    height: 120px;
+    overflow-y: auto;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 8px;
+    font-size: 0.75rem;
+    line-height: 1.6;
+}
+
+.log-entry {
+    padding: 1px 0;
+}
+
+.log-entry.player-action { color: #5dade2; }
+.log-entry.enemy-action { color: #e74c3c; }
+.log-entry.loot { color: var(--gold); }
+.log-entry.exp-gain { color: var(--green-heal); }
+.log-entry.level-up { color: var(--cyan-mythic); font-weight: 700; }
+.log-entry.system { color: var(--text-muted); }
+
+/* ============================================
+   Equipment Panel
+   ============================================ */
+#equipment-slots {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.equip-slot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.equip-slot:hover {
+    border-color: var(--gold-dark);
+    background: var(--bg-hover);
+}
+
+.equip-slot.has-item {
+    border-color: var(--rarity-uncommon);
+}
+
+.slot-icon {
+    font-size: 1.2rem;
+}
+
+.slot-name {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.slot-name.equipped {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* ============================================
+   Inventory
+   ============================================ */
+#inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+}
+
+.inv-slot {
+    aspect-ratio: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.inv-slot:hover {
+    border-color: var(--gold-dark);
+    background: var(--bg-hover);
+}
+
+.inv-slot.rarity-common { border-color: var(--rarity-common); }
+.inv-slot.rarity-uncommon { border-color: var(--rarity-uncommon); }
+.inv-slot.rarity-rare { border-color: var(--rarity-rare); }
+.inv-slot.rarity-epic { border-color: var(--rarity-epic); }
+.inv-slot.rarity-legendary { border-color: var(--rarity-legendary); }
+.inv-slot.rarity-mythic { border-color: var(--rarity-mythic); }
+
+.inv-slot .item-count {
+    position: absolute;
+    bottom: 1px;
+    right: 3px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* ============================================
+   Dungeon List
+   ============================================ */
+.dungeon-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.dungeon-card:hover {
+    border-color: var(--gold-dark);
+    background: var(--bg-hover);
+}
+
+.dungeon-card.locked {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.dungeon-icon {
+    font-size: 2rem;
+}
+
+.dungeon-info {
+    flex: 1;
+}
+
+.dungeon-name {
+    font-family: 'MedievalSharp', cursive;
+    font-size: 1rem;
+    color: var(--gold);
+}
+
+.dungeon-desc {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.dungeon-req {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.dungeon-reward {
+    text-align: right;
+    font-size: 0.75rem;
+    color: var(--gold);
+}
+
+/* ============================================
+   Quest List
+   ============================================ */
+.quest-card {
+    padding: 10px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    margin-bottom: 6px;
+}
+
+.quest-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.quest-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--gold);
+}
+
+.quest-type {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--bg-dark);
+}
+
+.quest-type.daily { color: #5dade2; }
+.quest-type.weekly { color: var(--purple-rare); }
+.quest-type.main { color: var(--gold); }
+
+.quest-desc {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.quest-progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.quest-progress .progress-bar {
+    flex: 1;
+    height: 14px;
+}
+
+.quest-progress .progress-fill {
+    background: linear-gradient(90deg, var(--gold-dark), var(--gold));
+}
+
+.quest-progress-text {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.quest-reward {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+.btn-claim {
+    padding: 3px 12px;
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+    border: none;
+    border-radius: 4px;
+    color: #1a1a2e;
+    font-weight: 700;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-claim:hover {
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+}
+
+/* ============================================
+   Shop
+   ============================================ */
+.shop-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    margin-bottom: 6px;
+    transition: all 0.2s;
+}
+
+.shop-item:hover {
+    border-color: var(--gold-dark);
+    background: var(--bg-hover);
+}
+
+.shop-item-icon {
+    font-size: 1.8rem;
+}
+
+.shop-item-info {
+    flex: 1;
+}
+
+.shop-item-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.shop-item-desc {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.shop-item-price {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--gold);
+}
+
+.btn-buy {
+    padding: 4px 14px;
+    background: linear-gradient(135deg, #196f3d, #27ae60);
+    border: 1px solid #2ecc71;
+    border-radius: 6px;
+    color: white;
+    font-family: 'Sarabun', sans-serif;
+    font-weight: 600;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-buy:hover {
+    box-shadow: 0 0 10px rgba(46, 204, 113, 0.3);
+}
+
+.btn-buy:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* ============================================
+   Footer
+   ============================================ */
+#game-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    height: var(--footer-height);
+    background: var(--bg-panel);
+    border-top: 1px solid var(--border-color);
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+/* ============================================
+   Tooltip
+   ============================================ */
+.tooltip {
+    position: fixed;
+    z-index: 1000;
+    background: var(--bg-dark);
+    border: 1px solid var(--gold-dark);
+    border-radius: 6px;
+    padding: 10px 12px;
+    max-width: 250px;
+    font-size: 0.8rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+}
+
+.tooltip.hidden {
+    display: none;
+}
+
+.tooltip-name {
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.tooltip-desc {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+.tooltip-stats {
+    margin-top: 6px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 6px;
+    font-size: 0.75rem;
+}
+
+/* ============================================
+   Modal
+   ============================================ */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 900;
+}
+
+.modal-overlay.hidden {
+    display: none;
+}
+
+.modal {
+    background: var(--bg-panel);
+    border: 2px solid var(--gold-dark);
+    border-radius: var(--border-radius);
+    min-width: 300px;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-title {
+    font-family: 'MedievalSharp', cursive;
+    color: var(--gold);
+    font-size: 1.1rem;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.modal-close:hover {
+    color: var(--red-hp);
+}
+
+.modal-body {
+    padding: 16px;
+}
+
+/* ============================================
+   Utility Classes
+   ============================================ */
+.hidden {
+    display: none !important;
+}
+
+.text-gold { color: var(--gold); }
+.text-red { color: var(--red-hp); }
+.text-blue { color: var(--blue-mp); }
+.text-green { color: var(--green-heal); }
+.text-purple { color: var(--purple-rare); }
+
+/* ============================================
+   Animations
+   ============================================ */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+@keyframes glow {
+    0%, 100% { box-shadow: 0 0 5px rgba(255, 215, 0, 0.2); }
+    50% { box-shadow: 0 0 15px rgba(255, 215, 0, 0.5); }
+}
+
+.level-up-glow {
+    animation: glow 1s ease-in-out 3;
+}

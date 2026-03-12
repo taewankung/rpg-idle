@@ -1,0 +1,28 @@
+# Ignore node modules if any
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# IDE/editor files
+.vscode/
+*.code-workspace
+
+# build artifacts
+dist/
+build/
+
+# dependency directories
+jspm_packages/
+
+# environment files
+.env
+
+# Mac thumbnail
+._*

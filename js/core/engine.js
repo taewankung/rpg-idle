@@ -34,6 +34,7 @@ class GameEngine {
             playTime: 0,
             questProgress: {},
             dungeonCooldowns: {},
+            shopLevel: 1,
             lastSaveTime: Date.now(),
         };
 
@@ -52,6 +53,7 @@ class GameEngine {
         this.onBattleUpdate = null;
         this.onPlayerUpdate = null;
         this.onEnemyDefeated = null;
+        this.onEnemySpawned = null;
         this.onLogMessage = null;
         this.onLevelUp = null;
         this.onLoot = null;
@@ -59,6 +61,9 @@ class GameEngine {
 
         this._running = false;
         this._lastTime = 0;
+
+        // Movement phase - combat only starts when entities are in range
+        this.battleReady = false;
     }
 
     // ========================
@@ -66,11 +71,49 @@ class GameEngine {
     // ========================
     init() {
         this.loadGame();
+        this.validateState();
         this.recalculateStats();
         if (!this.state.currentEnemy) {
             this.spawnEnemy();
         }
         this.initQuests();
+    }
+
+    validateState() {
+        const player = this.state.player;
+        const classData = GameData.classes[player.classId];
+        if (!classData) {
+            player.classId = 'warrior';
+        }
+
+        // Recalculate base stats from class + level growth
+        const cls = GameData.classes[player.classId];
+        const baseStats = { ...cls.baseStats };
+        for (const stat of Object.keys(baseStats)) {
+            baseStats[stat] = Math.floor(cls.baseStats[stat] + (cls.growthPerLevel[stat] || 0) * (player.level - 1));
+        }
+        player.stats = baseStats;
+
+        // Unlock any skills the player should have at their current level
+        this.checkSkillUnlocks();
+
+        // Remove skills that no longer exist in GameData
+        for (const skillId of Object.keys(player.skills)) {
+            if (!GameData.skills[skillId]) {
+                delete player.skills[skillId];
+            }
+        }
+
+        // Clamp HP/MP to valid range
+        const maxHp = this.getTotalStat('hp');
+        const maxMp = this.getTotalStat('mp');
+        if (player.currentHp > maxHp) player.currentHp = maxHp;
+        if (player.currentMp > maxMp) player.currentMp = maxMp;
+        if (player.currentHp <= 0) player.currentHp = Math.floor(maxHp * 0.5);
+        if (player.currentMp < 0) player.currentMp = 0;
+
+        // Ensure auto battle is always enabled
+        this.state.autoBattle = true;
     }
 
     start() {
@@ -121,8 +164,11 @@ class GameEngine {
             this.dpsTimer = 0;
         }
 
-        // Battle
-        if (this.state.autoBattle && this.state.currentEnemy) {
+        // Passive MP regeneration
+        this.updateMpRegen(scaledDt);
+
+        // Battle (only in combat phase, after approach walk is done)
+        if (this.state.autoBattle && this.state.currentEnemy && this.battleReady) {
             this.battleTimer += scaledDt;
 
             const attackSpeed = this.getAttackSpeed();
@@ -329,6 +375,10 @@ class GameEngine {
         const avgLevel = Math.floor((zone.levelRange[0] + zone.levelRange[1]) / 2);
         this.state.currentEnemy = GameData.scaleEnemy(enemyId, avgLevel);
         this.battleTimer = 0;
+        this.battleReady = false;
+
+        // Notify UI to start approach animation
+        if (this.onEnemySpawned) this.onEnemySpawned();
     }
 
     // ========================
@@ -358,6 +408,25 @@ class GameEngine {
             if (skillState.cooldownRemaining > 0) {
                 skillState.cooldownRemaining = Math.max(0, skillState.cooldownRemaining - dt);
             }
+        }
+    }
+
+    updateMpRegen(dt) {
+        const player = this.state.player;
+        let regenPerSec = 0;
+
+        for (const [skillId, skillState] of Object.entries(player.skills)) {
+            if (skillState.level <= 0) continue;
+            const skillData = GameData.skills[skillId];
+            if (!skillData || skillData.type !== 'passive') continue;
+            if (skillData.mpRegenBonus) {
+                regenPerSec += skillData.mpRegenBonus * skillState.level;
+            }
+        }
+
+        if (regenPerSec > 0) {
+            const maxMp = this.getTotalStat('mp');
+            player.currentMp = Math.min(player.currentMp + regenPerSec * dt, maxMp);
         }
     }
 
@@ -450,9 +519,14 @@ class GameEngine {
     checkSkillUnlocks() {
         const player = this.state.player;
         for (const [skillId, skillData] of Object.entries(GameData.skills)) {
-            if (!player.skills[skillId] && player.level >= skillData.unlockLevel) {
-                player.skills[skillId] = { level: 1, cooldownRemaining: 0 };
-                if (this.onLogMessage) this.onLogMessage(`✨ New skill unlocked: ${skillData.icon} ${skillData.name}!`, 'level-up');
+            if (player.level >= skillData.unlockLevel) {
+                if (!player.skills[skillId]) {
+                    player.skills[skillId] = { level: 1, cooldownRemaining: 0 };
+                    if (this.onLogMessage) this.onLogMessage(`✨ New skill unlocked: ${skillData.icon} ${skillData.name}!`, 'level-up');
+                } else if (player.skills[skillId].level <= 0) {
+                    player.skills[skillId].level = 1;
+                    if (this.onLogMessage) this.onLogMessage(`✨ New skill unlocked: ${skillData.icon} ${skillData.name}!`, 'level-up');
+                }
             }
         }
     }
@@ -548,16 +622,69 @@ class GameEngine {
         return true;
     }
 
+    useAllItems(itemId) {
+        const count = this.getItemCount(itemId);
+        if (count <= 0) return 0;
+        let used = 0;
+        for (let i = 0; i < count; i++) {
+            if (this.useItem(itemId)) {
+                used++;
+            } else {
+                break;
+            }
+        }
+        return used;
+    }
+
+    sellAllItems(itemId) {
+        const count = this.getItemCount(itemId);
+        if (count <= 0) return 0;
+        if (this.sellItem(itemId, count)) {
+            return count;
+        }
+        return 0;
+    }
+
     // ========================
     // Shop
     // ========================
+    getShopDiscount() {
+        const shopData = GameData.getShopData(this.state.shopLevel);
+        return shopData ? shopData.discount : 0;
+    }
+
+    getDiscountedPrice(basePrice) {
+        const discount = this.getShopDiscount();
+        return Math.floor(basePrice * (1 - discount / 100));
+    }
+
     buyItem(itemId) {
         const itemData = GameData.items[itemId];
         if (!itemData || !itemData.buyPrice) return false;
 
-        if (this.state.player.gold >= itemData.buyPrice) {
-            this.state.player.gold -= itemData.buyPrice;
+        const price = this.getDiscountedPrice(itemData.buyPrice);
+        if (this.state.player.gold >= price) {
+            this.state.player.gold -= price;
             this.addItem(itemId);
+            return true;
+        }
+        return false;
+    }
+
+    upgradeShop() {
+        const currentLevel = this.state.shopLevel;
+        const maxLevel = GameData.getMaxShopLevel();
+        if (currentLevel >= maxLevel) return false;
+
+        const nextData = GameData.getShopData(currentLevel + 1);
+        if (!nextData) return false;
+
+        if (this.state.player.gold >= nextData.upgradeCost) {
+            this.state.player.gold -= nextData.upgradeCost;
+            this.state.shopLevel = currentLevel + 1;
+            if (this.onLogMessage) {
+                this.onLogMessage(`🏪 Shop upgraded to ${nextData.icon} ${nextData.name}!`, 'level-up');
+            }
             return true;
         }
         return false;

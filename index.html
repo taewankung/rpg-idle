@@ -106,29 +106,33 @@
                         <button class="btn-zone" id="btn-next-zone">▶</button>
                     </div>
 
-                    <div class="battle-arena">
-                        <div class="battle-entity player-side">
-                            <div class="entity-avatar" id="player-battle-avatar">🧙</div>
-                            <div class="entity-name" id="player-battle-name">Hero</div>
-                            <div class="progress-bar hp-bar">
-                                <div class="progress-fill hp-fill" id="player-hp-bar"></div>
-                                <span class="progress-text" id="player-hp-text">100/100</span>
+                    <div class="battle-arena minimap-arena">
+                        <canvas id="minimap-canvas" width="560" height="280"></canvas>
+                        <div class="minimap-hud">
+                            <div class="minimap-entity-hud player-hud">
+                                <span class="hud-avatar" id="player-battle-avatar">🧙</span>
+                                <span class="hud-name" id="player-battle-name">Hero</span>
+                                <div class="hud-bars">
+                                    <div class="progress-bar hp-bar hud-hp">
+                                        <div class="progress-fill hp-fill" id="player-hp-bar"></div>
+                                        <span class="progress-text" id="player-hp-text">100/100</span>
+                                    </div>
+                                    <div class="progress-bar mp-bar hud-mp">
+                                        <div class="progress-fill mp-fill" id="player-mp-bar"></div>
+                                        <span class="progress-text" id="player-mp-text">50/50</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="minimap-entity-hud enemy-hud">
+                                <span class="hud-avatar" id="enemy-avatar">🐺</span>
+                                <span class="hud-name" id="enemy-name">Wild Wolf</span>
+                                <div class="progress-bar hp-bar hud-hp">
+                                    <div class="progress-fill hp-fill enemy-hp" id="enemy-hp-bar"></div>
+                                    <span class="progress-text" id="enemy-hp-text">50/50</span>
+                                </div>
                             </div>
                         </div>
-
-                        <div class="battle-vs">
-                            <div class="battle-effects" id="battle-effects"></div>
-                            <span>⚔️</span>
-                        </div>
-
-                        <div class="battle-entity enemy-side">
-                            <div class="entity-avatar" id="enemy-avatar">🐺</div>
-                            <div class="entity-name" id="enemy-name">Wild Wolf</div>
-                            <div class="progress-bar hp-bar">
-                                <div class="progress-fill hp-fill enemy-hp" id="enemy-hp-bar"></div>
-                                <span class="progress-text" id="enemy-hp-text">50/50</span>
-                            </div>
-                        </div>
+                        <div class="battle-effects" id="battle-effects"></div>
                     </div>
 
                     <div class="battle-controls">
@@ -162,7 +166,7 @@
 
                 <!-- Shop Tab -->
                 <div class="tab-content" id="tab-shop">
-                    <h2>🏪 Shop</h2>
+                    <div id="shop-header"></div>
                     <div id="shop-list"></div>
                 </div>
             </main>
@@ -236,6 +240,7 @@
 
     <script src="js/data/gameData.js"></script>
     <script src="js/core/engine.js"></script>
+    <script src="js/core/minimap.js"></script>
     <script src="js/core/ui.js"></script>
     <script src="js/main.js"></script>
 </body>

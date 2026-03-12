@@ -8,6 +8,7 @@ class UIManager {
         this.engine = engine;
         this.elements = {};
         this.damageNumberId = 0;
+        this.minimap = new MinimapRenderer();
     }
 
     // ========================
@@ -18,6 +19,10 @@ class UIManager {
         this.bindEvents();
         this.setupCallbacks();
         this.renderAll();
+        this.minimap.init();
+        this.syncMinimapZone();
+        this.syncMinimapEntities();
+        this.startInitialApproach();
     }
 
     cacheElements() {
@@ -30,10 +35,11 @@ class UIManager {
             'zone-name', 'zone-level',
             'player-battle-avatar', 'player-battle-name',
             'player-hp-bar', 'player-hp-text',
+            'player-mp-bar', 'player-mp-text',
             'enemy-avatar', 'enemy-name', 'enemy-hp-bar', 'enemy-hp-text',
             'auto-battle-status', 'battle-effects', 'battle-log',
             'equipment-slots', 'inventory-grid',
-            'dungeon-list', 'quest-list', 'shop-list',
+            'dungeon-list', 'quest-list', 'shop-list', 'shop-header',
             'dps-value', 'kills-value', 'playtime-value',
             'tooltip', 'modal-overlay', 'modal', 'modal-title', 'modal-body', 'modal-close',
         ];
@@ -86,6 +92,11 @@ class UIManager {
             if (e.target === this.elements['modal-overlay']) this.closeModal();
         });
 
+        // Minimap resize
+        window.addEventListener('resize', () => {
+            if (this.minimap && this.minimap.canvas) this.minimap.resize();
+        });
+
         // Equipment slot clicks
         document.querySelectorAll('.equip-slot').forEach(slot => {
             slot.addEventListener('click', () => {
@@ -102,11 +113,68 @@ class UIManager {
 
     setupCallbacks() {
         this.engine.onBattleUpdate = () => this.updateBattle();
-        this.engine.onLogMessage = (msg, type) => this.addLog(msg, type);
-        this.engine.onEnemyDefeated = () => this.onEnemyDefeated();
+        this.engine.onLogMessage = (msg, type) => {
+            this.addLog(msg, type);
+            // Detect skill usage for minimap effects
+            if (type === 'player-action' && msg.startsWith('✨ Used')) {
+                this.showSkillOnMinimap(msg);
+            }
+        };
+        this.engine.onEnemyDefeated = (enemy) => this.onEnemyDefeated(enemy);
         this.engine.onLevelUp = (level) => this.onLevelUp(level);
         this.engine.onLoot = (value, type) => this.showDamageNumber(value, type);
         this.engine.onQuestUpdate = () => this.renderQuests();
+
+        // Movement phase: when a new enemy spawns, start approach
+        this.engine.onEnemySpawned = () => {
+            // Sync zone first (rebuilds grid + resets positions if zone changed)
+            this.syncMinimapZone();
+            this.syncMinimapEntities();
+            this.minimap.spawnEnemyPosition();
+            this.minimap.startApproach();
+        };
+
+        // When minimap says entities are in range, enable combat
+        this.minimap.onReachedEnemy = () => {
+            this.engine.battleReady = true;
+        };
+    }
+
+    syncMinimapZone() {
+        const zone = GameData.zones[this.engine.state.currentZoneIndex];
+        if (zone) this.minimap.setZone(zone.id);
+    }
+
+    syncMinimapEntities() {
+        const p = this.engine.state.player;
+        const classData = GameData.classes[p.classId];
+        this.minimap.setPlayerInfo(classData.avatar, p.name);
+
+        const enemy = this.engine.state.currentEnemy;
+        if (enemy) {
+            this.minimap.setEnemyInfo(enemy.icon, enemy.name);
+        }
+    }
+
+    // Start the first approach on init (enemy already exists from engine.init)
+    startInitialApproach() {
+        this.syncMinimapEntities();
+        if (this.engine.state.currentEnemy) {
+            this.minimap.startApproach();
+        }
+    }
+
+    showSkillOnMinimap(msg) {
+        // Find which skill was used by matching the name
+        const player = this.engine.state.player;
+        for (const [skillId] of Object.entries(player.skills)) {
+            const skillData = GameData.skills[skillId];
+            if (skillData && msg.includes(skillData.name)) {
+                const target = skillData.healMultiplier ? 'player' : 'enemy';
+                this.minimap.showSkillEffect(skillData.icon, target);
+                break;
+            }
+        }
     }
 
     // ========================
@@ -147,6 +215,7 @@ class UIManager {
         this.elements['char-level'].textContent = p.level;
         this.elements['player-battle-avatar'].textContent = classData.avatar;
         this.elements['player-battle-name'].textContent = p.name;
+        this.minimap.setPlayerInfo(classData.avatar, p.name);
     }
 
     renderStats() {
@@ -241,6 +310,7 @@ class UIManager {
         if (!zone) return;
         this.elements['zone-name'].textContent = `${zone.icon} ${zone.name}`;
         this.elements['zone-level'].textContent = `Lv. ${zone.levelRange[0]}-${zone.levelRange[1]}`;
+        this.syncMinimapZone();
     }
 
     // ========================
@@ -257,6 +327,12 @@ class UIManager {
         this.elements['player-hp-bar'].style.width = `${Math.max(0, hpPercent)}%`;
         this.elements['player-hp-text'].textContent = `${Math.floor(player.currentHp)}/${maxHp}`;
 
+        // Player MP bar
+        const maxMp = engine.getTotalStat('mp');
+        const mpPercent = (player.currentMp / maxMp) * 100;
+        this.elements['player-mp-bar'].style.width = `${Math.max(0, mpPercent)}%`;
+        this.elements['player-mp-text'].textContent = `${Math.floor(player.currentMp)}/${maxMp}`;
+
         // EXP bar
         const expRequired = GameData.getExpRequired(player.level);
         const expPercent = (player.exp / expRequired) * 100;
@@ -270,7 +346,14 @@ class UIManager {
             const enemyHpPercent = (enemy.currentHp / enemy.maxHp) * 100;
             this.elements['enemy-hp-bar'].style.width = `${Math.max(0, enemyHpPercent)}%`;
             this.elements['enemy-hp-text'].textContent = `${Math.floor(Math.max(0, enemy.currentHp))}/${enemy.maxHp}`;
+
+            // Sync minimap
+            this.minimap.setEnemyHpRatio(Math.max(0, enemy.currentHp / enemy.maxHp));
+            this.minimap.setEnemyInfo(enemy.icon, enemy.name);
         }
+
+        // Sync player HP to minimap
+        this.minimap.setPlayerHpRatio(Math.max(0, player.currentHp / maxHp));
 
         // Resources
         this.renderResources();
@@ -312,14 +395,13 @@ class UIManager {
         });
     }
 
-    onEnemyDefeated() {
-        // Flash enemy
-        const el = this.elements['enemy-avatar'];
-        el.classList.add('hit');
-        setTimeout(() => el.classList.remove('hit'), 300);
+    onEnemyDefeated(enemy) {
+        // Death burst effect on minimap
+        this.minimap.showEnemyDeath();
 
         // Re-render inventory in case of drops
         this.renderInventory();
+        // Note: new enemy sync & approach is handled by onEnemySpawned callback
     }
 
     onLevelUp(level) {
@@ -335,16 +417,21 @@ class UIManager {
     }
 
     showDamageNumber(value, type) {
-        const container = this.elements['battle-effects'];
-        if (!container) return;
-
-        const el = document.createElement('div');
-        el.className = `damage-number ${type}`;
-        el.textContent = type === 'heal' ? `+${value}` : `-${value}`;
-        el.style.left = `${Math.random() * 40 - 20}px`;
-
-        container.appendChild(el);
-        setTimeout(() => el.remove(), 1000);
+        // Determine target and trigger minimap effects
+        if (type === 'heal') {
+            this.minimap.showDamageOnMap(value, type, 'player');
+            this.minimap.showHealEffect();
+        } else if (type === 'player-dmg' || type === 'crit') {
+            // Player dealt damage to enemy
+            this.minimap.triggerPlayerAttack();
+            this.minimap.triggerEnemyHit();
+            this.minimap.showDamageOnMap(value, type, 'enemy');
+        } else if (type === 'enemy-dmg') {
+            // Enemy dealt damage to player
+            this.minimap.triggerEnemyAttack();
+            this.minimap.triggerPlayerHit();
+            this.minimap.showDamageOnMap(value, type, 'player');
+        }
     }
 
     // ========================
@@ -431,9 +518,15 @@ class UIManager {
 
         if (itemData.type === 'consumable') {
             body += `<button class="btn-buy" id="btn-use-item">🧪 Use</button>`;
+            if (count > 1) {
+                body += `<button class="btn-buy" id="btn-use-all-item" style="background: linear-gradient(135deg, #1a6b2a, #27ae60)">🧪 Use All (${count})</button>`;
+            }
         }
 
         body += `<button class="btn-buy" id="btn-sell-item" style="background: linear-gradient(135deg, #7d3c1f, #c0392b)">💰 Sell (${itemData.sellPrice}g)</button>`;
+        if (count > 1) {
+            body += `<button class="btn-buy" id="btn-sell-all-item" style="background: linear-gradient(135deg, #7d3c1f, #c0392b)">💰 Sell All (${count}) = ${itemData.sellPrice * count}g</button>`;
+        }
         body += '</div>';
 
         this.showModal(`${itemData.icon} ${itemData.name}`, body);
@@ -467,6 +560,33 @@ class UIManager {
             sellBtn.addEventListener('click', () => {
                 if (this.engine.sellItem(itemId)) {
                     this.addLog(`💰 Sold ${itemData.name} for ${itemData.sellPrice}g`, 'loot');
+                }
+                this.closeModal();
+                this.renderInventory();
+                this.renderResources();
+            });
+        }
+
+        const useAllBtn = document.getElementById('btn-use-all-item');
+        if (useAllBtn) {
+            useAllBtn.addEventListener('click', () => {
+                const used = this.engine.useAllItems(itemId);
+                if (used > 0) {
+                    this.addLog(`🧪 Used ${itemData.name} x${used}`, 'system');
+                }
+                this.closeModal();
+                this.renderInventory();
+                this.renderStats();
+            });
+        }
+
+        const sellAllBtn = document.getElementById('btn-sell-all-item');
+        if (sellAllBtn) {
+            sellAllBtn.addEventListener('click', () => {
+                const totalGold = itemData.sellPrice * this.engine.getItemCount(itemId);
+                const sold = this.engine.sellAllItems(itemId);
+                if (sold > 0) {
+                    this.addLog(`💰 Sold ${itemData.name} x${sold} for ${totalGold}g`, 'loot');
                 }
                 this.closeModal();
                 this.renderInventory();
@@ -606,18 +726,70 @@ class UIManager {
     // Shop
     // ========================
     renderShop() {
+        // --- Shop Header (name + upgrade) ---
+        const header = this.elements['shop-header'];
+        if (header) {
+            const shopLevel = this.engine.state.shopLevel;
+            const shopData = GameData.getShopData(shopLevel);
+            const maxLevel = GameData.getMaxShopLevel();
+            const isMaxed = shopLevel >= maxLevel;
+            const nextData = !isMaxed ? GameData.getShopData(shopLevel + 1) : null;
+            const canUpgrade = nextData && this.engine.state.player.gold >= nextData.upgradeCost;
+            const discount = shopData.discount;
+
+            let headerHtml = `<div class="shop-header-row">`;
+            headerHtml += `<div class="shop-title">${shopData.icon} ${shopData.name} <span class="shop-level">Lv.${shopLevel}</span></div>`;
+            if (discount > 0) {
+                headerHtml += `<div class="shop-discount">🏷️ -${discount}% discount</div>`;
+            }
+            headerHtml += `</div>`;
+
+            if (!isMaxed) {
+                headerHtml += `<div class="shop-upgrade-row">`;
+                headerHtml += `<div class="shop-upgrade-info">⬆️ Next: ${nextData.icon} ${nextData.name}`;
+                if (nextData.discount > 0) headerHtml += ` <span class="shop-discount-preview">(-${nextData.discount}%)</span>`;
+                headerHtml += `</div>`;
+                headerHtml += `<button class="btn-upgrade-shop" id="btn-upgrade-shop" ${canUpgrade ? '' : 'disabled'}>🪙 ${this.engine.formatNumber(nextData.upgradeCost)} Upgrade</button>`;
+                headerHtml += `</div>`;
+            } else {
+                headerHtml += `<div class="shop-upgrade-row"><div class="shop-upgrade-info">✨ Max Level!</div></div>`;
+            }
+            header.innerHTML = headerHtml;
+
+            const upgradeBtn = header.querySelector('#btn-upgrade-shop');
+            if (upgradeBtn) {
+                upgradeBtn.addEventListener('click', () => {
+                    if (this.engine.upgradeShop()) {
+                        this.renderShop();
+                        this.renderResources();
+                    }
+                });
+            }
+        }
+
+        // --- Shop Item List ---
         const container = this.elements['shop-list'];
         if (!container) return;
         container.innerHTML = '';
 
-        for (const shopEntry of GameData.shopItems) {
+        const shopData = GameData.getShopData(this.engine.state.shopLevel);
+        if (!shopData) return;
+
+        for (const shopEntry of shopData.items) {
             const itemData = GameData.items[shopEntry.itemId];
             if (!itemData || !itemData.buyPrice) continue;
 
-            const canAfford = this.engine.state.player.gold >= itemData.buyPrice;
+            const price = this.engine.getDiscountedPrice(itemData.buyPrice);
+            const canAfford = this.engine.state.player.gold >= price;
+            const hasDiscount = price < itemData.buyPrice;
 
             const div = document.createElement('div');
             div.className = 'shop-item';
+
+            let priceHtml = `🪙 ${price}`;
+            if (hasDiscount) {
+                priceHtml = `<span class="shop-original-price">${itemData.buyPrice}</span> 🪙 ${price}`;
+            }
 
             div.innerHTML = `
                 <div class="shop-item-icon">${itemData.icon}</div>
@@ -625,14 +797,14 @@ class UIManager {
                     <div class="shop-item-name" style="color: var(--rarity-${itemData.rarity})">${itemData.name}</div>
                     <div class="shop-item-desc">${itemData.description}</div>
                 </div>
-                <div class="shop-item-price">🪙 ${itemData.buyPrice}</div>
+                <div class="shop-item-price">${priceHtml}</div>
                 <button class="btn-buy" ${canAfford ? '' : 'disabled'}>Buy</button>
             `;
 
             const buyBtn = div.querySelector('.btn-buy');
             buyBtn.addEventListener('click', () => {
                 if (this.engine.buyItem(shopEntry.itemId)) {
-                    this.addLog(`🛒 Bought ${itemData.name}!`, 'loot');
+                    this.addLog(`🛒 Bought ${itemData.name} for ${price}g!`, 'loot');
                     this.renderShop();
                     this.renderResources();
                     this.renderInventory();

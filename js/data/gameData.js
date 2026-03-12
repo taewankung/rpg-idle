@@ -112,6 +112,15 @@ const GameData = {
             unlockLevel: 6,
             maxLevel: 15,
         },
+        mana_flow: {
+            name: 'Mana Flow',
+            icon: '🔮',
+            description: 'Passive: Regenerate MP over time.',
+            type: 'passive',
+            mpRegenBonus: 2,
+            unlockLevel: 4,
+            maxLevel: 10,
+        },
     },
 
     // ========================
@@ -179,6 +188,7 @@ const GameData = {
             drops: [
                 { itemId: 'slime_gel', chance: 0.4 },
                 { itemId: 'wooden_sword', chance: 0.05 },
+                { itemId: 'wooden_amulet', chance: 0.04 },
             ],
         },
         wolf: {
@@ -190,6 +200,7 @@ const GameData = {
             drops: [
                 { itemId: 'wolf_fang', chance: 0.3 },
                 { itemId: 'leather_armor', chance: 0.05 },
+                { itemId: 'copper_ring', chance: 0.04 },
             ],
         },
         goblin: {
@@ -225,6 +236,7 @@ const GameData = {
             goldReward: [15, 35],
             drops: [
                 { itemId: 'bat_wing', chance: 0.35 },
+                { itemId: 'silver_amulet', chance: 0.04 },
             ],
         },
         spider: {
@@ -247,6 +259,7 @@ const GameData = {
             drops: [
                 { itemId: 'bone_fragment', chance: 0.4 },
                 { itemId: 'steel_sword', chance: 0.05 },
+                { itemId: 'silver_ring', chance: 0.04 },
             ],
         },
         cave_troll: {
@@ -293,6 +306,7 @@ const GameData = {
             drops: [
                 { itemId: 'dark_essence', chance: 0.2 },
                 { itemId: 'shadow_blade', chance: 0.04 },
+                { itemId: 'ruby_ring', chance: 0.03 },
             ],
         },
         lich_king: {
@@ -338,6 +352,7 @@ const GameData = {
             drops: [
                 { itemId: 'dragon_scale', chance: 0.15 },
                 { itemId: 'dragon_sword', chance: 0.03 },
+                { itemId: 'dragon_ring', chance: 0.02 },
             ],
         },
         elder_dragon: {
@@ -372,6 +387,7 @@ const GameData = {
             goldReward: [120, 220],
             drops: [
                 { itemId: 'dark_gem', chance: 0.15 },
+                { itemId: 'demon_amulet', chance: 0.02 },
             ],
         },
         demon_warrior: {
@@ -395,6 +411,7 @@ const GameData = {
             drops: [
                 { itemId: 'demon_blade', chance: 0.12 },
                 { itemId: 'demon_crown', chance: 0.05 },
+                { itemId: 'demon_ring', chance: 0.04 },
             ],
         },
     },
@@ -427,31 +444,43 @@ const GameData = {
         exp_scroll: { name: 'EXP Scroll', icon: '📜', type: 'consumable', rarity: 'rare', buyPrice: 500, sellPrice: 150, expBoost: 1.5, duration: 60, description: 'x1.5 EXP for 60s.' },
 
         // Weapons
-        wooden_sword: { name: 'Wooden Sword', icon: '🗡️', type: 'weapon', rarity: 'common', slot: 'weapon', stats: { atk: 5 }, sellPrice: 15, description: 'A basic wooden sword.' },
+        wooden_sword: { name: 'Wooden Sword', icon: '🗡️', type: 'weapon', rarity: 'common', slot: 'weapon', stats: { atk: 5 }, sellPrice: 15, buyPrice: 50, description: 'A basic wooden sword.' },
         iron_sword: { name: 'Iron Sword', icon: '⚔️', type: 'weapon', rarity: 'uncommon', slot: 'weapon', stats: { atk: 12, spd: 2 }, sellPrice: 50, buyPrice: 200, description: 'A sturdy iron sword.' },
-        steel_sword: { name: 'Steel Sword', icon: '⚔️', type: 'weapon', rarity: 'rare', slot: 'weapon', stats: { atk: 25, crit: 3 }, sellPrice: 150, description: 'A sharp steel sword.' },
-        troll_club: { name: 'Troll Club', icon: '🏏', type: 'weapon', rarity: 'rare', slot: 'weapon', stats: { atk: 35, spd: -3 }, sellPrice: 200, description: 'A massive troll club.' },
-        shadow_blade: { name: 'Shadow Blade', icon: '🗡️', type: 'weapon', rarity: 'epic', slot: 'weapon', stats: { atk: 50, crit: 8, spd: 5 }, sellPrice: 500, description: 'A blade forged in shadow.' },
-        dragon_sword: { name: 'Dragon Slayer', icon: '⚔️', type: 'weapon', rarity: 'legendary', slot: 'weapon', stats: { atk: 80, crit: 12, spd: 8 }, sellPrice: 1500, description: 'A legendary dragon-slaying sword.' },
+        steel_sword: { name: 'Steel Sword', icon: '⚔️', type: 'weapon', rarity: 'rare', slot: 'weapon', stats: { atk: 25, crit: 3 }, sellPrice: 150, buyPrice: 500, description: 'A sharp steel sword.' },
+        troll_club: { name: 'Troll Club', icon: '🏓', type: 'weapon', rarity: 'rare', slot: 'weapon', stats: { atk: 35, spd: -3 }, sellPrice: 200, buyPrice: 700, description: 'A massive troll club.' },
+        shadow_blade: { name: 'Shadow Blade', icon: '🗡️', type: 'weapon', rarity: 'epic', slot: 'weapon', stats: { atk: 50, crit: 8, spd: 5 }, sellPrice: 500, buyPrice: 2000, description: 'A blade forged in shadow.' },
+        dragon_sword: { name: 'Dragon Slayer', icon: '⚔️', type: 'weapon', rarity: 'legendary', slot: 'weapon', stats: { atk: 80, crit: 12, spd: 8 }, sellPrice: 1500, buyPrice: 6000, description: 'A legendary dragon-slaying sword.' },
         demon_blade: { name: 'Demon Blade', icon: '🗡️', type: 'weapon', rarity: 'mythic', slot: 'weapon', stats: { atk: 120, crit: 15, spd: 10 }, sellPrice: 3000, description: 'A blade empowered by demonic energy.' },
 
         // Armor
         leather_armor: { name: 'Leather Armor', icon: '🎽', type: 'armor', rarity: 'common', slot: 'armor', stats: { def: 5, hp: 20 }, sellPrice: 20, buyPrice: 80, description: 'Basic leather armor.' },
-        steel_armor: { name: 'Steel Armor', icon: '🎽', type: 'armor', rarity: 'rare', slot: 'armor', stats: { def: 15, hp: 80 }, sellPrice: 180, description: 'Heavy steel armor.' },
-        mithril_armor: { name: 'Mithril Armor', icon: '🎽', type: 'armor', rarity: 'epic', slot: 'armor', stats: { def: 30, hp: 150, spd: 3 }, sellPrice: 600, description: 'Lightweight mithril armor.' },
+        steel_armor: { name: 'Steel Armor', icon: '🎽', type: 'armor', rarity: 'rare', slot: 'armor', stats: { def: 15, hp: 80 }, sellPrice: 180, buyPrice: 600, description: 'Heavy steel armor.' },
+        mithril_armor: { name: 'Mithril Armor', icon: '🎽', type: 'armor', rarity: 'epic', slot: 'armor', stats: { def: 30, hp: 150, spd: 3 }, sellPrice: 600, buyPrice: 2500, description: 'Lightweight mithril armor.' },
 
         // Helmets
         iron_helmet: { name: 'Iron Helmet', icon: '⛑️', type: 'helmet', rarity: 'uncommon', slot: 'helmet', stats: { def: 5, hp: 30 }, sellPrice: 40, buyPrice: 150, description: 'A sturdy iron helmet.' },
 
         // Boots
         leather_boots: { name: 'Leather Boots', icon: '👢', type: 'boots', rarity: 'common', slot: 'boots', stats: { spd: 3, def: 2 }, sellPrice: 15, buyPrice: 60, description: 'Light leather boots.' },
-        swift_boots: { name: 'Swift Boots', icon: '👢', type: 'boots', rarity: 'rare', slot: 'boots', stats: { spd: 10, def: 5 }, sellPrice: 200, description: 'Boots enchanted with speed.' },
+        swift_boots: { name: 'Swift Boots', icon: '👢', type: 'boots', rarity: 'rare', slot: 'boots', stats: { spd: 10, def: 5 }, sellPrice: 200, buyPrice: 700, description: 'Boots enchanted with speed.' },
 
-        // Accessories
-        emerald_ring: { name: 'Emerald Ring', icon: '💍', type: 'ring', rarity: 'rare', slot: 'ring', stats: { hp: 50, mp: 30, def: 5 }, sellPrice: 250, description: 'A ring with an emerald gem.' },
-        goblin_crown: { name: 'Goblin Crown', icon: '👑', type: 'helmet', rarity: 'rare', slot: 'helmet', stats: { atk: 8, def: 8, hp: 40 }, sellPrice: 300, description: 'Crown of the Goblin Chief.' },
-        necro_amulet: { name: 'Necro Amulet', icon: '📿', type: 'amulet', rarity: 'epic', slot: 'amulet', stats: { atk: 20, mp: 50, crit: 5 }, sellPrice: 800, description: 'An amulet radiating dark power.' },
-        dragon_amulet: { name: 'Dragon Amulet', icon: '📿', type: 'amulet', rarity: 'legendary', slot: 'amulet', stats: { atk: 35, def: 20, hp: 200, crit: 8 }, sellPrice: 2000, description: 'An amulet holding dragon essence.' },
+        // Accessories - Rings
+        copper_ring: { name: 'Copper Ring', icon: '💍', type: 'ring', rarity: 'common', slot: 'ring', stats: { atk: 2, def: 2 }, sellPrice: 25, buyPrice: 100, description: 'A simple copper ring.' },
+        silver_ring: { name: 'Silver Ring', icon: '💍', type: 'ring', rarity: 'uncommon', slot: 'ring', stats: { atk: 5, hp: 30, spd: 2 }, sellPrice: 80, buyPrice: 280, description: 'A polished silver ring.' },
+        emerald_ring: { name: 'Emerald Ring', icon: '💍', type: 'ring', rarity: 'rare', slot: 'ring', stats: { hp: 50, mp: 30, def: 5 }, sellPrice: 250, buyPrice: 900, description: 'A ring with an emerald gem.' },
+        ruby_ring: { name: 'Ruby Ring', icon: '💍', type: 'ring', rarity: 'epic', slot: 'ring', stats: { atk: 15, crit: 6, hp: 80 }, sellPrice: 600, buyPrice: 2200, description: 'A ring blazing with ruby fire.' },
+        dragon_ring: { name: 'Dragon Ring', icon: '💍', type: 'ring', rarity: 'legendary', slot: 'ring', stats: { atk: 30, def: 15, crit: 10, hp: 150 }, sellPrice: 1800, buyPrice: 6500, description: 'A ring forged from dragon flame.' },
+        demon_ring: { name: 'Demon Ring', icon: '💍', type: 'ring', rarity: 'mythic', slot: 'ring', stats: { atk: 45, def: 25, crit: 12, hp: 250, spd: 8 }, sellPrice: 4000, description: 'A ring pulsing with demonic power.' },
+
+        // Accessories - Amulets
+        wooden_amulet: { name: 'Wooden Amulet', icon: '📿', type: 'amulet', rarity: 'common', slot: 'amulet', stats: { hp: 20, mp: 10 }, sellPrice: 20, buyPrice: 80, description: 'A simple wooden charm.' },
+        silver_amulet: { name: 'Silver Amulet', icon: '📿', type: 'amulet', rarity: 'uncommon', slot: 'amulet', stats: { hp: 40, mp: 20, def: 3 }, sellPrice: 70, buyPrice: 250, description: 'A shining silver amulet.' },
+        necro_amulet: { name: 'Necro Amulet', icon: '📿', type: 'amulet', rarity: 'epic', slot: 'amulet', stats: { atk: 20, mp: 50, crit: 5 }, sellPrice: 800, buyPrice: 3000, description: 'An amulet radiating dark power.' },
+        dragon_amulet: { name: 'Dragon Amulet', icon: '📿', type: 'amulet', rarity: 'legendary', slot: 'amulet', stats: { atk: 35, def: 20, hp: 200, crit: 8 }, sellPrice: 2000, buyPrice: 8000, description: 'An amulet holding dragon essence.' },
+        demon_amulet: { name: 'Demon Amulet', icon: '📿', type: 'amulet', rarity: 'mythic', slot: 'amulet', stats: { atk: 60, mp: 80, crit: 12, hp: 250 }, sellPrice: 4500, description: 'An amulet forged in the demon realm.' },
+
+        // Accessories - Other
+        goblin_crown: { name: 'Goblin Crown', icon: '👑', type: 'helmet', rarity: 'rare', slot: 'helmet', stats: { atk: 8, def: 8, hp: 40 }, sellPrice: 300, buyPrice: 1000, description: 'Crown of the Goblin Chief.' },
         demon_crown: { name: 'Demon Crown', icon: '👑', type: 'helmet', rarity: 'mythic', slot: 'helmet', stats: { atk: 50, def: 40, hp: 300, crit: 10 }, sellPrice: 5000, description: 'The crown of the Demon Lord.' },
     },
 
@@ -560,18 +589,138 @@ const GameData = {
     ],
 
     // ========================
-    // Shop Items
+    // Shop Upgrade Levels
     // ========================
-    shopItems: [
-        { itemId: 'hp_potion', stock: -1 },
-        { itemId: 'mp_potion', stock: -1 },
-        { itemId: 'hp_potion_large', stock: -1 },
-        { itemId: 'exp_scroll', stock: 3 },
-        { itemId: 'iron_sword', stock: 1 },
-        { itemId: 'leather_armor', stock: 1 },
-        { itemId: 'iron_helmet', stock: 1 },
-        { itemId: 'leather_boots', stock: 1 },
+    shopUpgrades: [
+        {
+            level: 1,
+            name: 'Traveling Merchant',
+            icon: '🏕️',
+            upgradeCost: 0,
+            discount: 0,
+            items: [
+                { itemId: 'hp_potion', stock: -1 },
+                { itemId: 'mp_potion', stock: -1 },
+                { itemId: 'wooden_sword', stock: 1 },
+                { itemId: 'leather_boots', stock: 1 },
+                { itemId: 'wooden_amulet', stock: 1 },
+            ],
+        },
+        {
+            level: 2,
+            name: 'Village Shop',
+            icon: '🏠',
+            upgradeCost: 500,
+            discount: 0,
+            items: [
+                { itemId: 'hp_potion', stock: -1 },
+                { itemId: 'mp_potion', stock: -1 },
+                { itemId: 'hp_potion_large', stock: -1 },
+                { itemId: 'iron_sword', stock: 1 },
+                { itemId: 'leather_armor', stock: 1 },
+                { itemId: 'iron_helmet', stock: 1 },
+                { itemId: 'leather_boots', stock: 1 },
+                { itemId: 'copper_ring', stock: 1 },
+                { itemId: 'wooden_amulet', stock: 1 },
+            ],
+        },
+        {
+            level: 3,
+            name: 'Town Market',
+            icon: '🏪',
+            upgradeCost: 3000,
+            discount: 5,
+            items: [
+                { itemId: 'hp_potion', stock: -1 },
+                { itemId: 'mp_potion', stock: -1 },
+                { itemId: 'hp_potion_large', stock: -1 },
+                { itemId: 'exp_scroll', stock: 3 },
+                { itemId: 'iron_sword', stock: 1 },
+                { itemId: 'steel_sword', stock: 1 },
+                { itemId: 'leather_armor', stock: 1 },
+                { itemId: 'steel_armor', stock: 1 },
+                { itemId: 'iron_helmet', stock: 1 },
+                { itemId: 'leather_boots', stock: 1 },
+                { itemId: 'swift_boots', stock: 1 },
+                { itemId: 'copper_ring', stock: 1 },
+                { itemId: 'silver_ring', stock: 1 },
+                { itemId: 'wooden_amulet', stock: 1 },
+                { itemId: 'silver_amulet', stock: 1 },
+            ],
+        },
+        {
+            level: 4,
+            name: 'Grand Bazaar',
+            icon: '🏛️',
+            upgradeCost: 10000,
+            discount: 10,
+            items: [
+                { itemId: 'hp_potion', stock: -1 },
+                { itemId: 'mp_potion', stock: -1 },
+                { itemId: 'hp_potion_large', stock: -1 },
+                { itemId: 'exp_scroll', stock: -1 },
+                { itemId: 'iron_sword', stock: 1 },
+                { itemId: 'steel_sword', stock: 1 },
+                { itemId: 'troll_club', stock: 1 },
+                { itemId: 'leather_armor', stock: 1 },
+                { itemId: 'steel_armor', stock: 1 },
+                { itemId: 'mithril_armor', stock: 1 },
+                { itemId: 'iron_helmet', stock: 1 },
+                { itemId: 'goblin_crown', stock: 1 },
+                { itemId: 'leather_boots', stock: 1 },
+                { itemId: 'swift_boots', stock: 1 },
+                { itemId: 'copper_ring', stock: 1 },
+                { itemId: 'silver_ring', stock: 1 },
+                { itemId: 'emerald_ring', stock: 1 },
+                { itemId: 'ruby_ring', stock: 1 },
+                { itemId: 'wooden_amulet', stock: 1 },
+                { itemId: 'silver_amulet', stock: 1 },
+                { itemId: 'necro_amulet', stock: 1 },
+            ],
+        },
+        {
+            level: 5,
+            name: 'Royal Emporium',
+            icon: '👑',
+            upgradeCost: 30000,
+            discount: 15,
+            items: [
+                { itemId: 'hp_potion', stock: -1 },
+                { itemId: 'mp_potion', stock: -1 },
+                { itemId: 'hp_potion_large', stock: -1 },
+                { itemId: 'exp_scroll', stock: -1 },
+                { itemId: 'iron_sword', stock: 1 },
+                { itemId: 'steel_sword', stock: 1 },
+                { itemId: 'troll_club', stock: 1 },
+                { itemId: 'shadow_blade', stock: 1 },
+                { itemId: 'dragon_sword', stock: 1 },
+                { itemId: 'leather_armor', stock: 1 },
+                { itemId: 'steel_armor', stock: 1 },
+                { itemId: 'mithril_armor', stock: 1 },
+                { itemId: 'iron_helmet', stock: 1 },
+                { itemId: 'goblin_crown', stock: 1 },
+                { itemId: 'leather_boots', stock: 1 },
+                { itemId: 'swift_boots', stock: 1 },
+                { itemId: 'copper_ring', stock: 1 },
+                { itemId: 'silver_ring', stock: 1 },
+                { itemId: 'emerald_ring', stock: 1 },
+                { itemId: 'ruby_ring', stock: 1 },
+                { itemId: 'dragon_ring', stock: 1 },
+                { itemId: 'wooden_amulet', stock: 1 },
+                { itemId: 'silver_amulet', stock: 1 },
+                { itemId: 'necro_amulet', stock: 1 },
+                { itemId: 'dragon_amulet', stock: 1 },
+            ],
+        },
     ],
+
+    getShopData(shopLevel) {
+        return this.shopUpgrades[Math.min(shopLevel - 1, this.shopUpgrades.length - 1)];
+    },
+
+    getMaxShopLevel() {
+        return this.shopUpgrades.length;
+    },
 
     // ========================
     // Level EXP Table

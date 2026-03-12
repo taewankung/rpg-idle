@@ -466,68 +466,112 @@ body {
     color: var(--text-muted);
 }
 
-.battle-arena {
+.battle-arena.minimap-arena {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 20px;
-    padding: 20px;
+    gap: 8px;
+    padding: 8px;
     background: var(--bg-card);
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
     margin-bottom: 12px;
-    min-height: 180px;
+    position: relative;
+    overflow: hidden;
 }
 
-.battle-entity {
-    text-align: center;
+#minimap-canvas {
+    width: 100%;
+    max-width: 560px;
+    height: auto;
+    aspect-ratio: 2 / 1;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: #0a0f1a;
+    image-rendering: auto;
+}
+
+.minimap-hud {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 560px;
+    height: auto;
+    gap: 12px;
+}
+
+.minimap-entity-hud {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     flex: 1;
-    max-width: 180px;
+    padding: 4px 8px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
 }
 
-.entity-avatar {
-    font-size: 3.5rem;
-    margin-bottom: 6px;
+.minimap-entity-hud.player-hud {
+    border-color: rgba(52, 152, 219, 0.4);
 }
 
-.player-side .entity-avatar {
-    animation: playerIdle 2s ease-in-out infinite;
+.minimap-entity-hud.enemy-hud {
+    border-color: rgba(231, 76, 60, 0.4);
+    flex-direction: row-reverse;
 }
 
-.enemy-side .entity-avatar {
-    animation: enemyIdle 2s ease-in-out infinite;
+.enemy-hud > .hud-hp {
+    flex: 1;
 }
 
-@keyframes playerIdle {
-    0%, 100% { transform: translateX(0); }
-    50% { transform: translateX(3px); }
+.hud-avatar {
+    font-size: 1.3rem;
+    flex-shrink: 0;
 }
 
-@keyframes enemyIdle {
-    0%, 100% { transform: translateX(0); }
-    50% { transform: translateX(-3px); }
+.hud-name {
+    font-size: 0.7rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    flex-shrink: 1;
 }
 
-.entity-avatar.attacking {
-    animation: attack 0.3s ease-out !important;
+.hud-bars {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    overflow: hidden;
 }
 
-@keyframes attack {
-    0% { transform: translateX(0) scale(1); }
-    50% { transform: translateX(30px) scale(1.1); }
-    100% { transform: translateX(0) scale(1); }
+.hud-hp {
+    width: 100%;
+    height: 14px;
+    min-width: 0;
 }
 
-.entity-avatar.hit {
-    animation: hit 0.3s ease-out !important;
+.hud-mp {
+    width: 100%;
+    height: 10px;
 }
 
-@keyframes hit {
-    0% { transform: translateX(0); filter: brightness(1); }
-    25% { transform: translateX(-8px); filter: brightness(2); }
-    50% { transform: translateX(5px); filter: brightness(0.8); }
-    100% { transform: translateX(0); filter: brightness(1); }
+.mp-fill {
+    background: linear-gradient(90deg, #2471a3, #3498db);
 }
+
+.minimap-arena .battle-effects {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 10;
+}
+/* (removed old entity-avatar.hit - now rendered on canvas) */
 
 .entity-name {
     font-size: 0.85rem;
@@ -535,17 +579,7 @@ body {
     margin-bottom: 4px;
 }
 
-.battle-vs {
-    font-size: 2rem;
-    position: relative;
-}
-
-.battle-effects {
-    position: absolute;
-    top: -30px;
-    left: 50%;
-    transform: translateX(-50%);
-}
+/* (removed old battle-vs - now rendered on canvas) */
 
 .damage-number {
     position: absolute;
@@ -956,6 +990,86 @@ body {
 .btn-buy:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+}
+
+/* Shop Header & Upgrade */
+.shop-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    margin-bottom: 6px;
+}
+
+.shop-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.shop-level {
+    font-size: 0.8rem;
+    color: var(--gold);
+    margin-left: 6px;
+}
+
+.shop-discount {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #2ecc71;
+}
+
+.shop-upgrade-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, rgba(243, 156, 18, 0.08), rgba(241, 196, 15, 0.08));
+    border: 1px solid rgba(243, 156, 18, 0.25);
+    border-radius: var(--border-radius);
+    margin-bottom: 10px;
+}
+
+.shop-upgrade-info {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.shop-discount-preview {
+    color: #2ecc71;
+    font-weight: 600;
+}
+
+.btn-upgrade-shop {
+    padding: 5px 16px;
+    background: linear-gradient(135deg, #b8860b, #f39c12);
+    border: 1px solid #f1c40f;
+    border-radius: 6px;
+    color: white;
+    font-family: 'Sarabun', sans-serif;
+    font-weight: 700;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-upgrade-shop:hover {
+    box-shadow: 0 0 12px rgba(241, 196, 15, 0.4);
+}
+
+.btn-upgrade-shop:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.shop-original-price {
+    text-decoration: line-through;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    margin-right: 4px;
 }
 
 /* ============================================

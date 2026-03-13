@@ -9,6 +9,8 @@ function createPlayer(className, name) {
     atk:cd.atk,def:cd.def,spd:cd.spd,crit:cd.crit,x:cx,y:cy,dir:'down',frame:0,animTimer:0,
     skills,equipment:{weapon:null,armor:null,accessory:null},inventory:[],
     attackTimer:0,attackRange:cd.attackRange,state:'idle',buffs:[],respawnTimer:0,isDead:false,killCount:0,
+    jobLevel:1,jobExp:0,skillPoints:0,skillLevels:[0,0,0,0],_jobPassives:{},
+    evasion:0,dropRate:0,critDmg:1.5,matk:0,
     _path:null,_pathIdx:0};
 }
 
@@ -21,6 +23,15 @@ function levelUp(p){
   addLog(p.name+' reached Level '+p.level+'!','#FFD700');
   addEffect(p.x,p.y,'levelup',1.5);
   sfx.levelUp();
+  // Grant stat points
+  if(p===game.player&&typeof statPointSystem!=='undefined'){
+    const sp=5+statPointSystem.milestoneBonus(p.level);
+    statPointSystem.grantPoints(sp);
+    addNotification('Level Up! +'+sp+' Stat Points!','#f1c40f');
+  }
+  if(p===game.player&&typeof petSystem!=='undefined'&&petSystem.active)petSystem.recalcStats();
+  if(p===game.player&&typeof achievementSystem!=='undefined')achievementSystem.onLevelUp(p.level);
+  if(p!==game.player&&typeof classChangeSystem!=='undefined'&&classChangeSystem.checkNPCClassChange)classChangeSystem.checkNPCClassChange(p);
 }
 
 function gainExp(p,amt){
@@ -99,7 +110,7 @@ function updateMonster(m,dt){
               const r=calcDamage(m,t);t.hp=Math.max(0,t.hp-r.dmg);
               addDmg(t.x,t.y-TILE,'-'+r.dmg,'#FF4444');
               if(t.hp<=0){t.isDead=true;t.respawnTimer=3;
-                if(t===game.player){addLog(t.name+' was killed by dragon fire!','#FF4444');t.gold=Math.max(0,Math.round(t.gold*0.95))}
+                if(t===game.player){addLog(t.name+' was killed by dragon fire!','#FF4444');t.gold=Math.max(0,Math.round(t.gold*0.95));if(typeof questSystem!=='undefined')questSystem.onPlayerDeath()}
               }
             }
           }
@@ -112,6 +123,7 @@ function updateMonster(m,dt){
         if(m.target&&m.target.hp<=0){m.target.isDead=true;m.target.respawnTimer=3;
           addLog(m.target.name+' was killed by '+m.type+'!','#FF4444');
           m.target.gold=Math.max(0,Math.round(m.target.gold*0.95));
+          if(m.target===game.player&&typeof questSystem!=='undefined')questSystem.onPlayerDeath();
           m.target=null;m.state='patrol'}
       }
       break;}
@@ -125,9 +137,12 @@ function createNPCs(count){
     let nm;do{nm=NPC_NAMES[ri(0,NPC_NAMES.length-1)]}while(used.has(nm)&&used.size<NPC_NAMES.length);used.add(nm);
     const cls=CLASSES[ri(0,3)],lv=ri(1,15),npc=createPlayer(cls,nm);
     for(let l=1;l<lv;l++)levelUp(npc);npc.level=lv;npc.exp=0;npc.isNPC=true;npc.entityType='npc';
+    npc.jobLevel=Math.min(30,Math.floor(lv*1.2));npc.skillLevels=[ri(0,Math.min(5,npc.jobLevel)),ri(0,Math.min(4,npc.jobLevel)),ri(0,Math.min(3,npc.jobLevel)),ri(0,Math.min(2,npc.jobLevel))];
+    if(typeof applyAllJobPassives==='function')applyAllJobPassives(npc);
     let nx,ny,att=0;do{nx=ri(5,MAP_W-5)*TILE+TILE/2;ny=ri(5,MAP_H-5)*TILE+TILE/2;att++}while(!map.isWalkable(Math.floor(nx/TILE),Math.floor(ny/TILE))&&att<30);
     npc.x=nx;npc.y=ny;npc.botState='idle';npc.roamTarget=null;npc.roamTimer=0;npc.npcTarget=null;
     npc._path=null;npc._pathIdx=0;npc._pathTimer=0;
+    if(typeof statPointSystem!=='undefined'&&statPointSystem.npcAllocate)statPointSystem.npcAllocate(npc);
     npcs.push(npc);
   }
   return npcs;
@@ -143,6 +158,8 @@ function updateNPC(npc,dt){
   for(const m of game.monsters){if(m.isDead)continue;const d=Math.hypot(m.x-npc.x,m.y-npc.y);if(d<nd){nd=d;near=m}}
   if(hpR<0.25&&npc.botState!=='retreating'){npc.botState='retreating';npc.npcTarget=null;npc._path=null}
 
+  // World boss: NPCs prioritize boss
+  if(typeof worldBossNPCLogic==='function'){const wbTarget=worldBossNPCLogic(npc);if(wbTarget&&npc.botState==='idle'){assignPath(npc,wbTarget.x,wbTarget.y,25);npc.botState='roaming';npc.roamTarget=wbTarget}}
   switch(npc.botState){
     case'idle':npc.roamTimer-=dt;
       if(near&&nd<TILE*5){

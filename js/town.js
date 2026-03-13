@@ -133,26 +133,32 @@ function drawTownNPCs() {
       ctx.restore();
     }
 
-    // Draw name label
+    // Draw name label / interaction hint based on proximity
     ctx.save();
-    ctx.font = 'bold 10px monospace';
-    ctx.textAlign = 'center';
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 2;
-    ctx.strokeText(npc.name, sx, sy - 22);
-    ctx.fillStyle = '#FFD700';
-    ctx.fillText(npc.name, sx, sy - 22);
-
-    // Draw interaction hint if player is nearby
-    if (game.player) {
-      const dist = Math.hypot(game.player.x - npc.x, game.player.y - npc.y);
-      if (dist < TILE * 2.5) {
+    const pDist = game.player ? Math.hypot(game.player.x - npc.x, game.player.y - npc.y) : Infinity;
+    if (pDist < TILE * 3) {
+      // Close enough: show name
+      ctx.font = 'bold 10px monospace';
+      ctx.textAlign = 'center';
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 2;
+      ctx.strokeText(npc.name, sx, sy - 22);
+      ctx.fillStyle = '#FFD700';
+      ctx.fillText(npc.name, sx, sy - 22);
+      // Very close: show interaction hint
+      if (pDist < TILE * 1.5) {
         const hint = spriteName === 'shopkeeper' ? '[Click to Shop]' : '[Auto Heal]';
         ctx.font = '9px monospace';
         ctx.strokeText(hint, sx, sy - 32);
         ctx.fillStyle = '#AADDFF';
         ctx.fillText(hint, sx, sy - 32);
       }
+    } else {
+      // Far away: show colored dot above NPC
+      ctx.fillStyle = spriteName === 'shopkeeper' ? '#FFD700' : '#ffffff';
+      ctx.beginPath();
+      ctx.arc(sx, sy - 22, 3, 0, Math.PI * 2);
+      ctx.fill();
     }
     ctx.restore();
   };

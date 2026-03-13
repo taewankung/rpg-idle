@@ -14,17 +14,31 @@ function screenShake(intensity,dur){game.shakeIntensity=Math.max(game.shakeInten
 function addNotification(text,color){game.notifications.push({text,color:color||'#fff',timer:3,alpha:1})}
 
 function calcDamage(atk,def){
+  // Evasion check
+  if(typeof checkEvasion==='function'&&checkEvasion(atk,def)){return{dmg:0,crit:false,miss:true}}
+  // Iron Body passive: chance to block all damage
+  if(typeof hasJobPassive==='function'&&hasJobPassive(def,'ironBody')>0&&Math.random()<hasJobPassive(def,'ironBody')){return{dmg:0,crit:false,blocked:true}}
   const base=atk.atk-def.def*0.5+rf(-2,2);let dmg=Math.max(1,Math.round(base));
-  const crit=Math.random()<(atk.crit||0.05);if(crit)dmg*=2;return{dmg,crit};
+  const crit=Math.random()<(atk.crit||0.05);if(crit){const cdmg=atk.critDmg||2;dmg=Math.round(dmg*cdmg)}return{dmg,crit};
 }
 
 function useSkill(p,idx){
   if(!p||p.isDead)return;const sk=p.skills[idx];if(!sk||sk.cdTimer>0)return;
   if(sk.reqLv&&p.level<sk.reqLv)return;
-  sk.cdTimer=sk.cd;
-  if(sk.heal){const amt=Math.round(p.maxHp*sk.heal);p.hp=Math.min(p.maxHp,p.hp+amt);addDmg(p.x,p.y-TILE,'+'+amt,'#44FF44');addEffect(p.x,p.y,'heal',0.8);addLog(p.name+' healed '+amt+' HP','#44FF44');sfx.spell();return}
+  // Skill level scaling
+  const slv=(p.skillLevels&&p.skillLevels[idx])||0;
+  const dmgMult=1+slv*0.15;
+  const cdReduction=slv*0.3;
+  let effectiveCD=Math.max(0.5,sk.cd-cdReduction);
+  // Job passive: Mage -20% CD at job lv30
+  if(typeof hasJobPassive==='function'){const cdMul=hasJobPassive(p,'cdMult');if(cdMul>0)effectiveCD=Math.max(0.5,effectiveCD*(1-cdMul))}
+  // Job passive: Ranger 15% no-cooldown
+  if(typeof hasJobPassive==='function'&&hasJobPassive(p,'quickDraw')>0&&Math.random()<hasJobPassive(p,'quickDraw')){effectiveCD=0}
+  sk.cdTimer=effectiveCD;
+  if(sk.heal){const healMul=1+(typeof hasJobPassive==='function'?hasJobPassive(p,'healMult'):0);const amt=Math.round(p.maxHp*sk.heal*dmgMult*healMul);p.hp=Math.min(p.maxHp,p.hp+amt);addDmg(p.x,p.y-TILE,'+'+amt,'#44FF44');addEffect(p.x,p.y,'heal',0.8);addLog(p.name+' healed '+amt+' HP','#44FF44');sfx.spell();return}
   if(sk.buff){
-    const b={...sk.buff,timer:sk.buff.dur};
+    const buffDurBonus=slv*0.5;
+    const b={...sk.buff,timer:sk.buff.dur+buffDurBonus};
     p.buffs=p.buffs.filter(x=>x.type!==b.type);
     if(b.type==='def'){b.val=Math.round(p.def*b.pct);p.def+=b.val}
     else if(b.type==='berserk'){b.atkVal=Math.round(p.atk*b.atkPct);b.defVal=Math.round(p.def*Math.abs(b.defPct));p.atk+=b.atkVal;p.def-=b.defVal}
@@ -33,8 +47,11 @@ function useSkill(p,idx){
     p.buffs.push(b);addEffect(p.x,p.y,'buff',0.6);addLog(p.name+' used '+sk.name,'#88CCFF');sfx.spell();return;
   }
   if(sk.dmgPct>0){
-    const base=Math.round(p.atk*sk.dmgPct);let hit=0;
-    for(const m of game.monsters){
+    const base=Math.round(p.atk*sk.dmgPct*dmgMult);let hit=0;
+    // Build target list: regular monsters + world boss if active
+    const skillTargets=[...game.monsters];
+    if(typeof worldBoss!=='undefined'&&worldBoss.active&&!worldBoss.active.isDead)skillTargets.push(worldBoss.active);
+    for(const m of skillTargets){
       if(m.isDead)continue;
       const dist=Math.hypot(m.x-p.x,m.y-p.y);
       if(dist>sk.range)continue;
@@ -43,15 +60,18 @@ function useSkill(p,idx){
         const dmg=Math.max(1,Math.round(base-m.def*0.5+rf(-2,2)));
         const crit=Math.random()<p.crit;const fd=crit?dmg*2:dmg;
         m.hp-=fd;addDmg(m.x,m.y-TILE,fd+(crit?'!':''),crit?'#FFD700':'#FFFFFF');
-        if(crit){screenShake(4,0.15);sfx.crit()}else{sfx.hit()}
+        if(p===game.player){if(crit){screenShake(4,0.15);sfx.crit()}else{sfx.hit()}}
         if(sk.slow)m.slowTimer=2;
-        if(m.hp<=0&&!m.isDead)killMon(m,p);hit++;
+        if(p===game.player&&typeof questSystem!=='undefined')questSystem.onDamageDealt(fd);
+        if(p===game.player&&typeof leaderboard!=='undefined')leaderboard.recordDamage(fd);
+        if(p===game.player&&typeof worldBoss!=='undefined'&&worldBoss.active&&m===worldBoss.active)onWorldBossHit(p.name,fd);
+        if(m.hp<=0&&!m.isDead&&m.entityType==='monster')killMon(m,p);hit++;
       }
       if(!sk.aoe&&!sk.piercing)break;
     }
-    if(sk.healPct&&hit>0){const ha=Math.round(p.maxHp*sk.healPct);p.hp=Math.min(p.maxHp,p.hp+ha);addDmg(p.x,p.y-TILE*2,'+'+ha,'#88FF88')}
+    if(sk.healPct&&hit>0){const ha=Math.round(p.maxHp*sk.healPct*dmgMult);p.hp=Math.min(p.maxHp,p.hp+ha);addDmg(p.x,p.y-TILE*2,'+'+ha,'#88FF88')}
     if(hit>0){const etype=sk.aoe?'aoe':sk.heal?'heal':'slash';addEffect(p.x,p.y,etype,0.5)}
-    if(p.className==='Ranger')sfx.arrow();else sfx.spell();
+    if(p===game.player){if(p.className==='Ranger')sfx.arrow();else sfx.spell()}
     addLog(p.name+' used '+sk.name,'#FFAA44');
   }
 }
@@ -60,12 +80,22 @@ function killMon(m,killer){
   if(m.isDead)return;m.isDead=true;m.respawnTimer=rf(8,15);m.hp=0;
   sfx.monDeath();
   if(killer){
-    gainExp(killer,m.expReward);killer.gold+=m.goldReward;killer.killCount++;
+    gainExp(killer,m.expReward);if(typeof gainJobExp==='function')gainJobExp(killer,m.level*15);killer.gold+=m.goldReward;killer.killCount++;
     const isPlayer=killer===game.player;
     if(isPlayer)game.killCount++;
     addLog('Killed '+m.type+'! +'+m.expReward+'XP +'+m.goldReward+'G','#FFD700');
     // Kill streak popup every 10 player kills only
     if(isPlayer&&game.killCount%10===0){game.streakPopup={text:game.killCount+' Kill Streak!',timer:2.5}}
+    // Quest hook: monster kill
+    if(isPlayer&&typeof questSystem!=='undefined')questSystem.onMonsterKill(m.type);
+    // Achievement hook: monster kill
+    if(isPlayer&&typeof achievementSystem!=='undefined')achievementSystem.onKill(m.type);
+    // Guild hook: monster kill
+    if(isPlayer&&typeof guildSystem!=='undefined'&&guildSystem.onMonsterKill)guildSystem.onMonsterKill();
+    // Pet soul gem drop (5% chance, 1% for dragon)
+    if(isPlayer&&typeof petSystem!=='undefined'){const gemChance=m.type==='dragon'?0.01:0.05;if(Math.random()<gemChance)petSystem.addGem(m.type)}
+    // Crafting material drops
+    if(isPlayer&&typeof craftingSystem!=='undefined'){const mat=craftingSystem.rollMaterialDrop(m.type,dungeon.active);if(mat){game.itemDrops.push({item:mat,x:m.x+rf(-8,8),y:m.y+rf(-8,8),timer:30});addNotification(mat.name,RARITY_COLORS[mat.rarity]||'#aaa');console.log('Material dropped:',mat.name)}}
     // Dragon: guaranteed rare+ loot + victory fanfare
     if(m.type==='dragon'){
       sfx.victoryFanfare();screenShake(8,0.4);
@@ -82,9 +112,13 @@ function killMon(m,killer){
       const item={name,type,rarity:rar,stats,level:m.level,value:Math.round((5+m.level*10)*rarMult(rar))};
       game.itemDrops.push({item,x:m.x,y:m.y,timer:60});
       addNotification('Dragon dropped '+item.name+'!',RARITY_COLORS[rar]);
+      console.log('Item dropped:',item.name,'['+rar+']');
+      if(isPlayer&&typeof achievementSystem!=='undefined')achievementSystem.onItemFound(item);
     }else{
       const item=genItem(m.level);
-      if(item){game.itemDrops.push({item,x:m.x,y:m.y,timer:30});addNotification(item.name,RARITY_COLORS[item.rarity])}
+      if(item){game.itemDrops.push({item,x:m.x,y:m.y,timer:30});addNotification(item.name,RARITY_COLORS[item.rarity]);
+        console.log('Item dropped:',item.name,'['+item.rarity+']');
+        if(isPlayer&&typeof achievementSystem!=='undefined')achievementSystem.onItemFound(item)}
     }
   }
 }
@@ -106,17 +140,29 @@ function updatePlayer(dt){
   const p=game.player;if(!p)return;
   updateBuffs(p,dt);
   for(const sk of p.skills)if(sk.cdTimer>0)sk.cdTimer=Math.max(0,sk.cdTimer-dt);
-  if(p.isDead){p.respawnTimer-=dt;if(p.respawnTimer<=0){p.isDead=false;p.hp=Math.round(p.maxHp*0.5);p.mp=Math.round(p.maxMp*0.5);p.x=Math.floor(MAP_W/2)*TILE+TILE/2;p.y=Math.floor(MAP_H/2)*TILE+TILE/2;addLog('Respawned at town.','#AAAAAA')}return}
+  if(p.isDead){p.respawnTimer-=dt;if(p.respawnTimer<=0){p.isDead=false;p.hp=Math.round(p.maxHp*0.5);p.mp=Math.round(p.maxMp*0.5);
+    if(typeof dungeon!=='undefined'&&dungeon.active){
+      // Respawn at dungeon exit portal (not town)
+      if(dungeon.exitPos){p.x=dungeon.exitPos.x;p.y=dungeon.exitPos.y+TILE}
+      else{const sr=dungeon.rooms&&dungeon.rooms[0];if(sr){p.x=sr.cx*TILE+TILE/2;p.y=sr.cy*TILE+TILE/2}};
+      p._path=null;p._pathIdx=0;addLog('Respawned in dungeon.','#AAAAAA');
+    }else{
+      p.x=Math.floor(MAP_W/2)*TILE+TILE/2;p.y=Math.floor(MAP_H/2)*TILE+TILE/2;addLog('Respawned at town.','#AAAAAA');
+    }}return}
   if(p.attackTimer>0)p.attackTimer-=dt;
   // Auto attack nearest monster only
   let nearest=null,nd=Infinity;
   for(const m of game.monsters){if(m.isDead)continue;const d=Math.hypot(m.x-p.x,m.y-p.y);if(d<nd){nd=d;nearest=m}}
+  // Check world boss too
+  if(typeof worldBoss!=='undefined'&&worldBoss.active&&!worldBoss.active.isDead){const wb=worldBoss.active;const d=Math.hypot(wb.x-p.x,wb.y-p.y);if(d<nd){nd=d;nearest=wb}}
   if(nearest&&nd<=p.attackRange&&p.attackTimer<=0){
     const r=calcDamage(p,nearest);nearest.hp-=r.dmg;
     addDmg(nearest.x,nearest.y-TILE,r.dmg+(r.crit?'!':''),r.crit?'#FFD700':'#FFFFFF');
     addEffect(nearest.x,nearest.y,'hit',0.25);
     if(r.crit){screenShake(4,0.15);sfx.crit()}else{sfx.hit()}
-    p.attackTimer=1/p.spd;if(nearest.hp<=0)killMon(nearest,p);
+    if(typeof leaderboard!=='undefined')leaderboard.recordDamage(r.dmg);
+    if(typeof worldBoss!=='undefined'&&worldBoss.active&&nearest===worldBoss.active){onWorldBossHit(p.name,r.dmg)}
+    p.attackTimer=1/p.spd;if(nearest.hp<=0&&nearest.entityType==='monster')killMon(nearest,p);
   }
   // Regen
   if(game.time%1<dt){

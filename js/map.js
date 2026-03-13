@@ -161,6 +161,12 @@ const camera = {
   screenToWorld(sx,sy){return{x:sx+this.x,y:sy+this.y}}
 };
 
+// --- Dungeon-aware helpers ---
+// These check `typeof dungeon` because dungeon.js loads after map.js
+function _isWalkable(tx,ty){return(typeof dungeon!=='undefined'&&dungeon.active)?dungeon.isWalkable(tx,ty):map.isWalkable(tx,ty)}
+function _findPath(wx1,wy1,wx2,wy2,maxR){return(typeof dungeon!=='undefined'&&dungeon.active)?dungeon.findPath(wx1,wy1,wx2,wy2,maxR):map.findPath(wx1,wy1,wx2,wy2,maxR)}
+function _findRandomWalkable(wx,wy,minR,maxR){return(typeof dungeon!=='undefined'&&dungeon.active)?dungeon.findRandomWalkable(wx,wy,minR,maxR):map.findRandomWalkable(wx,wy,minR,maxR)}
+
 // --- Shared path-following movement ---
 // Moves entity along a path, returns true if reached end.
 // entity needs: x, y, spd, dir, state, _path, _pathIdx
@@ -172,13 +178,9 @@ function followPath(ent,dt){
   if(dist<6){ent._pathIdx++;return ent._pathIdx>=ent._path.length}
   const s=ent.spd*TILE*dt;
   const nx=ent.x+(dx/dist)*s,ny=ent.y+(dy/dist)*s;
-  // Try full move
-  if(map.isWalkable(Math.floor(nx/TILE),Math.floor(ny/TILE))){ent.x=nx;ent.y=ny}
-  // Wall slide: try X only
-  else if(map.isWalkable(Math.floor(nx/TILE),Math.floor(ent.y/TILE))){ent.x=nx}
-  // Wall slide: try Y only
-  else if(map.isWalkable(Math.floor(ent.x/TILE),Math.floor(ny/TILE))){ent.y=ny}
-  // Set facing direction
+  if(_isWalkable(Math.floor(nx/TILE),Math.floor(ny/TILE))){ent.x=nx;ent.y=ny}
+  else if(_isWalkable(Math.floor(nx/TILE),Math.floor(ent.y/TILE))){ent.x=nx}
+  else if(_isWalkable(Math.floor(ent.x/TILE),Math.floor(ny/TILE))){ent.y=ny}
   if(Math.abs(dx)>Math.abs(dy))ent.dir=dx>0?'right':'left';
   else ent.dir=dy>0?'down':'up';
   return false;
@@ -186,7 +188,7 @@ function followPath(ent,dt){
 
 // Assign a path to an entity. Returns true if path was found.
 function assignPath(ent,wx,wy,maxR){
-  const path=map.findPath(ent.x,ent.y,wx,wy,maxR||20);
+  const path=_findPath(ent.x,ent.y,wx,wy,maxR||20);
   if(path&&path.length>0){ent._path=path;ent._pathIdx=0;return true}
   ent._path=null;ent._pathIdx=0;return false;
 }
@@ -196,9 +198,9 @@ function moveTowardDirect(ent,tx,ty,dt){
   const dx=tx-ent.x,dy=ty-ent.y,dist=Math.sqrt(dx*dx+dy*dy);
   if(dist<4)return true;
   const s=ent.spd*TILE*dt,nx=ent.x+(dx/dist)*s,ny=ent.y+(dy/dist)*s;
-  if(map.isWalkable(Math.floor(nx/TILE),Math.floor(ny/TILE))){ent.x=nx;ent.y=ny}
-  else if(map.isWalkable(Math.floor(nx/TILE),Math.floor(ent.y/TILE)))ent.x=nx;
-  else if(map.isWalkable(Math.floor(ent.x/TILE),Math.floor(ny/TILE)))ent.y=ny;
+  if(_isWalkable(Math.floor(nx/TILE),Math.floor(ny/TILE))){ent.x=nx;ent.y=ny}
+  else if(_isWalkable(Math.floor(nx/TILE),Math.floor(ent.y/TILE)))ent.x=nx;
+  else if(_isWalkable(Math.floor(ent.x/TILE),Math.floor(ny/TILE)))ent.y=ny;
   if(Math.abs(dx)>Math.abs(dy))ent.dir=dx>0?'right':'left';else ent.dir=dy>0?'down':'up';
   return false;
 }

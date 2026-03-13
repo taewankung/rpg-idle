@@ -30,6 +30,10 @@ function autoEquip(p,item){
     for(const[k,v]of Object.entries(item.stats))if(k in p)p[k]+=v;
     p.equipment[slot]=item;
     const idx=p.inventory.indexOf(item);if(idx>=0)p.inventory.splice(idx,1);
-    addLog('Equipped '+item.name,'#88CCFF');
+    const statStr=Object.entries(item.stats).map(([k,v])=>'+'+v+' '+k.toUpperCase()).join(' ');
+    addLog('Equipped: '+(_rarityLabel(item.rarity))+' '+item.name+' ('+statStr+')','#88CCFF');
+    addNotification('Equipped: '+item.name+' ('+statStr+')',RARITY_COLORS[item.rarity]);
+    console.log('Item equipped:',item.name,'['+item.rarity+']',statStr);
   }
 }
+function _rarityLabel(r){return r?r.charAt(0).toUpperCase()+r.slice(1):''}

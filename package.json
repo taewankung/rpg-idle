@@ -4,9 +4,19 @@
   "description": "A fully autonomous 2D pixel-art idle RPG built with vanilla JS and HTML5 Canvas",
   "scripts": {
     "start": "npx serve .",
-    "dev": "npx serve . -l 8090"
+    "dev": "npx serve . -l 8090",
+    "test:expedition": "node tests/offline-expedition.playwright.js"
   },
-  "keywords": ["game", "rpg", "idle", "canvas", "pixel-art"],
+  "keywords": [
+    "game",
+    "rpg",
+    "idle",
+    "canvas",
+    "pixel-art"
+  ],
   "license": "MIT",
-  "private": true
+  "private": true,
+  "dependencies": {
+    "playwright": "^1.58.2"
+  }
 }

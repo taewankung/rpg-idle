@@ -207,6 +207,31 @@ const achievementSystem = {
     dragonKills: 0
   },
 
+  init() {
+    this.unlocked = new Set();
+    this.progress = {};
+    this.titles = [];
+    this.activeTitle = null;
+    this.panelOpen = false;
+    this.popup = { achievement: null, timer: 0, slideY: -80 };
+    this.totalPoints = 0;
+    this.activeCategory = 'COMBAT';
+    this.shopDiscount = false;
+    this.hasGoldenAura = false;
+    this.hasPetGlow = false;
+    this.stats = {
+      kills: 0,
+      itemsFound: 0,
+      legendariesFound: 0,
+      dungeonEnters: 0,
+      dungeonFloorsCleared: 0,
+      goldSpent: 0,
+      worldBossKills: 0,
+      maxStreak: 0,
+      dragonKills: 0
+    };
+  },
+
   // --- CHECK ALL ACHIEVEMENTS ---
   // Compare stats/progress against targets; unlock newly completed ones
   check() {

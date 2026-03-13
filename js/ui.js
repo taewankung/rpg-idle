@@ -1129,7 +1129,7 @@ function drawTabMenu(){
   // Dark overlay
   ctx.save();ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(0,0,W,H);
   // Panel
-  const pw=360,ph=380;
+  const pw=360,ph=446;
   const px=(W-pw)/2,py=(H-ph)/2;
   ctx.fillStyle='rgba(12,12,30,0.96)';roundRect(ctx,px,py,pw,ph,12);ctx.fill();
   ctx.strokeStyle='#556688';ctx.lineWidth=2;roundRect(ctx,px,py,pw,ph,12);ctx.stroke();
@@ -1180,6 +1180,14 @@ function drawTabMenu(){
     // Key shortcut
     if(btn.key){ctx.fillStyle='#667';ctx.font='7px monospace';ctx.textAlign='right';ctx.fillText(btn.key,bx+bw-3,by+10)}
   }
+  const ex=px+28,ey=gy+gridH+18,ew=pw-56,eh=50;
+  ctx.fillStyle='rgba(20,28,50,0.92)';roundRect(ctx,ex,ey,ew,eh,8);ctx.fill();
+  ctx.strokeStyle='#5dade2';ctx.lineWidth=1.5;roundRect(ctx,ex,ey,ew,eh,8);ctx.stroke();
+  ctx.fillStyle='#5dade2';ctx.beginPath();ctx.arc(ex+28,ey+25,10,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#111';ctx.beginPath();ctx.arc(ex+28,ey+25,4,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#d8ecff';ctx.font='bold 14px sans-serif';ctx.textAlign='left';ctx.fillText('Expedition',ex+48,ey+21);
+  ctx.fillStyle='#8fb7d9';ctx.font='10px sans-serif';ctx.fillText('Start or claim offline expedition rewards',ex+48,ey+37);
+  ctx.fillStyle='#667';ctx.font='8px monospace';ctx.textAlign='right';ctx.fillText('O',ex+ew-10,ey+14);
   ctx.restore();
 }
 
@@ -1187,7 +1195,7 @@ function drawTabMenu(){
 function handleTabMenuClick(cx,cy){
   if(!showTabMenu)return false;
   const W=canvas.width,H=canvas.height;
-  const pw=360,ph=380;
+  const pw=360,ph=446;
   const px=(W-pw)/2,py=(H-ph)/2;
   // Outside panel
   if(cx<px||cx>px+pw||cy<py||cy>py+ph){showTabMenu=false;return true}
@@ -1196,7 +1204,7 @@ function handleTabMenuClick(cx,cy){
   if(cx>=clx&&cx<=clx+20&&cy>=cly&&cy<=cly+20){showTabMenu=false;return true}
   // Check grid buttons
   const bw=72,bh=60,gap=8;
-  const gridW=4*bw+3*gap;
+  const gridW=4*bw+3*gap,gridH=4*bh+3*gap;
   const gx=px+(pw-gridW)/2,gy=py+42;
   for(let i=0;i<16;i++){
     const col=i%4,row=Math.floor(i/4);
@@ -1223,6 +1231,12 @@ function handleTabMenuClick(cx,cy){
       }
       return true;
     }
+  }
+  const ex=px+28,ey=gy+gridH+18,ew=pw-56,eh=50;
+  if(cx>=ex&&cx<=ex+ew&&cy>=ey&&cy<=ey+eh){
+    showTabMenu=false;
+    if(typeof offlineExpeditionSystem!=='undefined')offlineExpeditionSystem.panelOpen=true;
+    return true;
   }
   return true;
 }
@@ -1287,6 +1301,7 @@ function render(){
   if(typeof drawAchievementPanel==='function'&&typeof achievementSystem!=='undefined'&&achievementSystem.panelOpen)drawAchievementPanel();
   if(typeof drawLeaderboardPanel==='function'&&typeof leaderboard!=='undefined'&&leaderboard.panelOpen)drawLeaderboardPanel();
   if(typeof drawRankBadge==='function')drawRankBadge();
+  if(typeof offlineExpeditionSystem!=='undefined'&&offlineExpeditionSystem.panelOpen&&typeof renderOfflineExpeditionPanel==='function')renderOfflineExpeditionPanel(ctx);
   if(typeof craftingSystem!=='undefined'&&craftingSystem.panelOpen&&typeof drawCraftingPanel==='function')drawCraftingPanel();
   if(typeof pvpArena!=='undefined'&&pvpArena.panelOpen&&typeof drawArenaPanel==='function')drawArenaPanel();
   if(typeof pvpArena!=='undefined'&&pvpArena.state==='result'&&pvpArena.drawResult)pvpArena.drawResult();

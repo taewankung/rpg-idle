@@ -6,6 +6,7 @@ let showSettings=false,confirmNewGame=false;
 function startGame(cls){
   sfx.init();
   sfx.startFadeIn();
+  if(typeof initOfflineExpedition==='function')initOfflineExpedition();
   initSprites();
   generateTownSprites();
   generateDungeonSprites();
@@ -107,6 +108,7 @@ function update(dt){
   if(typeof enchantSystem!=='undefined'&&enchantSystem.updateAnim)enchantSystem.updateAnim(dt);
   if(typeof guildSystem!=='undefined'){if(guildSystem.updateQuests)guildSystem.updateQuests(dt);if(guildSystem.updateMembers)guildSystem.updateMembers(dt)}
   if(typeof gachaSystem!=='undefined'){if(gachaSystem.updateAnim)gachaSystem.updateAnim(dt);if(gachaSystem.updateSpecialBanner)gachaSystem.updateSpecialBanner(dt)}
+  if(typeof offlineExpeditionSystem!=='undefined'&&offlineExpeditionSystem.update)offlineExpeditionSystem.update();
   if(typeof updateJobPassives==='function')updateJobPassives(dt);
   if(typeof worldMap!=='undefined'&&!dungeon.active&&!(typeof pvpArena!=='undefined'&&pvpArena.active)){
     if(worldMap.announcement&&worldMap.announcement.timer>0)worldMap.announcement.timer-=dt;
@@ -188,6 +190,7 @@ canvas.addEventListener('click',e=>{
   if(typeof achievementSystem!=='undefined'&&achievementSystem.panelOpen){handleAchievementClick(cx2,cy2);return}
   if(typeof leaderboard!=='undefined'&&leaderboard.panelOpen){handleLeaderboardClick(cx2,cy2);return}
   if(talentSystem.panelOpen){handleTalentClick(cx2,cy2);return}
+  if(typeof offlineExpeditionSystem!=='undefined'&&offlineExpeditionSystem.panelOpen){if(typeof handleOfflineExpeditionClick==='function')handleOfflineExpeditionClick(cx2,cy2);return}
   if(typeof craftingSystem!=='undefined'&&craftingSystem.panelOpen){handleCraftingClick(cx2,cy2);return}
   if(typeof pvpArena!=='undefined'&&pvpArena.panelOpen){handleArenaClick(cx2,cy2);return}
   if(typeof pvpArena!=='undefined'&&pvpArena.state==='result'){if(typeof handleArenaResultClick==='function')handleArenaResultClick(cx2,cy2);return}
@@ -249,6 +252,7 @@ window.addEventListener('keydown',e=>{
       else if(typeof achievementSystem!=='undefined'&&achievementSystem.panelOpen){achievementSystem.panelOpen=false}
       else if(typeof leaderboard!=='undefined'&&leaderboard.panelOpen){leaderboard.panelOpen=false}
       else if(talentSystem.panelOpen){talentSystem.panelOpen=false}
+      else if(typeof offlineExpeditionSystem!=='undefined'&&offlineExpeditionSystem.panelOpen){offlineExpeditionSystem.panelOpen=false}
       else if(typeof craftingSystem!=='undefined'&&craftingSystem.panelOpen){craftingSystem.panelOpen=false}
       else if(typeof pvpArena!=='undefined'&&pvpArena.panelOpen){pvpArena.panelOpen=false}
       else if(typeof classChangeSystem!=='undefined'&&classChangeSystem.panelOpen){classChangeSystem.panelOpen=false}
@@ -295,6 +299,7 @@ window.addEventListener('keydown',e=>{
     case'KeyJ':if(typeof classChangeSystem!=='undefined'){classChangeSystem.panelOpen=!classChangeSystem.panelOpen}break;
     case'KeyP':if(typeof pvpArena!=='undefined'){pvpArena.panelOpen=!pvpArena.panelOpen}break;
     case'KeyK':if(typeof craftingSystem!=='undefined'){craftingSystem.panelOpen=!craftingSystem.panelOpen}break;
+    case'KeyO':if(typeof offlineExpeditionSystem!=='undefined'){offlineExpeditionSystem.panelOpen=!offlineExpeditionSystem.panelOpen}break;
     case'KeyN':if(typeof enchantSystem!=='undefined'){enchantSystem.panelOpen=!enchantSystem.panelOpen}break;
     case'KeyG':if(typeof guildSystem!=='undefined'){guildSystem.panelOpen=!guildSystem.panelOpen}break;
     case'KeyU':if(typeof gachaSystem!=='undefined'){gachaSystem.panelOpen=!gachaSystem.panelOpen}break;

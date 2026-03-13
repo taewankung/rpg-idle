@@ -63,6 +63,7 @@ function saveGame() {
     party: typeof partySystem!=='undefined' ? partySystem.getSaveData() : null,
     worldBoss: typeof worldBoss!=='undefined' ? { spawnTimer: worldBoss.spawnTimer } : null,
     crafting: typeof craftingSystem!=='undefined' ? craftingSystem.save() : null,
+    offlineExpedition: typeof offlineExpeditionSystem!=='undefined' ? offlineExpeditionSystem.save() : null,
     worldMapData: typeof worldMap!=='undefined' ? worldMap.save() : null,
     pvp: typeof pvpArena!=='undefined' ? pvpArena.save() : null,
     classChange: typeof classChangeSystem!=='undefined' ? classChangeSystem.save() : null,
@@ -135,6 +136,8 @@ function loadGame() {
     if (!raw) return false;
     const data = JSON.parse(raw);
     if (!data.version || !data.player) { console.warn('LOAD: invalid save data'); return false; }
+    const savedActiveExpedition = !!(data.offlineExpedition && data.offlineExpedition.activeRun);
+    let shouldResave = false;
 
     // Initialize world
     initSprites();
@@ -232,6 +235,10 @@ function loadGame() {
     if (data.worldBoss && typeof worldBoss !== 'undefined') {
       worldBoss.spawnTimer = data.worldBoss.spawnTimer || 300;
     }
+    if (typeof offlineExpeditionSystem !== 'undefined') {
+      offlineExpeditionSystem.load(data.offlineExpedition || null);
+      if (offlineExpeditionSystem.pendingSummary) offlineExpeditionSystem.panelOpen = true;
+    }
 
     // Restore new content systems
     if(typeof craftingSystem!=='undefined'){craftingSystem.generateSprites();craftingSystem.initTownNPC();if(data.crafting)craftingSystem.load(data.crafting)}
@@ -248,12 +255,18 @@ function loadGame() {
     sfx.startFadeIn();
     camera.update(game.player);
 
+    if (typeof offlineExpeditionSystem !== 'undefined') {
+      const resolved = offlineExpeditionSystem.resolveOfflineExpedition(Date.now(), true);
+      if (resolved) shouldResave = true;
+    }
+
     console.log('LOADED: Lv.' + p.level, p.className, 'HP:' + p.hp + '/' + p.maxHp, 'Gold:' + p.gold);
     addNotification('Welcome back, ' + p.name + '! Lv.' + p.level + ' ' + p.className, '#4fc3f7');
     addLog('Welcome back, ' + p.name + '!', '#FFD700');
 
     // AFK rewards check
-    if(typeof afkSystem!=='undefined'&&data.timestamp){afkSystem.checkAfk(data.timestamp)}
+    if(typeof afkSystem!=='undefined'&&data.timestamp&&!savedActiveExpedition){afkSystem.checkAfk(data.timestamp)}
+    if (shouldResave) saveGame();
 
     return true;
   } catch (e) {

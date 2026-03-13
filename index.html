@@ -1,242 +1,32 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fantasy Idle - MMORPG</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auto MMO RPG</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;overflow:hidden;font-family:monospace}
+canvas{display:block;width:100vw;height:100vh;image-rendering:pixelated}
+</style>
 </head>
 <body>
-    <div id="game-container">
-        <!-- Header -->
-        <header id="game-header">
-            <div class="header-left">
-                <h1 class="game-title">⚔️ Fantasy Idle</h1>
-                <span class="game-subtitle">MMORPG</span>
-            </div>
-            <div class="header-right">
-                <div class="resource gold" title="Gold">
-                    <span class="resource-icon">🪙</span>
-                    <span id="gold-amount">0</span>
-                </div>
-                <div class="resource gems" title="Gems">
-                    <span class="resource-icon">💎</span>
-                    <span id="gems-amount">0</span>
-                </div>
-                <div class="resource exp" title="Experience">
-                    <span class="resource-icon">⭐</span>
-                    <span id="exp-amount">0</span>
-                </div>
-                <button id="btn-save" class="btn-header" title="Save Game">💾</button>
-            </div>
-        </header>
+<canvas id="gameCanvas"></canvas>
 
-        <!-- Main Content -->
-        <div id="main-content">
-            <!-- Left Panel: Character Info -->
-            <aside id="panel-left">
-                <div class="panel character-panel">
-                    <h2 class="panel-title">🛡️ Character</h2>
-                    <div id="character-info">
-                        <div class="char-avatar" id="char-avatar">🧙</div>
-                        <div class="char-name" id="char-name">Hero</div>
-                        <div class="char-class" id="char-class">Warrior</div>
-                        <div class="char-level">
-                            Lv. <span id="char-level">1</span>
-                        </div>
-                        <div class="progress-bar exp-bar">
-                            <div class="progress-fill" id="exp-bar-fill"></div>
-                            <span class="progress-text" id="exp-bar-text">0 / 100</span>
-                        </div>
-                    </div>
-                    <div id="character-stats">
-                        <div class="stat-row">
-                            <span class="stat-label">❤️ HP</span>
-                            <span class="stat-value" id="stat-hp">100 / 100</span>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label">🔷 MP</span>
-                            <span class="stat-value" id="stat-mp">50 / 50</span>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label">⚔️ ATK</span>
-                            <span class="stat-value" id="stat-atk">10</span>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label">🛡️ DEF</span>
-                            <span class="stat-value" id="stat-def">5</span>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label">💨 SPD</span>
-                            <span class="stat-value" id="stat-spd">10</span>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label">🎯 CRIT</span>
-                            <span class="stat-value" id="stat-crit">5%</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Skills -->
-                <div class="panel skills-panel">
-                    <h2 class="panel-title">✨ Skills</h2>
-                    <div id="skills-list"></div>
-                </div>
-            </aside>
-
-            <!-- Center Panel: Battle / Content -->
-            <main id="panel-center">
-                <!-- Navigation Tabs -->
-                <nav id="tab-nav">
-                    <button class="tab-btn active" data-tab="battle">⚔️ Battle</button>
-                    <button class="tab-btn" data-tab="dungeon">🏰 Dungeon</button>
-                    <button class="tab-btn" data-tab="quest">📜 Quests</button>
-                    <button class="tab-btn" data-tab="shop">🏪 Shop</button>
-                </nav>
-
-                <!-- Battle Tab -->
-                <div class="tab-content active" id="tab-battle">
-                    <div class="zone-selector">
-                        <button class="btn-zone" id="btn-prev-zone">◀</button>
-                        <div class="zone-info">
-                            <span class="zone-name" id="zone-name">Greenwood Forest</span>
-                            <span class="zone-level" id="zone-level">Lv. 1-5</span>
-                        </div>
-                        <button class="btn-zone" id="btn-next-zone">▶</button>
-                    </div>
-
-                    <div class="battle-arena">
-                        <div class="battle-entity player-side">
-                            <div class="entity-avatar" id="player-battle-avatar">🧙</div>
-                            <div class="entity-name" id="player-battle-name">Hero</div>
-                            <div class="progress-bar hp-bar">
-                                <div class="progress-fill hp-fill" id="player-hp-bar"></div>
-                                <span class="progress-text" id="player-hp-text">100/100</span>
-                            </div>
-                        </div>
-
-                        <div class="battle-vs">
-                            <div class="battle-effects" id="battle-effects"></div>
-                            <span>⚔️</span>
-                        </div>
-
-                        <div class="battle-entity enemy-side">
-                            <div class="entity-avatar" id="enemy-avatar">🐺</div>
-                            <div class="entity-name" id="enemy-name">Wild Wolf</div>
-                            <div class="progress-bar hp-bar">
-                                <div class="progress-fill hp-fill enemy-hp" id="enemy-hp-bar"></div>
-                                <span class="progress-text" id="enemy-hp-text">50/50</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="battle-controls">
-                        <button class="btn-battle" id="btn-auto-battle">
-                            🔄 Auto Battle: <span id="auto-battle-status">ON</span>
-                        </button>
-                        <div class="battle-speed">
-                            Speed: <button class="btn-speed active" data-speed="1">1x</button>
-                            <button class="btn-speed" data-speed="2">2x</button>
-                            <button class="btn-speed" data-speed="5">5x</button>
-                        </div>
-                    </div>
-
-                    <div class="battle-log-container">
-                        <h3>📋 Battle Log</h3>
-                        <div id="battle-log"></div>
-                    </div>
-                </div>
-
-                <!-- Dungeon Tab -->
-                <div class="tab-content" id="tab-dungeon">
-                    <h2>🏰 Dungeons</h2>
-                    <div id="dungeon-list"></div>
-                </div>
-
-                <!-- Quest Tab -->
-                <div class="tab-content" id="tab-quest">
-                    <h2>📜 Quests</h2>
-                    <div id="quest-list"></div>
-                </div>
-
-                <!-- Shop Tab -->
-                <div class="tab-content" id="tab-shop">
-                    <h2>🏪 Shop</h2>
-                    <div id="shop-list"></div>
-                </div>
-            </main>
-
-            <!-- Right Panel: Inventory & Equipment -->
-            <aside id="panel-right">
-                <div class="panel equipment-panel">
-                    <h2 class="panel-title">🎽 Equipment</h2>
-                    <div id="equipment-slots">
-                        <div class="equip-slot" data-slot="weapon" title="Weapon">
-                            <span class="slot-icon">⚔️</span>
-                            <span class="slot-name" id="equip-weapon">Empty</span>
-                        </div>
-                        <div class="equip-slot" data-slot="armor" title="Armor">
-                            <span class="slot-icon">🎽</span>
-                            <span class="slot-name" id="equip-armor">Empty</span>
-                        </div>
-                        <div class="equip-slot" data-slot="helmet" title="Helmet">
-                            <span class="slot-icon">⛑️</span>
-                            <span class="slot-name" id="equip-helmet">Empty</span>
-                        </div>
-                        <div class="equip-slot" data-slot="boots" title="Boots">
-                            <span class="slot-icon">👢</span>
-                            <span class="slot-name" id="equip-boots">Empty</span>
-                        </div>
-                        <div class="equip-slot" data-slot="ring" title="Ring">
-                            <span class="slot-icon">💍</span>
-                            <span class="slot-name" id="equip-ring">Empty</span>
-                        </div>
-                        <div class="equip-slot" data-slot="amulet" title="Amulet">
-                            <span class="slot-icon">📿</span>
-                            <span class="slot-name" id="equip-amulet">Empty</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="panel inventory-panel">
-                    <h2 class="panel-title">🎒 Inventory</h2>
-                    <div id="inventory-grid"></div>
-                </div>
-            </aside>
-        </div>
-
-        <!-- Footer -->
-        <footer id="game-footer">
-            <div class="dps-info">
-                ⚡ DPS: <span id="dps-value">0</span>
-            </div>
-            <div class="kills-info">
-                💀 Kills: <span id="kills-value">0</span>
-            </div>
-            <div class="playtime-info">
-                ⏱️ Time: <span id="playtime-value">00:00:00</span>
-            </div>
-        </footer>
-    </div>
-
-    <!-- Tooltip -->
-    <div id="tooltip" class="tooltip hidden"></div>
-
-    <!-- Modal -->
-    <div id="modal-overlay" class="modal-overlay hidden">
-        <div class="modal" id="modal">
-            <div class="modal-header">
-                <h2 class="modal-title" id="modal-title"></h2>
-                <button class="modal-close" id="modal-close">✕</button>
-            </div>
-            <div class="modal-body" id="modal-body"></div>
-        </div>
-    </div>
-
-    <script src="js/data/gameData.js"></script>
-    <script src="js/core/engine.js"></script>
-    <script src="js/core/ui.js"></script>
-    <script src="js/main.js"></script>
+<!-- Load order: config first (globals), then systems, then engine last -->
+<script src="js/config.js"></script>
+<script src="js/sound.js"></script>
+<script src="js/chat.js"></script>
+<script src="js/sprites.js"></script>
+<script src="js/map.js"></script>
+<script src="js/items.js"></script>
+<script src="js/combat.js"></script>
+<script src="js/entities.js"></script>
+<script src="js/town.js"></script>
+<script src="js/bot.js"></script>
+<script src="js/save.js"></script>
+<script src="js/atmosphere.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/game.js"></script>
 </body>
 </html>

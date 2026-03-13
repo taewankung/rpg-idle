@@ -506,14 +506,16 @@ function generateWorldBossSprites() {
 // ============================================================
 function _createBossEntity(typeKey, wx, wy) {
   const def = WB_TYPES[typeKey];
+  const hpMul = typeof progressionSystem !== 'undefined' ? progressionSystem.getBossHpMultiplier('worldBoss') : 1;
+  const bossHp = Math.round(def.hp * hpMul);
   return {
     entityType: 'worldboss',
     bossType: typeKey,
     name: def.name,
     element: def.element,
     level: 20,
-    hp: def.hp,
-    maxHp: def.hp,
+    hp: bossHp,
+    maxHp: bossHp,
     atk: def.atk,
     def: def.def,
     spd: def.spd,

@@ -1466,13 +1466,21 @@ const offlineExpeditionSystem = {
     drawCtx.fillStyle = '#d5e3f0';
     this.drawWrappedText(drawCtx, selected.flavor, detailRect.x + 16, detailRect.y + 86, detailRect.w - 32, 16, '#d5e3f0', '12px sans-serif');
 
-    const durationGroup = { x: detailRect.x + 16, y: detailRect.y + 126, w: detailRect.w - 32, h: 66 };
-    const strategyGroup = { x: detailRect.x + 16, y: durationGroup.y + durationGroup.h + 10, w: detailRect.w - 32, h: 112 };
-    const scoreGroup = { x: detailRect.x + 16, y: strategyGroup.y + strategyGroup.h + 10, w: detailRect.w - 32, h: 118 };
-    const actionGroup = { x: detailRect.x + 16, y: scoreGroup.y + scoreGroup.h + 10, w: detailRect.w - 32, h: 108 };
+    const contentW = detailRect.w - 32;
+    const durationGroup = { x: detailRect.x + 16, y: detailRect.y + 126, w: contentW, h: 66 };
+    const strategyGroup = { x: detailRect.x + 16, y: durationGroup.y + durationGroup.h + 10, w: contentW, h: 102 };
+    const scoreGroup = { x: detailRect.x + 16, y: strategyGroup.y + strategyGroup.h + 10, w: contentW, h: 96 };
+    const footerButtonH = 28;
+    const footerButtonY = detailRect.y + detailRect.h - 42;
+    const actionGroup = {
+      x: detailRect.x + 16,
+      y: scoreGroup.y + scoreGroup.h + 10,
+      w: contentW,
+      h: Math.max(84, footerButtonY - (scoreGroup.y + scoreGroup.h + 10) - 10)
+    };
 
     this.drawOptionGroup(drawCtx, 'Duration', durationGroup, selected.durationOptions, function(option) {
-      return option.label + '  ' + offlineExpeditionSystem.formatDuration(option.seconds);
+      return option.label;
     }, this.selectedDurationSec, 'duration');
 
     this.drawOptionGroup(drawCtx, 'Strategy', strategyGroup, this.strategies, function(strategy) {
@@ -1487,17 +1495,18 @@ const offlineExpeditionSystem = {
     drawCtx.stroke();
     drawCtx.fillStyle = '#dcecff';
     drawCtx.font = 'bold 13px sans-serif';
+    drawCtx.textAlign = 'left';
     drawCtx.fillText('Build Forecast', scoreGroup.x + 12, scoreGroup.y + 20);
     drawCtx.fillStyle = '#8eb1cb';
     drawCtx.font = '11px monospace';
-    drawCtx.fillText('Combat ' + scorePreview.combatScore, scoreGroup.x + 12, scoreGroup.y + 42);
-    drawCtx.fillText('Survival ' + scorePreview.survivalScore, scoreGroup.x + 152, scoreGroup.y + 42);
-    drawCtx.fillText('Utility ' + scorePreview.utilityScore, scoreGroup.x + 12, scoreGroup.y + 62);
-    drawCtx.fillText('Luck ' + scorePreview.luckScore, scoreGroup.x + 152, scoreGroup.y + 62);
+    drawCtx.fillText('Combat ' + scorePreview.combatScore, scoreGroup.x + 12, scoreGroup.y + 40);
+    drawCtx.fillText('Survival ' + scorePreview.survivalScore, scoreGroup.x + 152, scoreGroup.y + 40);
+    drawCtx.fillText('Utility ' + scorePreview.utilityScore, scoreGroup.x + 12, scoreGroup.y + 58);
+    drawCtx.fillText('Luck ' + scorePreview.luckScore, scoreGroup.x + 152, scoreGroup.y + 58);
     drawCtx.fillStyle = '#d5e3f0';
     drawCtx.font = '12px sans-serif';
-    drawCtx.fillText('Success est.: ' + Math.round(scorePreview.successBaseline * 100) + '% pre-events', scoreGroup.x + 12, scoreGroup.y + 86);
-    drawCtx.fillText('Challenge score: ' + scorePreview.challengeScore, scoreGroup.x + 12, scoreGroup.y + 102);
+    drawCtx.fillText('Success est.: ' + Math.round(scorePreview.successBaseline * 100) + '% pre-events', scoreGroup.x + 12, scoreGroup.y + 78);
+    drawCtx.fillText('Challenge score: ' + scorePreview.challengeScore, scoreGroup.x + 12, scoreGroup.y + 94);
 
     drawCtx.fillStyle = 'rgba(10,18,30,0.9)';
     roundRect(drawCtx, actionGroup.x, actionGroup.y, actionGroup.w, actionGroup.h, 8);
@@ -1507,21 +1516,22 @@ const offlineExpeditionSystem = {
     drawCtx.stroke();
     drawCtx.fillStyle = '#dcecff';
     drawCtx.font = 'bold 13px sans-serif';
+    drawCtx.textAlign = 'left';
     drawCtx.fillText('Mission Notes', actionGroup.x + 12, actionGroup.y + 20);
     drawCtx.fillStyle = '#9ab4ca';
     drawCtx.font = '11px sans-serif';
-    drawCtx.fillText('- Expedition rewards start from AFK base values.', actionGroup.x + 12, actionGroup.y + 42);
-    drawCtx.fillText('- Strategy changes success, injury, materials, and rares.', actionGroup.x + 12, actionGroup.y + 58);
-    drawCtx.fillText('- One active run only. The offline window replaces AFK rewards.', actionGroup.x + 12, actionGroup.y + 74);
+    drawCtx.fillText('- Expedition rewards start from AFK base values.', actionGroup.x + 12, actionGroup.y + 40);
+    drawCtx.fillText('- Strategy changes success, injury, materials, and rares.', actionGroup.x + 12, actionGroup.y + 56);
+    drawCtx.fillText('- One active run only. The offline window replaces AFK rewards.', actionGroup.x + 12, actionGroup.y + 72);
 
     if (this.activeRun) {
       const activeDef = this.getDefinition(this.activeRun.id) || selected;
       const activeStrategy = this.getStrategy(this.activeRun.strategyId) || selectedStrategy;
       const remaining = Math.max(0, Math.ceil((this.activeRun.endsAt - Date.now()) / 1000));
       drawCtx.fillStyle = '#5ed39d';
-      drawCtx.fillText(activeDef.name + ' is active with ' + activeStrategy.name + '.', actionGroup.x + 12, actionGroup.y + 94);
-      drawCtx.fillText('Remaining: ' + this.formatDuration(remaining), actionGroup.x + actionGroup.w - 160, actionGroup.y + 94);
-      const cancelRect = { x: detailRect.x + detailRect.w - 176, y: detailRect.y + detailRect.h - 42, w: 160, h: 28 };
+      drawCtx.fillText(activeDef.name + ' is active with ' + activeStrategy.name + '.', actionGroup.x + 12, actionGroup.y + 88);
+      drawCtx.fillText('Remaining: ' + this.formatDuration(remaining), actionGroup.x + 12, actionGroup.y + 104);
+      const cancelRect = { x: detailRect.x + detailRect.w - 176, y: footerButtonY, w: 160, h: footerButtonH };
       this.registerClickable('cancel', cancelRect);
       drawCtx.fillStyle = 'rgba(190,92,66,0.95)';
       roundRect(drawCtx, cancelRect.x, cancelRect.y, cancelRect.w, cancelRect.h, 6);
@@ -1534,7 +1544,7 @@ const offlineExpeditionSystem = {
       drawCtx.textAlign = 'center';
       drawCtx.fillText('Cancel Expedition', cancelRect.x + cancelRect.w / 2, cancelRect.y + 19);
     } else {
-      const startRect = { x: detailRect.x + detailRect.w - 176, y: detailRect.y + detailRect.h - 42, w: 160, h: 28 };
+      const startRect = { x: detailRect.x + detailRect.w - 176, y: footerButtonY, w: 160, h: footerButtonH };
       this.registerClickable('start', startRect);
       drawCtx.fillStyle = canStart.ok ? 'rgba(56,142,60,0.95)' : 'rgba(82,88,97,0.95)';
       roundRect(drawCtx, startRect.x, startRect.y, startRect.w, startRect.h, 6);
@@ -1550,6 +1560,7 @@ const offlineExpeditionSystem = {
   },
 
   drawOptionGroup(drawCtx, title, rect, options, labelFn, selectedValue, prefix) {
+    drawCtx.textAlign = 'left';
     drawCtx.fillStyle = 'rgba(10,18,30,0.9)';
     roundRect(drawCtx, rect.x, rect.y, rect.w, rect.h, 8);
     drawCtx.fill();
@@ -1580,6 +1591,7 @@ const offlineExpeditionSystem = {
       drawCtx.textAlign = 'center';
       drawCtx.fillText(labelFn(option), buttonRect.x + buttonRect.w / 2, buttonRect.y + 17);
     }
+    drawCtx.textAlign = 'left';
   },
 
   drawSummaryPanel(drawCtx, layout) {

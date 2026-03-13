@@ -67,6 +67,9 @@ const botAI = {
   statusText: 'Ready',
   focusText: 'None',
   stuckTimer: 0,
+  progressTimer: 0,
+  progressX: 0,
+  progressY: 0,
   lastX: 0,
   lastY: 0,
   pathTimer: 0,
@@ -136,6 +139,7 @@ const botAI = {
         player._pathIdx = 0;
         player.state = 'idle';
       }
+      this.resetMotionTracking(player);
       return;
     }
     this.stopReason = 'ready';
@@ -143,6 +147,7 @@ const botAI = {
     this.focusText = 'Scanning';
     this.state = 'idle';
     this.stateTimer = 0;
+    this.resetMotionTracking(player);
   },
 
   cycleSetting(key) {
@@ -213,9 +218,9 @@ const botAI = {
       if (!this.isValidTarget(m)) continue;
       const dist = Math.hypot(m.x - x, m.y - y);
       if (dist > TILE * 4) continue;
-      const levelDiff = (m.level || 1) - (p.level || 1);
+      const threatDiff = typeof progressionSystem!=='undefined'&&progressionSystem.getRelativeThreat ? progressionSystem.getRelativeThreat(m,p) : ((m.level || 1) - (p.level || 1)) * 2;
       score += Math.max(3, 22 - dist / TILE * 4);
-      score += Math.max(0, levelDiff) * 9;
+      score += Math.max(0, threatDiff) * 7;
       score += Math.max(0, (m.atk || 0) - (p.def || 0)) * 0.5;
     }
     return score;
@@ -246,7 +251,7 @@ const botAI = {
       pathTiles += 2;
     }
 
-    const levelDiff = (monster.level || 1) - (p.level || 1);
+    const threatDiff = typeof progressionSystem!=='undefined'&&progressionSystem.getRelativeThreat ? progressionSystem.getRelativeThreat(monster,p) : ((monster.level || 1) - (p.level || 1)) * 2;
     const hpRatio = monster.maxHp > 0 ? monster.hp / monster.maxHp : 1;
     const packCount = Math.max(0, this.getNearbyMonsters(mons, monster.x, monster.y, TILE * 2.8).length - 1);
     const pressureNearPlayer = Math.max(0, this.getNearbyMonsters(mons, p.x, p.y, TILE * 3).length - 1);
@@ -254,7 +259,7 @@ const botAI = {
     const dmgBudget = Math.max(1, (p.atk || 0) + (p.matk || 0) * 0.35);
     const timeToKill = monster.hp / dmgBudget;
     const cautiousMul = this.isSkillHungryBuild(p) && p.maxMp > 0 && p.mp / p.maxMp < 0.25 ? 1.3 : 1;
-    const danger = Math.max(0, levelDiff) * 12 + packCount * 12 + pressureNearPlayer * 5 + Math.max(0, (monster.atk || 0) - (p.def || 0)) * 0.65;
+    const danger = Math.max(0, threatDiff) * 10 + packCount * 12 + pressureNearPlayer * 5 + Math.max(0, (monster.atk || 0) - (p.def || 0)) * 0.65;
 
     if (this.settings.avoidDangerousTargets && danger * cautiousMul > 72) {
       return { valid: false, reason: 'danger_detected', score: -9999 };
@@ -266,7 +271,7 @@ const botAI = {
     score -= timeToKill * 4;
     score -= danger * cautiousMul;
 
-    if (this.settings.preferWeaker) score += levelDiff <= 0 ? 14 + Math.max(0, -levelDiff * 2) : -levelDiff * 10;
+    if (this.settings.preferWeaker) score += threatDiff <= 0 ? 14 + Math.max(0, -threatDiff * 1.5) : -threatDiff * 8;
     if (monster === this.target) score += 14;
 
     if (this.settings.targetPriority === 'nearest') score += Math.max(0, 24 - distTiles * 4);
@@ -279,7 +284,7 @@ const botAI = {
       score,
       dist,
       pathTiles,
-      levelDiff,
+      levelDiff: threatDiff,
       packCount,
       danger,
       timeToKill
@@ -441,7 +446,10 @@ const botAI = {
       const pressure = this.getThreatScoreAt(p, mons, m.x, m.y);
       const reward = (m.expReward || 0) + (m.goldReward || 0) * 0.25;
       let score = cluster * 12 + reward - distTiles * 4 - pressure * 0.35;
-      if (this.settings.preferWeaker && (m.level || 1) <= (p.level || 1)) score += 10;
+      if (this.settings.preferWeaker) {
+        const threatDiff = typeof progressionSystem!=='undefined'&&progressionSystem.getRelativeThreat ? progressionSystem.getRelativeThreat(m,p) : ((m.level || 1) - (p.level || 1)) * 2;
+        if (threatDiff <= 0) score += 10;
+      }
       if (score > bestScore) {
         const spot = _findRandomWalkable(m.x, m.y, 1, 3) || { x: m.x, y: m.y };
         best = spot;
@@ -460,17 +468,36 @@ const botAI = {
 
     const spot = this.findFarmSpot(p, mons);
     if (!spot) return false;
-    this.roamTarget = spot;
+    const focusText = 'Farm ' + Math.floor(spot.x / TILE) + ',' + Math.floor(spot.y / TILE);
+    if (!this.beginRoam(p, spot, 'reposition_farm', 'Repositioning', focusText)) return false;
     this.farmAnchor = { x: spot.x, y: spot.y };
-    this.focusText = 'Farm ' + Math.floor(spot.x / TILE) + ',' + Math.floor(spot.y / TILE);
-    this.setState('roaming', 'reposition_farm', 'Repositioning', true);
-    this.requestPath(p, spot.x, spot.y);
     return true;
   },
 
   requestPath(p, tx, ty) {
     this.pathTimer = 0;
     return assignPath(p, tx, ty, dungeon.active ? 25 : 20);
+  },
+
+  resetMotionTracking(p) {
+    this.stuckTimer = 0;
+    this.progressTimer = 0;
+    if (p) {
+      this.progressX = p.x;
+      this.progressY = p.y;
+      this.lastX = p.x;
+      this.lastY = p.y;
+    }
+  },
+
+  beginRoam(p, target, reason, status, focusText) {
+    if (!target) return false;
+    if (!this.requestPath(p, target.x, target.y)) return false;
+    this.roamTarget = { x: target.x, y: target.y };
+    this.focusText = focusText || this.focusText;
+    this.setState('roaming', reason, status, true);
+    this.resetMotionTracking(p);
+    return true;
   },
 
   shouldRepath(p, tx, ty) {
@@ -482,25 +509,47 @@ const botAI = {
   },
 
   checkStuck(p, dt, mons) {
-    const moved = Math.hypot(p.x - this.lastX, p.y - this.lastY);
-    if (moved < 2) this.stuckTimer += dt;
-    else this.stuckTimer = 0;
+    if (!p._path || p._pathIdx >= p._path.length) {
+      this.progressTimer = 0;
+      this.progressX = p.x;
+      this.progressY = p.y;
+      this.lastX = p.x;
+      this.lastY = p.y;
+      return false;
+    }
+
+    if (!this.progressTimer) {
+      this.progressX = p.x;
+      this.progressY = p.y;
+      this.progressTimer = 0;
+    }
+
+    this.progressTimer += dt;
     this.lastX = p.x;
     this.lastY = p.y;
 
-    if (this.stuckTimer < 2.6) return false;
+    if (this.progressTimer < 0.45) return false;
+
+    const moved = Math.hypot(p.x - this.progressX, p.y - this.progressY);
+    const expectedProgress = Math.max(6, (p.spd || 1) * TILE * this.progressTimer * 0.2);
+    if (moved < expectedProgress) this.stuckTimer += this.progressTimer;
+    else this.stuckTimer = 0;
+
+    this.progressX = p.x;
+    this.progressY = p.y;
+    this.progressTimer = 0;
+
+    if (this.stuckTimer < 2.4) return false;
 
     this.stuckTimer = 0;
+    this.progressTimer = 0;
     if (this.target) this.markTargetBlocked(this.target, 6);
     this.target = null;
     p._path = null;
     p._pathIdx = 0;
     const fallback = this.getRetreatDestination(p, mons) || this.findFarmSpot(p, mons) || _findRandomWalkable(p.x, p.y, 2, 6);
-    if (fallback) {
-      this.roamTarget = fallback;
-      this.focusText = 'Unsticking';
-      this.setState('roaming', 'path_stuck', 'Unsticking', true);
-      this.requestPath(p, fallback.x, fallback.y);
+    if (fallback && this.beginRoam(p, fallback, 'path_stuck', 'Unsticking', 'Unsticking')) {
+      this.farmAnchor = null;
     } else {
       this.setState('idle', 'path_stuck', 'Stuck', true);
     }
@@ -533,6 +582,7 @@ const botAI = {
       this.maybeUseSurvivalTools(p, survival.reason);
       this.setState('retreating', survival.reason, this.getReasonLabel(survival.reason), true);
       this.focusText = survival.reason === 'inventory_full' ? 'Town' : 'Safe point';
+      this.resetMotionTracking(p);
       return true;
     }
 
@@ -603,10 +653,8 @@ const botAI = {
         if (!dungeon.active && typeof worldMap !== 'undefined' && worldMap.botCheckZoneTravel) {
           const zt = worldMap.botCheckZoneTravel(p);
           if (zt && !p._path) {
-            this.roamTarget = zt;
-            this.focusText = 'Portal';
-            this.setState('roaming', 'reposition_farm', 'Travelling', true);
-            this.requestPath(p, zt.x, zt.y);
+            if (this.beginRoam(p, zt, 'reposition_farm', 'Travelling', 'Portal')) break;
+            this.setState('idle', 'target_unreachable', this.getReasonLabel('target_unreachable'), true);
             break;
           }
         }
@@ -632,22 +680,20 @@ const botAI = {
           this.farmAnchor = { x: this.target.x, y: this.target.y };
           if (this.requestPath(p, this.target.x, this.target.y)) {
             this.setState('approaching', 'ready', 'Approaching', true);
-            this.lastX = p.x;
-            this.lastY = p.y;
+            this.resetMotionTracking(p);
             break;
           }
           this.markTargetBlocked(this.target, 8);
           this.target = null;
-          this.setState('roaming', 'target_unreachable', this.getReasonLabel('target_unreachable'), true);
+          this.setState('idle', 'target_unreachable', this.getReasonLabel('target_unreachable'), true);
         }
 
         if (!this.shouldRepositionFarm(p, mons)) {
           const dest = _findRandomWalkable(p.x, p.y, 2, 5);
           if (dest) {
-            this.roamTarget = dest;
-            this.focusText = 'Exploring';
-            this.setState('roaming', 'no_valid_targets', 'Exploring', true);
-            this.requestPath(p, dest.x, dest.y);
+            if (!this.beginRoam(p, dest, 'no_valid_targets', 'Exploring', 'Exploring')) {
+              this.setState('idle', 'no_valid_targets', this.getReasonLabel('no_valid_targets'), true);
+            }
           }
         }
         break;
@@ -666,8 +712,7 @@ const botAI = {
           this.targetLockTimer = 0;
           if (this.requestPath(p, target.x, target.y)) {
             this.setState('approaching', 'ready', 'Approaching', true);
-            this.lastX = p.x;
-            this.lastY = p.y;
+            this.resetMotionTracking(p);
             break;
           }
           this.markTargetBlocked(target, 8);
@@ -899,7 +944,10 @@ const botAI = {
         dungeon.nextFloor();
         return true;
       }
-      if (!p._path || p._pathIdx >= p._path.length) assignPath(p, dungeon.stairsPos.x, dungeon.stairsPos.y, 25);
+      if ((!p._path || p._pathIdx >= p._path.length) && !this.beginRoam(p, dungeon.stairsPos, 'reposition_farm', 'Moving to stairs', 'Stairs')) {
+        this.setState('idle', 'target_unreachable', this.getReasonLabel('target_unreachable'), true);
+        return false;
+      }
       followPath(p, game.dt);
       p.state = 'walking';
       this.state = 'roaming';
@@ -917,7 +965,10 @@ const botAI = {
         dungeon.exitDungeon();
         return true;
       }
-      if (!p._path || p._pathIdx >= p._path.length) assignPath(p, dungeon.exitPos.x, dungeon.exitPos.y, 25);
+      if ((!p._path || p._pathIdx >= p._path.length) && !this.beginRoam(p, dungeon.exitPos, 'reposition_farm', 'Moving to exit', 'Exit')) {
+        this.setState('idle', 'target_unreachable', this.getReasonLabel('target_unreachable'), true);
+        return false;
+      }
       followPath(p, game.dt);
       p.state = 'walking';
       this.state = 'roaming';

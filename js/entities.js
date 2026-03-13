@@ -17,17 +17,14 @@ function createPlayer(className, name) {
 function expToNext(lv){return lv*100+lv*lv*10}
 
 function levelUp(p){
-  const g=CLASS_DATA[p.className].growth;
-  p.level++;p.maxHp+=g.hp;p.maxMp+=g.mp;p.atk+=g.atk;p.def+=g.def;p.spd+=g.spd;
+  p.level++;
+  if(typeof statPointSystem!=='undefined'&&statPointSystem.applyStats)statPointSystem.applyStats(p);
   p.hp=p.maxHp;p.mp=p.maxMp;
-  addLog(p.name+' reached Level '+p.level+'!','#FFD700');
+  addLog(p.name+' reached Level '+p.level+'!','#FFD700',{actor:p});
   addEffect(p.x,p.y,'levelup',1.5);
   sfx.levelUp();
-  // Grant stat points
-  if(p===game.player&&typeof statPointSystem!=='undefined'){
-    const sp=5+statPointSystem.milestoneBonus(p.level);
-    statPointSystem.grantPoints(sp);
-    addNotification('Level Up! +'+sp+' Stat Points!','#f1c40f');
+  if(p===game.player&&typeof progressionSystem!=='undefined'){
+    addNotification('Access Lv.'+p.level+'! '+progressionSystem.getLevelUnlockHint(p.level),'#f1c40f');
   }
   if(p===game.player&&typeof petSystem!=='undefined'&&petSystem.active)petSystem.recalcStats();
   if(p===game.player&&typeof achievementSystem!=='undefined')achievementSystem.onLevelUp(p.level);
@@ -43,8 +40,11 @@ function gainExp(p,amt){
 // --- MONSTERS ---
 function createMon(type,sx,sy){
   const d=MON_DATA[type],lv=ri(d.lvR[0],d.lvR[1]),hp=ri(d.hpR[0],d.hpR[1]);
-  return{entityType:'monster',type,level:lv,hp,maxHp:hp,atk:ri(d.atkR[0],d.atkR[1]),def:d.def,spd:d.spd,
-    expReward:ri(d.expR[0],d.expR[1]),goldReward:ri(d.goldR[0],d.goldR[1]),
+  const bossHpMul=typeof progressionSystem!=='undefined'?progressionSystem.getBossHpMultiplier(type==='dragon'?'dragon':'normal'):1;
+  const bossGoldMul=typeof progressionSystem!=='undefined'?progressionSystem.getBossGoldMultiplier(type==='dragon'?'dragon':'normal'):1;
+  const scaledHp=Math.round(hp*bossHpMul);
+  return{entityType:'monster',type,level:lv,hp:scaledHp,maxHp:scaledHp,atk:ri(d.atkR[0],d.atkR[1]),def:d.def,spd:d.spd,
+    expReward:ri(d.expR[0],d.expR[1]),goldReward:Math.round(ri(d.goldR[0],d.goldR[1])*bossGoldMul),
     x:sx,y:sy,dir:'down',frame:0,animTimer:0,state:'patrol',
     patrolCenter:{x:sx,y:sy},patrolAngle:Math.random()*Math.PI*2,
     target:null,respawnTimer:0,attackTimer:0,aggroRange:TILE*5,attackRange:TILE*1.2,
@@ -110,7 +110,7 @@ function updateMonster(m,dt){
               const r=calcDamage(m,t);t.hp=Math.max(0,t.hp-r.dmg);
               addDmg(t.x,t.y-TILE,'-'+r.dmg,'#FF4444');
               if(t.hp<=0){t.isDead=true;t.respawnTimer=3;
-                if(t===game.player){addLog(t.name+' was killed by dragon fire!','#FF4444');t.gold=Math.max(0,Math.round(t.gold*0.95));if(typeof questSystem!=='undefined')questSystem.onPlayerDeath()}
+                if(t===game.player){addLog(t.name+' was killed by dragon fire!','#FF4444',{victim:t});t.gold=Math.max(0,Math.round(t.gold*0.95));if(typeof questSystem!=='undefined')questSystem.onPlayerDeath()}
               }
             }
           }
@@ -121,7 +121,7 @@ function updateMonster(m,dt){
         m.attackTimer=1/(spd*0.5+0.5);
         }
         if(m.target&&m.target.hp<=0){m.target.isDead=true;m.target.respawnTimer=3;
-          addLog(m.target.name+' was killed by '+m.type+'!','#FF4444');
+          addLog(m.target.name+' was killed by '+m.type+'!','#FF4444',{victim:m.target});
           m.target.gold=Math.max(0,Math.round(m.target.gold*0.95));
           if(m.target===game.player&&typeof questSystem!=='undefined')questSystem.onPlayerDeath();
           m.target=null;m.state='patrol'}

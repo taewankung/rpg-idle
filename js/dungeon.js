@@ -838,12 +838,16 @@ function createDungeonMon(type, sx, sy, floor) {
   hp = Math.round(hp * floorMult);
   atk = Math.round(atk * floorMult);
   def = Math.round(def * floorMult);
+  if(type==='demon_lord'&&typeof progressionSystem!=='undefined'){
+    hp = Math.round(hp * progressionSystem.getBossHpMultiplier('dungeonBoss'));
+  }
+  const goldMul=(type==='demon_lord'&&typeof progressionSystem!=='undefined')?progressionSystem.getBossGoldMultiplier('dungeonBoss'):1;
 
   return {
     entityType: 'monster', type, level: lv,
     hp, maxHp: hp, atk, def, spd: d.spd,
     expReward: ri(d.expR[0], d.expR[1]),
-    goldReward: ri(d.goldR[0], d.goldR[1]),
+    goldReward: Math.round(ri(d.goldR[0], d.goldR[1]) * goldMul),
     x: sx, y: sy, dir: 'down', frame: 0, animTimer: 0,
     state: 'patrol',
     patrolCenter: { x: sx, y: sy },

@@ -5,6 +5,8 @@
   "scripts": {
     "start": "npx serve .",
     "dev": "npx serve . -l 8090",
+    "test:combat-log": "node tests/combat-log.playwright.js",
+    "test:progression": "node tests/progression.playwright.js",
     "test:expedition": "node tests/offline-expedition.playwright.js",
     "test:bot": "node tests/smarter-bot.playwright.js"
   },

@@ -253,10 +253,20 @@ async function main() {
     const lootDecision = await page.evaluate(() => ({
       state: botAI.state,
       reason: botAI.stopReason,
-      focus: botAI.getFocusLabel()
+      focus: botAI.getFocusLabel(),
+      remainingDropNames: game.itemDrops.map(d => d.item && d.item.name),
+      equippedWeapon: game.player.equipment.weapon && game.player.equipment.weapon.name
     }));
-    assert.equal(lootDecision.state, 'looting', 'Bot should loot nearby priority drops before re-engaging');
-    assert.equal(lootDecision.reason, 'loot_nearby', 'Looting should set a clear reason');
+    assert.equal(
+      lootDecision.state === 'looting' || lootDecision.equippedWeapon === 'Epic Bow',
+      true,
+      'Bot should either still be looting or have already collected the priority drop before re-engaging'
+    );
+    if (lootDecision.state === 'looting') {
+      assert.equal(lootDecision.reason, 'loot_nearby', 'Looting should set a clear reason');
+    } else {
+      assert.equal(lootDecision.remainingDropNames.includes('Epic Bow'), false, 'Fast loot pickup should remove the priority drop before re-engaging');
+    }
     await page.evaluate(() => advanceTime(4200));
     const lootOutcome = await page.evaluate(() => ({
       dropCount: game.itemDrops.length,
@@ -313,6 +323,121 @@ async function main() {
     assert.equal(inventoryPressure.state, 'retreating', 'Inventory pressure should stop farming and retreat');
     assert.equal(inventoryPressure.reason, 'inventory_full', 'Inventory retreat should expose the correct reason');
     assert.equal(inventoryPressure.render.bot.reason, 'inventory_full', 'Text renderer should expose bot reason');
+
+    await resetScenario('Knight');
+    const failedRoamRecovery = await page.evaluate(() => {
+      const p = game.player;
+      game.monsters = [{
+        entityType: 'monster',
+        type: 'wolf',
+        level: p.level,
+        hp: 70,
+        maxHp: 70,
+        atk: 14,
+        def: 3,
+        spd: 1.4,
+        expReward: 18,
+        goldReward: 7,
+        x: p.x + TILE * 6,
+        y: p.y + TILE,
+        dir: 'down',
+        frame: 0,
+        animTimer: 0,
+        state: 'patrol',
+        patrolCenter: { x: p.x + TILE * 6, y: p.y + TILE },
+        patrolAngle: 0,
+        target: null,
+        respawnTimer: 0,
+        attackTimer: 0,
+        aggroRange: 0,
+        attackRange: TILE * 1.2,
+        slowTimer: 0,
+        isDead: false,
+        crit: 0.05
+      }];
+      botAI.state = 'idle';
+      botAI.target = null;
+      botAI.noTargetTimer = 2;
+      p._path = null;
+      p._pathIdx = 0;
+
+      const originalChoose = botAI.chooseBestBotTarget;
+      const originalFindFarmSpot = botAI.findFarmSpot;
+      const originalRequestPath = botAI.requestPath;
+      let requestCount = 0;
+
+      botAI.chooseBestBotTarget = () => null;
+      botAI.findFarmSpot = () => ({ x: p.x + TILE * 4, y: p.y + TILE * 2 });
+      botAI.requestPath = () => {
+        requestCount += 1;
+        p._path = null;
+        p._pathIdx = 0;
+        return false;
+      };
+
+      advanceTime(500);
+
+      const snapshot = {
+        state: botAI.state,
+        reason: botAI.stopReason,
+        requestCount,
+        hasPath: !!(p._path && p._path.length)
+      };
+
+      botAI.chooseBestBotTarget = originalChoose;
+      botAI.findFarmSpot = originalFindFarmSpot;
+      botAI.requestPath = originalRequestPath;
+      return snapshot;
+    });
+    assert.notEqual(failedRoamRecovery.state, 'roaming', 'Bot should not stay in roaming when reposition path assignment fails');
+    assert.equal(failedRoamRecovery.hasPath, false, 'Failed reposition regression should keep path empty for this scenario');
+    assert.ok(failedRoamRecovery.requestCount >= 1, 'Regression scenario should exercise the failed path branch');
+
+    await resetScenario('Knight');
+    const movingRoamProgress = await page.evaluate(() => {
+      const p = game.player;
+      p.x = 16 * TILE + TILE / 2;
+      p.y = Math.floor(MAP_H / 2) * TILE + TILE / 2;
+      p._path = null;
+      p._pathIdx = 0;
+      game.monsters = [];
+      game.itemDrops = [];
+      botAI.state = 'idle';
+      botAI.target = null;
+      botAI.roamTarget = null;
+      botAI.stopReason = 'ready';
+      botAI.stuckTimer = 0;
+      botAI.progressTimer = 0;
+
+      const started = botAI.beginRoam(
+        p,
+        { x: 25 * TILE + TILE / 2, y: Math.floor(MAP_H / 2) * TILE + TILE / 2 },
+        'reposition_farm',
+        'Repositioning',
+        'Road test'
+      );
+      const beforeX = p.x;
+      advanceTime(2600);
+      return {
+        started,
+        beforeX,
+        afterX: p.x,
+        deltaX: p.x - beforeX,
+        state: botAI.state,
+        reason: botAI.stopReason,
+        stuckTimer: botAI.stuckTimer,
+        pathIdx: p._pathIdx,
+        pathLen: p._path ? p._path.length : 0
+      };
+    });
+    assert.equal(movingRoamProgress.started, true, 'Road regression setup should assign a roam path');
+    assert.ok(movingRoamProgress.deltaX > 32 * 4, 'Bot should make visible progress while roaming');
+    assert.notEqual(movingRoamProgress.reason, 'path_stuck', 'Visible roam progress should not be mislabeled as path_stuck');
+    assert.ok(movingRoamProgress.stuckTimer < 2.4, 'Moving along a valid path should not accumulate a stuck timeout');
+    assert.ok(
+      movingRoamProgress.state === 'roaming' || movingRoamProgress.state === 'idle',
+      'Long-path regression should remain in active travel or finish cleanly'
+    );
 
     await resetScenario('Knight');
     const saveLoadCheck = await page.evaluate(() => {

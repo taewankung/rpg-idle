@@ -240,17 +240,18 @@ function drawHUD(){
   drawUIBar(20,50,200,18,p.hp/p.maxHp,'#e74c3c','#880000','HP: '+p.hp+'/'+p.maxHp);
   drawUIBar(20,72,200,14,p.mp/p.maxMp,'#3498db','#002266','MP: '+p.mp+'/'+p.maxMp);
   const expR=p.exp/expToNext(p.level);
-  drawUIBar(20,90,200,10,expR,'#f1c40f','#664400','Base: '+Math.floor(expR*100)+'%');
+  drawUIBar(20,90,200,10,expR,'#f1c40f','#664400','Access: '+Math.floor(expR*100)+'%');
   const jlv=p.jobLevel||1;const jexp=p.jobExp||0;
   const jnext=jlv>=30?1:(typeof jobExpToNext==='function'?jobExpToNext(jlv):1);
   const jr=jlv>=30?1:(jexp/jnext);
   drawUIBar(20,103,200,10,jr,'#00CED1','#004455','Job: '+(jlv>=30?'MAX':Math.floor(jr*100)+'%'));
-  ctx.fillStyle='#ffcc00';ctx.font='11px monospace';ctx.fillText('Gold: '+p.gold,20,128);
+  ctx.fillStyle='#ffcc00';ctx.font='11px monospace';ctx.fillText('Gold: '+p.gold,20,126);
+  ctx.fillStyle='#889';ctx.font='8px monospace';ctx.fillText('Level gates content. Gold buys power.',20,137);
   // Flashing SP icon when unspent stat points > 0
   if(typeof statPointSystem!=='undefined'&&statPointSystem.unspent>0){
     const pulse=Math.sin(Date.now()/250)*0.4+0.6;
     ctx.globalAlpha=pulse;ctx.fillStyle='#f1c40f';ctx.font='bold 10px sans-serif';
-    ctx.fillText('SP:'+statPointSystem.unspent,180,128);ctx.globalAlpha=1;
+    ctx.fillText('Train:'+statPointSystem.unspent,160,126);ctx.globalAlpha=1;
   }
   ctx.restore();
   drawMinimap();
@@ -418,13 +419,58 @@ function drawBotPanel(){
 }
 
 function drawCombatLog(){
-  const lW=300,lH=140,lx=10,ly=canvas.height-lH-14;
-  ctx.save();ctx.fillStyle='rgba(0,0,0,0.6)';roundRect(ctx,lx,ly,lW,lH,6);ctx.fill();
-  ctx.fillStyle='#556677';ctx.font='bold 9px monospace';ctx.textAlign='left';ctx.fillText('COMBAT LOG',lx+8,ly+12);
+  const rect=getCombatLogRect();
+  const chips=getCombatLogFilterChipRects();
+  const activeFilter=getCombatLogFilter();
+  ctx.save();ctx.fillStyle='rgba(0,0,0,0.6)';roundRect(ctx,rect.x,rect.y,rect.w,rect.h,6);ctx.fill();
+  ctx.fillStyle='#556677';ctx.font='bold 9px monospace';ctx.textAlign='left';ctx.fillText('COMBAT LOG',rect.x+8,rect.y+12);
+
+  for(const chip of chips){
+    const active=chip.id===activeFilter;
+    ctx.fillStyle=active?'rgba(70,120,170,0.95)':'rgba(20,28,40,0.95)';
+    roundRect(ctx,chip.x,chip.y,chip.w,chip.h,4);ctx.fill();
+    ctx.strokeStyle=active?'#a8ddff':'#3d5164';
+    roundRect(ctx,chip.x,chip.y,chip.w,chip.h,4);ctx.stroke();
+    ctx.fillStyle=active?'#f3fbff':'#93a8bc';
+    ctx.font='bold 9px monospace';
+    ctx.textAlign='center';
+    ctx.fillText(COMBAT_LOG_FILTER_LABELS[chip.id],chip.x+chip.w/2,chip.y+10);
+  }
+
   ctx.font='10px monospace';
-  const msgs=combatLog.slice(0,8);
-  msgs.forEach((m,i)=>{ctx.fillStyle=m.color||'#ccc';ctx.fillText(m.text.substring(0,40),lx+8,ly+24+i*14)});
+  ctx.textAlign='left';
+  const msgs=getVisibleCombatLogEntries(7);
+  msgs.forEach((m,i)=>{ctx.fillStyle=m.color||'#ccc';ctx.fillText(m.text.substring(0,42),rect.x+8,rect.y+34+i*14)});
   ctx.restore();
+}
+
+function getCombatLogRect(){
+  const w=300,h=140;
+  return{x:10,y:canvas.height-h-14,w,h};
+}
+
+function getCombatLogFilterChipRects(){
+  const rect=getCombatLogRect();
+  const chipW=46,chipH=14,gap=4;
+  const startX=rect.x+rect.w-(chipW*3+gap*2)-8;
+  const y=rect.y+4;
+  return[
+    {id:'self',x:startX,y,w:chipW,h:chipH},
+    {id:'party',x:startX+chipW+gap,y,w:chipW,h:chipH},
+    {id:'all',x:startX+(chipW+gap)*2,y,w:chipW,h:chipH}
+  ];
+}
+
+function handleCombatLogClick(cx,cy){
+  const chips=getCombatLogFilterChipRects();
+  for(const chip of chips){
+    if(cx>=chip.x&&cx<=chip.x+chip.w&&cy>=chip.y&&cy<=chip.y+chip.h){
+      setCombatLogFilter(chip.id);
+      if(typeof saveSettings==='function')saveSettings();
+      return true;
+    }
+  }
+  return false;
 }
 
 function drawWorldChatUI(){
@@ -719,7 +765,7 @@ function _doInventoryAction(action,idx){
       if(item.type==='potion'){
         p.hp=Math.min(p.maxHp,p.hp+(item.stats.hp||50));
         addDmg(p.x,p.y-TILE,'+'+(item.stats.hp||50),'#44FF44');
-        p.inventory.splice(idx,1);addLog('Used '+item.name,'#44FF44');
+        p.inventory.splice(idx,1);addLog('Used '+item.name,'#44FF44',{actor:p});
       }
       break;
     case'equip':{
@@ -732,16 +778,16 @@ function _doInventoryAction(action,idx){
       for(const[k,v]of Object.entries(item.stats))if(k in p)p[k]+=v;
       p.equipment[slot]=item;
       const ii=p.inventory.indexOf(item);if(ii>=0)p.inventory.splice(ii,1);
-      addLog('Equipped '+item.name,'#88CCFF');
+      addLog('Equipped '+item.name,'#88CCFF',{actor:p});
       break;}
 
     case'sell':
       p.gold+=item.value||1;p.inventory.splice(idx,1);
-      addLog('Sold '+item.name+' for '+item.value+'g','#ffcc00');
+      addLog('Sold '+item.name+' for '+item.value+'g','#ffcc00',{actor:p});
       break;
     case'drop':
       game.itemDrops.push({item,x:p.x,y:p.y,timer:30});
-      p.inventory.splice(idx,1);addLog('Dropped '+item.name,'#888');
+      p.inventory.splice(idx,1);addLog('Dropped '+item.name,'#888',{actor:p});
       break;
   }
   invSelectedIdx=-1;invSelectedSlot=null;
@@ -750,11 +796,11 @@ function _doInventoryAction(action,idx){
 function _doUnequip(slot){
   const p=game.player;if(!p)return;
   const eq=p.equipment[slot];if(!eq)return;
-  if(p.inventory.length>=20){addLog('Inventory full!','#FF4444');return}
+  if(p.inventory.length>=20){addLog('Inventory full!','#FF4444',{actor:p});return}
   // Remove stats
   for(const[k,v]of Object.entries(eq.stats))if(k in p)p[k]-=v;
   p.inventory.push(eq);p.equipment[slot]=null;
-  addLog('Unequipped '+eq.name,'#aaa');
+  addLog('Unequipped '+eq.name,'#aaa',{actor:p});
 }
 
 function drawCharStatsPanel(){
@@ -776,17 +822,21 @@ function drawCharStatsPanel(){
   ctx.fillStyle=CLASS_DEFS[p.className]?.color||'#fff';ctx.font='bold 13px sans-serif';ctx.textAlign='left';
   ctx.fillText(p.name,px+70,py+48);
   ctx.fillStyle='#ccc';ctx.font='11px monospace';
-  ctx.fillText('Lv.'+p.level+' '+p.className,px+70,py+62);
+  ctx.fillText('Lv.'+p.level+' '+p.className+' ['+(typeof progressionSystem!=='undefined'?progressionSystem.getAccessLabel(p.level):'Access')+']',px+70,py+62);
   ctx.fillStyle='#00CED1';ctx.font='9px monospace';
-  ctx.fillText('Job Lv.'+(p.jobLevel||1)+'  SP:'+(p.skillPoints||0),px+70,py+74);
+  ctx.fillText('Job Lv.'+(p.jobLevel||1)+'  Gold Power:'+p.gold,px+70,py+74);
   // Title
   if(typeof achievementSystem!=='undefined'&&achievementSystem.getTitle){
     const title=achievementSystem.getTitle();
     if(title){ctx.fillStyle='#f1c40f';ctx.font='9px monospace';ctx.fillText(title,px+70,py+74)}
   }
+  if(typeof progressionSystem!=='undefined'){
+    ctx.fillStyle='#667';ctx.font='8px monospace';
+    ctx.fillText(progressionSystem.getLevelRoleSummary(p.level),px+14,py+88);
+  }
 
   // --- Stats with breakdown ---
-  let sy=py+92;
+  let sy=py+102;
   const cd=CLASS_DATA[p.className];
   const statRows=[
     {l:'HP',val:p.maxHp,base:cd?cd.hp:0,col:'#e74c3c',fmt:v=>''+v},

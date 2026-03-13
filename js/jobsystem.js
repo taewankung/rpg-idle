@@ -35,7 +35,6 @@ const SKILL_LEVEL_MAX=10;
 function jobLevelUp(p){
   if(p.jobLevel>=30)return;
   p.jobLevel++;
-  p.skillPoints++;
   addLog(p.name+' reached Job Level '+p.jobLevel+'!','#00CED1');
   if(p===game.player){
     addNotification('Job Level '+p.jobLevel+'!','#00CED1');
@@ -55,14 +54,8 @@ function applyJobPassive(p,passive){
   if(!p._jobPassives)p._jobPassives={};
   if(p._jobPassives[passive.type])return; // already applied
   p._jobPassives[passive.type]=passive.val;
-  switch(passive.type){
-    case'hpMult':p.maxHp=Math.round(p.maxHp*(1+passive.val));p.hp=Math.min(p.hp,p.maxHp);break;
-    case'mpMult':p.maxMp=Math.round(p.maxMp*(1+passive.val));p.mp=Math.min(p.mp,p.maxMp);break;
-    case'atkMult':p.atk=Math.round(p.atk*(1+passive.val));break;
-    case'defMult':p.def=Math.round(p.def*(1+passive.val));break;
-    case'spdMult':p.spd=parseFloat((p.spd*(1+passive.val)).toFixed(2));break;
-    // ironBody, manaSurge, quickDraw, hpRegen, healMult, cdMult — checked at runtime
-  }
+  if(typeof statPointSystem!=='undefined'&&statPointSystem.applyStats)statPointSystem.applyStats(p);
+  // ironBody, manaSurge, quickDraw, hpRegen, healMult, cdMult — checked at runtime
 }
 
 function applyAllJobPassives(p){
@@ -103,19 +96,18 @@ function jobLevelCatchUp(p){
   gainJobExp(p,remaining);
 }
 
-// --- Reset skill points (refund all SP, cost gold) ---
+// --- Reset skill levels (gold respec, no refund) ---
 function resetSkillPoints(){
   const p=game.player;
   if(!p)return false;
   const totalSpent=(p.skillLevels||[0,0,0,0]).reduce((a,b)=>a+b,0);
   if(totalSpent===0){addNotification('No skills to reset!','#999');return false;}
-  const cost=50*p.level;
+  const cost=typeof progressionSystem!=='undefined'&&progressionSystem.getSkillResetCost?progressionSystem.getSkillResetCost(p):50*p.level;
   if(p.gold<cost){addNotification('Need '+cost+' Gold to reset skills!','#e74c3c');return false;}
   p.gold-=cost;
-  p.skillPoints+=totalSpent;
   p.skillLevels=[0,0,0,0];
-  addNotification('Skills reset! (-'+cost+'G) +'+totalSpent+' SP','#00CED1');
-  addLog('Reset all skills for '+cost+' gold. Refunded '+totalSpent+' SP.','#00CED1');
+  addNotification('Skills reset! (-'+cost+'G)','#00CED1');
+  addLog('Reset all skills for '+cost+' gold.','#00CED1');
   sfx.spell();
   return true;
 }
@@ -123,13 +115,28 @@ function resetSkillPoints(){
 // --- Skill Level Up ---
 function skillLevelUp(p,skillIdx){
   if(!p||skillIdx<0||skillIdx>=p.skills.length)return false;
-  if(p.skillPoints<=0)return false;
   if(!p.skillLevels)p.skillLevels=[0,0,0,0];
-  if(p.skillLevels[skillIdx]>=SKILL_LEVEL_MAX)return false;
+  const cap=typeof progressionSystem!=='undefined'&&progressionSystem.getSkillCap?progressionSystem.getSkillCap(p):SKILL_LEVEL_MAX;
+  if(p.skillLevels[skillIdx]>=SKILL_LEVEL_MAX||p.skillLevels[skillIdx]>=cap){
+    if(p===game.player&&p.skillLevels[skillIdx]>=cap){
+      addNotification('Raise Access Level or Job Level to increase the skill cap.','#e67e22');
+    }
+    return false;
+  }
+  const nextLv=p.skillLevels[skillIdx]+1;
+  const cost=typeof progressionSystem!=='undefined'&&progressionSystem.getSkillUpgradeCost?progressionSystem.getSkillUpgradeCost(p,skillIdx,nextLv):0;
+  const usedLegacy=(p.skillPoints||0)>0;
+  if(usedLegacy)p.skillPoints--;
+  else{
+    if(p.gold<cost){
+      if(p===game.player)addNotification('Need '+cost+' gold to upgrade this skill.','#e74c3c');
+      return false;
+    }
+    p.gold-=cost;
+  }
   p.skillLevels[skillIdx]++;
-  p.skillPoints--;
   const sk=p.skills[skillIdx];
-  addLog('Upgraded '+sk.name+' to Lv.'+p.skillLevels[skillIdx],'#00CED1');
+  addLog('Upgraded '+sk.name+' to Lv.'+p.skillLevels[skillIdx]+(usedLegacy?' (Legacy SP)':(' (-'+cost+'G)')),'#00CED1');
   if(p===game.player)sfx.spell();
   return true;
 }
@@ -167,11 +174,13 @@ function updateJobPassives(dt){
 // --- Bot auto-spend SP ---
 function jobBotLogic(){
   const p=game.player;
-  if(!p||p.skillPoints<=0||!p.skillLevels)return;
+  if(!p||!p.skillLevels)return;
+  if(typeof progressionSystem!=='undefined'&&p.skillPoints<=0&&p.gold<=progressionSystem.getAutoSpendReserve(p))return;
   // Priority: Q (main dmg) → W (utility) → E (defensive) → R (ultimate)
   const priority=[0,1,2,3];
   for(const idx of priority){
-    if(p.skillLevels[idx]<SKILL_LEVEL_MAX){
+    const cap=typeof progressionSystem!=='undefined'&&progressionSystem.getSkillCap?progressionSystem.getSkillCap(p):SKILL_LEVEL_MAX;
+    if(p.skillLevels[idx]<SKILL_LEVEL_MAX&&p.skillLevels[idx]<cap){
       skillLevelUp(p,idx);
       return;
     }
@@ -185,7 +194,7 @@ let showSkillPanel=false;
 
 function drawSkillPanel(){
   const p=game.player;if(!p)return;
-  const pw=340,ph=380,px=(canvas.width-pw)/2,py=(canvas.height-ph)/2;
+  const pw=340,ph=404,px=(canvas.width-pw)/2,py=(canvas.height-ph)/2;
 
   // Background
   ctx.save();
@@ -206,9 +215,14 @@ function drawSkillPanel(){
   ctx.fillStyle='#fff';ctx.font='bold 8px sans-serif';ctx.textAlign='center';
   ctx.fillText('Auto:'+(autoOn?'ON':'OFF'),atx+28,aty+13);
 
-  // SP counter
-  ctx.fillStyle='#FFD700';ctx.font='bold 12px monospace';ctx.textAlign='right';
-  ctx.fillText('SP: '+(p.skillPoints||0),px+pw-16,py+22);
+  // Gold / legacy counter
+  ctx.fillStyle='#FFD700';ctx.font='bold 11px monospace';ctx.textAlign='right';
+  ctx.fillText('Gold Power',px+pw-16,py+18);
+  ctx.fillText('G: '+(p.gold||0),px+pw-16,py+31);
+  if((p.skillPoints||0)>0){
+    ctx.fillStyle='#88cccc';ctx.font='8px monospace';
+    ctx.fillText('Legacy SP: '+p.skillPoints,px+pw-16,py+42);
+  }
 
   // Job level info
   ctx.fillStyle='#88cccc';ctx.font='11px monospace';ctx.textAlign='left';
@@ -218,17 +232,21 @@ function drawSkillPanel(){
   ctx.fillText('Job Lv.'+jlv+(jlv>=30?' MAX':''),px+16,py+42);
   // Job EXP bar
   drawUIBar(px+16,py+48,pw-32,10,jr,'#00CED1','#004455',jlv>=30?'MAX':Math.floor(jr*100)+'%');
+  ctx.fillStyle='#667';ctx.font='8px monospace';ctx.textAlign='left';
+  ctx.fillText('Level unlocks caps. Gold upgrades skill ranks.',px+16,py+64);
 
   // Skill rows
   const skColors=['#e74c3c','#3498db','#2ecc71','#f1c40f'];
   const keys=['Q','W','E','R'];
-  let sy=py+72;
+  let sy=py+82;
 
   for(let i=0;i<4;i++){
     const sk=p.skills[i];if(!sk)continue;
     const slv=(p.skillLevels&&p.skillLevels[i])||0;
     const eff=getSkillEffective(sk,slv);
     const nextEff=slv<SKILL_LEVEL_MAX?getSkillEffective(sk,slv+1):null;
+    const cap=typeof progressionSystem!=='undefined'&&progressionSystem.getSkillCap?progressionSystem.getSkillCap(p):SKILL_LEVEL_MAX;
+    const nextCost=typeof progressionSystem!=='undefined'&&progressionSystem.getSkillUpgradeCost?progressionSystem.getSkillUpgradeCost(p,i,slv+1):0;
 
     // Row bg
     ctx.fillStyle='rgba(20,20,40,0.8)';roundRect(ctx,px+10,sy,pw-20,66,6);ctx.fill();
@@ -239,8 +257,8 @@ function drawSkillPanel(){
     ctx.fillText('['+keys[i]+'] '+sk.name,px+18,sy+16);
 
     // Level badge
-    ctx.fillStyle=slv>=SKILL_LEVEL_MAX?'#FFD700':'#aaa';ctx.font='bold 11px monospace';ctx.textAlign='right';
-    ctx.fillText('Lv.'+slv+'/'+SKILL_LEVEL_MAX,px+pw-70,sy+16);
+    ctx.fillStyle=slv>=cap?'#FFD700':'#aaa';ctx.font='bold 11px monospace';ctx.textAlign='right';
+    ctx.fillText('Lv.'+slv+'/'+cap,px+pw-70,sy+16);
 
     // Current stats
     ctx.fillStyle='#ccc';ctx.font='9px monospace';ctx.textAlign='left';
@@ -252,27 +270,27 @@ function drawSkillPanel(){
     ctx.fillText(statText,px+18,sy+32);
 
     // Next level preview
-    if(nextEff&&slv<SKILL_LEVEL_MAX){
+    if(nextEff&&slv<cap){
       ctx.fillStyle='#4f4';ctx.font='8px monospace';
       let nextText='Next: ';
       if(sk.dmgPct)nextText+='DMG '+(nextEff.dmgPct*100).toFixed(0)+'%  ';
       if(sk.heal)nextText+='Heal '+(nextEff.heal*100).toFixed(0)+'%  ';
       nextText+='CD '+nextEff.cd.toFixed(1)+'s';
       ctx.fillText(nextText,px+18,sy+44);
-    }else if(slv>=SKILL_LEVEL_MAX){
+    }else if(slv>=cap){
       ctx.fillStyle='#FFD700';ctx.font='8px monospace';
-      ctx.fillText('MAX LEVEL',px+18,sy+44);
+      ctx.fillText(cap>=SKILL_LEVEL_MAX?'MAX LEVEL':'CAP LOCKED BY LEVEL/JOB',px+18,sy+44);
     }
 
     // Level up button
     if(slv<SKILL_LEVEL_MAX){
-      const bx=px+pw-58,bby=sy+34,bw=42,bh=22;
-      const canUp=(p.skillPoints||0)>0;
+      const bx=px+pw-70,bby=sy+30,bw=54,bh=24;
+      const canUp=slv<cap&&((p.skillPoints||0)>0||(p.gold||0)>=nextCost);
       ctx.fillStyle=canUp?'rgba(0,180,100,0.8)':'rgba(60,60,60,0.8)';
       roundRect(ctx,bx,bby,bw,bh,4);ctx.fill();
       ctx.strokeStyle=canUp?'#44ff88':'#555';ctx.lineWidth=1;roundRect(ctx,bx,bby,bw,bh,4);ctx.stroke();
-      ctx.fillStyle=canUp?'#fff':'#666';ctx.font='bold 9px monospace';ctx.textAlign='center';
-      ctx.fillText('+1 SP',bx+bw/2,bby+15);
+      ctx.fillStyle=canUp?'#fff':'#666';ctx.font='bold 8px monospace';ctx.textAlign='center';
+      ctx.fillText((p.skillPoints||0)>0?'LEGACY':'UP '+nextCost+'G',bx+bw/2,bby+15);
     }
 
     sy+=72;
@@ -297,7 +315,7 @@ function drawSkillPanel(){
 
   // Reset Skills button (bottom of panel)
   const totalSpent=(p.skillLevels||[0,0,0,0]).reduce((a,b)=>a+b,0);
-  const resetCost=50*(p.level||1);
+  const resetCost=typeof progressionSystem!=='undefined'&&progressionSystem.getSkillResetCost?progressionSystem.getSkillResetCost(p):50*(p.level||1);
   const hasSpent=totalSpent>0;
   const rbx=px+pw/2-40,rby=py+ph-32;
   ctx.fillStyle=hasSpent?'rgba(140,50,50,0.9)':'rgba(50,50,50,0.7)';
@@ -305,7 +323,7 @@ function drawSkillPanel(){
   ctx.strokeStyle=hasSpent?'#ff6666':'#555';ctx.lineWidth=1;
   roundRect(ctx,rbx,rby,80,22,4);ctx.stroke();
   ctx.fillStyle=hasSpent?'#fff':'#666';ctx.font='bold 9px sans-serif';ctx.textAlign='center';
-  ctx.fillText('Reset '+resetCost+'G',rbx+40,rby+15);
+  ctx.fillText('Respec '+resetCost+'G',rbx+40,rby+15);
 
   // Close button
   ctx.fillStyle='#888';ctx.font='bold 14px sans-serif';ctx.textAlign='center';
@@ -316,7 +334,7 @@ function drawSkillPanel(){
 
 function handleSkillPanelClick(cx,cy){
   const p=game.player;if(!p)return;
-  const pw=340,ph=380,px=(canvas.width-pw)/2,py=(canvas.height-ph)/2;
+  const pw=340,ph=404,px=(canvas.width-pw)/2,py=(canvas.height-ph)/2;
 
   // Close button
   if(cx>=px+pw-24&&cx<=px+pw-4&&cy>=py+4&&cy<=py+24){showSkillPanel=false;return}
@@ -339,11 +357,12 @@ function handleSkillPanelClick(cx,cy){
   }
 
   // Skill level up buttons
-  let sy=py+72;
+  let sy=py+82;
   for(let i=0;i<4;i++){
     const slv=(p.skillLevels&&p.skillLevels[i])||0;
+    const cap=typeof progressionSystem!=='undefined'&&progressionSystem.getSkillCap?progressionSystem.getSkillCap(p):SKILL_LEVEL_MAX;
     if(slv<SKILL_LEVEL_MAX){
-      const bx=px+pw-58,bby=sy+34,bw=42,bh=22;
+      const bx=px+pw-70,bby=sy+30,bw=54,bh=24;
       if(cx>=bx&&cx<=bx+bw&&cy>=bby&&cy<=bby+bh){
         skillLevelUp(p,i);
         return;

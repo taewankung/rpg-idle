@@ -13,7 +13,7 @@ function saveGame() {
   if (!p) return;
 
   const data = {
-    version: 1,
+    version: 2,
     timestamp: Date.now(),
     playTime: game.time,
     player: {
@@ -76,7 +76,10 @@ function saveGame() {
     enchant: typeof enchantSystem!=='undefined' ? enchantSystem.save() : null,
     guild: typeof guildSystem!=='undefined' ? guildSystem.save() : null,
     gacha: typeof gachaSystem!=='undefined' ? gachaSystem.save() : null,
-    statPoints: typeof statPointSystem!=='undefined' ? statPointSystem.save() : null
+    statPoints: typeof statPointSystem!=='undefined' ? statPointSystem.save() : null,
+    progression: typeof progressionSystem!=='undefined' ? {
+      version: progressionSystem.version
+    } : null
   };
 
   try {
@@ -101,6 +104,7 @@ function saveSettings() {
       showDmgNumbers: s.showDmgNumbers,
       showNPCs: s.showNPCs,
       showChat: s.showChat,
+      combatLogFilter: s.combatLogFilter,
       autoBuyPotions: s.autoBuyPotions,
       autoStatAllocate: s.autoStatAllocate,
       autoTalentAllocate: s.autoTalentAllocate,
@@ -123,6 +127,7 @@ function loadSettings() {
     game.settings.showDmgNumbers = s.showDmgNumbers ?? true;
     game.settings.showNPCs       = s.showNPCs       ?? true;
     game.settings.showChat       = s.showChat       ?? true;
+    game.settings.combatLogFilter= s.combatLogFilter?? 'self';
     game.settings.autoBuyPotions = s.autoBuyPotions ?? true;
     game.settings.autoStatAllocate = s.autoStatAllocate ?? true;
     game.settings.autoTalentAllocate = s.autoTalentAllocate ?? true;
@@ -142,11 +147,12 @@ function loadGame() {
     if (!raw) return false;
     const data = JSON.parse(raw);
     if (!data.version || !data.player) { console.warn('LOAD: invalid save data'); return false; }
+    const migration = typeof progressionSystem!=='undefined'&&progressionSystem.migrateLegacySave?progressionSystem.migrateLegacySave(data):{changed:false,bonusGold:0};
     const savedExpeditionConsumesAfk = !!(
       data.offlineExpedition &&
       (data.offlineExpedition.activeRun || data.offlineExpedition.pendingSummary)
     );
-    let shouldResave = false;
+    let shouldResave = !!migration.changed;
 
     // Initialize world
     initSprites();
@@ -286,6 +292,9 @@ function loadGame() {
     if(typeof guildSystem!=='undefined'){guildSystem.generateSprites();guildSystem.initTownNPC();if(data.guild)guildSystem.load(data.guild)}
     if(typeof gachaSystem!=='undefined'){gachaSystem.generateSprites();gachaSystem.initTownNPC();if(data.gacha)gachaSystem.load(data.gacha)}
 
+    if(typeof statPointSystem!=='undefined'&&statPointSystem.applyStats)statPointSystem.applyStats(game.player);
+    if(typeof petSystem!=='undefined'&&petSystem.active&&petSystem.recalcStats)petSystem.recalcStats();
+
     // Init audio with fade
     sfx.init();
     sfx.startFadeIn();
@@ -299,6 +308,10 @@ function loadGame() {
     console.log('LOADED: Lv.' + p.level, p.className, 'HP:' + p.hp + '/' + p.maxHp, 'Gold:' + p.gold);
     addNotification('Welcome back, ' + p.name + '! Lv.' + p.level + ' ' + p.className, '#4fc3f7');
     addLog('Welcome back, ' + p.name + '!', '#FFD700');
+    if(migration.changed&&migration.bonusGold>0){
+      addNotification('Legacy power migrated: +'+migration.bonusGold+'G training credit','#FFD700');
+      addLog('Converted old free stat/skill points into '+migration.bonusGold+' gold.','#FFD700');
+    }
 
     // AFK rewards check
     if(typeof afkSystem!=='undefined'&&data.timestamp&&!savedExpeditionConsumesAfk){afkSystem.checkAfk(data.timestamp)}

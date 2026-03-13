@@ -45,7 +45,7 @@ function startGame(cls){
   if(typeof guildSystem!=='undefined')guildSystem.initTownNPC();
   if(typeof gachaSystem!=='undefined')gachaSystem.initTownNPC();
   camera.update(game.player);
-  addLog('Welcome, Hero the '+cls+'!','#FFD700');
+  addLog('Welcome, Hero the '+cls+'!','#FFD700',{actor:game.player});
   saveGame();
 }
 
@@ -85,7 +85,7 @@ function update(dt){
       if(Math.hypot(d.x-game.player.x,d.y-game.player.y)<TILE){
         if(game.player.inventory.length<20){
           game.player.inventory.push(d.item);autoEquip(game.player,d.item);
-          addLog('Picked up '+d.item.name,'#FFDD44');sfx.itemPickup();
+          addLog('Picked up '+d.item.name,'#FFDD44',{actor:game.player});sfx.itemPickup();
           if(typeof questSystem!=='undefined')questSystem.onItemPickup(d.item);
         }
         game.itemDrops.splice(i,1);
@@ -204,6 +204,7 @@ canvas.addEventListener('click',e=>{
   if(typeof guildSystem!=='undefined'&&guildSystem.panelOpen){if(typeof handleGuildClick==='function')handleGuildClick(cx2,cy2);return}
   if(typeof gachaSystem!=='undefined'&&gachaSystem.panelOpen){if(typeof handleGachaClick==='function')handleGachaClick(cx2,cy2);return}
   if(typeof showSkillPanel!=='undefined'&&showSkillPanel){if(typeof handleSkillPanelClick==='function')handleSkillPanelClick(cx2,cy2);return}
+  if(typeof handleCombatLogClick==='function'&&handleCombatLogClick(cx2,cy2))return;
   if(town.shopOpen){checkTownNPCClick(cx2,cy2);return}
   if(questSystem.boardOpen){checkQuestBoardClick(cx2,cy2);return}
   // Dungeon exit button click
@@ -243,7 +244,16 @@ canvas.addEventListener('click',e=>{
   if(cx2>=volX&&cx2<=volX+volW&&cy2>=volY&&cy2<=volY+8){const v=Math.max(0,Math.min(1,(cx2-volX)/volW));sfx.setVolume(v);game.settings.volume=v;saveSettings();return}
   // Click monster
   const mons=dungeon.active?dungeon.monsters:game.monsters;
-  for(const m of mons){if(m.isDead||m.entityType!=='monster')continue;const{x:sx2,y:sy2}=camera.worldToScreen(m.x,m.y);if(Math.hypot(cx2-sx2,cy2-sy2)<24){botAI.target=m;botAI.stopReason='ready';botAI.statusText='Approaching';botAI.focusText=(m.type||'monster')+' Lv.'+(m.level||'?');botAI.state='approaching';botAI.targetLockTimer=0;return}}
+  for(const m of mons){
+    if(m.isDead||m.entityType!=='monster')continue;
+    const{x:sx2,y:sy2}=camera.worldToScreen(m.x,m.y);
+    if(Math.hypot(cx2-sx2,cy2-sy2)<24){
+      botAI.target=m;botAI.stopReason='ready';botAI.statusText='Approaching';botAI.focusText=(m.type||'monster')+' Lv.'+(m.level||'?');botAI.targetLockTimer=0;
+      if(botAI.requestPath(game.player,m.x,m.y)){botAI.state='approaching';botAI.resetMotionTracking(game.player)}
+      else{botAI.markTargetBlocked(m,8);botAI.target=null;botAI.state='idle';botAI.stopReason='target_unreachable';botAI.statusText=botAI.getReasonLabel('target_unreachable')}
+      return
+    }
+  }
 });
 
 // --- KEY TRACKING for smooth movement ---
@@ -366,7 +376,12 @@ window.render_game_to_text=()=>{
     note:'origin top-left, +x right, +y down',
     state:game.state,
     zone:typeof worldMap!=='undefined'&&worldMap.getZoneName?worldMap.getZoneName():(dungeon.active?'Dungeon':'Overworld'),
-    player:p?{x:Math.round(p.x),y:Math.round(p.y),hp:p.hp,maxHp:p.maxHp,mp:p.mp,maxMp:p.maxMp,inventory:p.inventory.length}:null,
+    player:p?{
+      x:Math.round(p.x),y:Math.round(p.y),level:p.level,gold:p.gold,hp:p.hp,maxHp:p.maxHp,mp:p.mp,maxMp:p.maxMp,
+      atk:p.atk,def:p.def,inventory:p.inventory.length,
+      statTraining:typeof statPointSystem!=='undefined'?{unspent:statPointSystem.unspent,bought:statPointSystem.getPurchasedPoints?statPointSystem.getPurchasedPoints():0}:null,
+      skillRanks:p.skillLevels||[0,0,0,0]
+    }:null,
     bot:typeof botAI!=='undefined'?{
       enabled:botAI.enabled,state:botAI.state,reason:botAI.stopReason,focus:botAI.getFocusLabel(),
       settings:{
@@ -375,6 +390,10 @@ window.render_game_to_text=()=>{
         avoidDangerousTargets:botAI.settings.avoidDangerousTargets,stopWhenInventoryAlmostFull:botAI.settings.stopWhenInventoryAlmostFull
       }
     }:null,
+    combatLog:{
+      filter:typeof getCombatLogFilter==='function'?getCombatLogFilter():'self',
+      visible:typeof getVisibleCombatLogEntries==='function'?getVisibleCombatLogEntries(4).map(entry=>entry.text):[]
+    },
     drops:(game.itemDrops||[]).slice(0,6).map(d=>({name:d.item&&d.item.name,rarity:d.item&&d.item.rarity,x:Math.round(d.x),y:Math.round(d.y)})),
     monsters:activeMons
   });

@@ -1444,7 +1444,14 @@ function dungeonBotLogic(p) {
 // ============================================================
 dungeon.clampCamera = function() {
   if (!this.active) return;
-  // Override camera bounds for dungeon size
-  camera.x = Math.max(0, Math.min(camera.x, this.DG_W * TILE - canvas.width));
-  camera.y = Math.max(0, Math.min(camera.y, this.DG_H * TILE - canvas.height));
+  // Center smaller dungeon floors inside large viewports instead of pinning them to the top-left.
+  const mapWidth = this.DG_W * TILE;
+  const mapHeight = this.DG_H * TILE;
+  const minX = mapWidth <= canvas.width ? (mapWidth - canvas.width) / 2 : 0;
+  const maxX = mapWidth <= canvas.width ? minX : mapWidth - canvas.width;
+  const minY = mapHeight <= canvas.height ? (mapHeight - canvas.height) / 2 : 0;
+  const maxY = mapHeight <= canvas.height ? minY : mapHeight - canvas.height;
+
+  camera.x = Math.max(minX, Math.min(camera.x, maxX));
+  camera.y = Math.max(minY, Math.min(camera.y, maxY));
 };

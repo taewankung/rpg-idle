@@ -256,6 +256,7 @@ function drawHUD(){
   drawMinimap();
   drawSkillBar(p);
   drawBotPanel();
+  if(typeof offlineExpeditionSystem!=='undefined'&&offlineExpeditionSystem.drawHudStatus)offlineExpeditionSystem.drawHudStatus(ctx);
 }
 
 function drawUIBar(x,y,w,h,ratio,c1,c2,label){
@@ -275,6 +276,7 @@ function drawMinimap(){
   if(dungeon.active){
     // Dungeon minimap
     const DW=dungeon.DG_W,DH=dungeon.DG_H;
+    const dungeonPxW=DW*TILE,dungeonPxH=DH*TILE;
     const ts=mm/DW,th=mm/DH;
     const dgColors={0:'#2a2a2a',1:'#444444',2:'#cc4400',3:'#8b6040',4:'#333355',5:'#aaaaaa'};
     for(let r=0;r<DH;r++)for(let c=0;c<DW;c++){const t=dungeon.getTile(c,r);ctx.fillStyle=dgColors[t]||'#111';ctx.fillRect(mx+c*ts,my+r*th,ts+.5,th+.5)}
@@ -289,8 +291,11 @@ function drawMinimap(){
     // Exit
     if(dungeon.exitPos){ctx.fillStyle='#aa44ff';ctx.fillRect(mx+(dungeon.exitPos.x/(DW*TILE))*mm-2,my+(dungeon.exitPos.y/(DH*TILE))*mm-2,4,4)}
     // Camera viewport
+    const viewW=Math.min(canvas.width,dungeonPxW),viewH=Math.min(canvas.height,dungeonPxH);
+    const viewX=Math.max(0,Math.min(camera.x,dungeonPxW-viewW));
+    const viewY=Math.max(0,Math.min(camera.y,dungeonPxH-viewH));
     ctx.strokeStyle='rgba(255,255,255,0.4)';ctx.lineWidth=1;
-    ctx.strokeRect(mx+(camera.x/TILE)*ts,my+(camera.y/TILE)*th,(canvas.width/TILE)*ts,(canvas.height/TILE)*th);
+    ctx.strokeRect(mx+(viewX/TILE)*ts,my+(viewY/TILE)*th,(viewW/TILE)*ts,(viewH/TILE)*th);
     // Player
     blinkTimer++;if(game.player&&blinkTimer%30<20){ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(mx+(game.player.x/(DW*TILE))*mm,my+(game.player.y/(DH*TILE))*mm,2.5,0,Math.PI*2);ctx.fill()}
     // Floor label + monster count
@@ -1119,7 +1124,7 @@ function drawControlHints(){
   const y=canvas.height-4;
   ctx.save();ctx.globalAlpha=0.4;ctx.fillStyle='#000';ctx.fillRect(0,y-14,canvas.width,18);
   ctx.globalAlpha=0.7;ctx.fillStyle='#99aabb';ctx.font='9px monospace';ctx.textAlign='center';
-  ctx.fillText('[TAB] Menu  [SPACE] Bot',canvas.width/2,y);ctx.restore();
+  ctx.fillText('[TAB] Menu  [X] Expedition  [SPACE] Bot',canvas.width/2,y);ctx.restore();
 }
 
 // --- TAB MENU OVERLAY ---
@@ -1187,7 +1192,7 @@ function drawTabMenu(){
   ctx.fillStyle='#111';ctx.beginPath();ctx.arc(ex+28,ey+25,4,0,Math.PI*2);ctx.fill();
   ctx.fillStyle='#d8ecff';ctx.font='bold 14px sans-serif';ctx.textAlign='left';ctx.fillText('Expedition',ex+48,ey+21);
   ctx.fillStyle='#8fb7d9';ctx.font='10px sans-serif';ctx.fillText('Start or claim offline expedition rewards',ex+48,ey+37);
-  ctx.fillStyle='#667';ctx.font='8px monospace';ctx.textAlign='right';ctx.fillText('O',ex+ew-10,ey+14);
+  ctx.fillStyle='#667';ctx.font='8px monospace';ctx.textAlign='right';ctx.fillText('X',ex+ew-10,ey+14);
   ctx.restore();
 }
 

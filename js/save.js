@@ -136,7 +136,10 @@ function loadGame() {
     if (!raw) return false;
     const data = JSON.parse(raw);
     if (!data.version || !data.player) { console.warn('LOAD: invalid save data'); return false; }
-    const savedActiveExpedition = !!(data.offlineExpedition && data.offlineExpedition.activeRun);
+    const savedExpeditionConsumesAfk = !!(
+      data.offlineExpedition &&
+      (data.offlineExpedition.activeRun || data.offlineExpedition.pendingSummary)
+    );
     let shouldResave = false;
 
     // Initialize world
@@ -265,7 +268,7 @@ function loadGame() {
     addLog('Welcome back, ' + p.name + '!', '#FFD700');
 
     // AFK rewards check
-    if(typeof afkSystem!=='undefined'&&data.timestamp&&!savedActiveExpedition){afkSystem.checkAfk(data.timestamp)}
+    if(typeof afkSystem!=='undefined'&&data.timestamp&&!savedExpeditionConsumesAfk){afkSystem.checkAfk(data.timestamp)}
     if (shouldResave) saveGame();
 
     return true;

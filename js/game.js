@@ -299,7 +299,7 @@ window.addEventListener('keydown',e=>{
     case'KeyJ':if(typeof classChangeSystem!=='undefined'){classChangeSystem.panelOpen=!classChangeSystem.panelOpen}break;
     case'KeyP':if(typeof pvpArena!=='undefined'){pvpArena.panelOpen=!pvpArena.panelOpen}break;
     case'KeyK':if(typeof craftingSystem!=='undefined'){craftingSystem.panelOpen=!craftingSystem.panelOpen}break;
-    case'KeyO':if(typeof offlineExpeditionSystem!=='undefined'){offlineExpeditionSystem.panelOpen=!offlineExpeditionSystem.panelOpen}break;
+    case'KeyX':if(typeof offlineExpeditionSystem!=='undefined'){offlineExpeditionSystem.panelOpen=!offlineExpeditionSystem.panelOpen;showTabMenu=false}break;
     case'KeyN':if(typeof enchantSystem!=='undefined'){enchantSystem.panelOpen=!enchantSystem.panelOpen}break;
     case'KeyG':if(typeof guildSystem!=='undefined'){guildSystem.panelOpen=!guildSystem.panelOpen}break;
     case'KeyU':if(typeof gachaSystem!=='undefined'){gachaSystem.panelOpen=!gachaSystem.panelOpen}break;

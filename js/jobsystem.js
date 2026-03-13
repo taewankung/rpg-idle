@@ -85,6 +85,41 @@ function gainJobExp(p,amt){
   if(p.jobLevel>=30)p.jobExp=0;
 }
 
+// --- Catch-up: grant missed job levels based on kill count ---
+function jobLevelCatchUp(p){
+  if(!p||p.jobLevel>=30)return;
+  // Estimate expected job level from total kill count and player level
+  const kc=p.killCount||0;
+  if(kc<5)return; // not enough data
+  const avgMonLv=Math.max(1,Math.floor(p.level*0.6));
+  const totalJobExp=kc*avgMonLv*15;
+  // Sum exp needed from current job level to see how many levels we'd gain
+  let simLv=p.jobLevel,simExp=p.jobExp||0;
+  let remaining=totalJobExp-simExp;
+  // Subtract exp already accounted for by current job level
+  for(let lv=1;lv<simLv;lv++)remaining-=jobExpToNext(lv);
+  if(remaining<=0)return;
+  // Silently grant the exp (will trigger jobLevelUp with notifications)
+  gainJobExp(p,remaining);
+}
+
+// --- Reset skill points (refund all SP, cost gold) ---
+function resetSkillPoints(){
+  const p=game.player;
+  if(!p)return false;
+  const totalSpent=(p.skillLevels||[0,0,0,0]).reduce((a,b)=>a+b,0);
+  if(totalSpent===0){addNotification('No skills to reset!','#999');return false;}
+  const cost=50*p.level;
+  if(p.gold<cost){addNotification('Need '+cost+' Gold to reset skills!','#e74c3c');return false;}
+  p.gold-=cost;
+  p.skillPoints+=totalSpent;
+  p.skillLevels=[0,0,0,0];
+  addNotification('Skills reset! (-'+cost+'G) +'+totalSpent+' SP','#00CED1');
+  addLog('Reset all skills for '+cost+' gold. Refunded '+totalSpent+' SP.','#00CED1');
+  sfx.spell();
+  return true;
+}
+
 // --- Skill Level Up ---
 function skillLevelUp(p,skillIdx){
   if(!p||skillIdx<0||skillIdx>=p.skills.length)return false;
@@ -160,6 +195,16 @@ function drawSkillPanel(){
   // Header
   ctx.fillStyle='#00CED1';ctx.font='bold 14px sans-serif';ctx.textAlign='center';
   ctx.fillText('Skills [B]',px+pw/2,py+22);
+
+  // Auto toggle (top-left)
+  const autoOn=game.settings.autoSkillAllocate;
+  const atx=px+10,aty=py+10;
+  ctx.fillStyle=autoOn?'rgba(20,120,40,0.9)':'rgba(80,30,30,0.9)';
+  roundRect(ctx,atx,aty,56,18,4);ctx.fill();
+  ctx.strokeStyle=autoOn?'#44ff88':'#cc4444';ctx.lineWidth=1;
+  roundRect(ctx,atx,aty,56,18,4);ctx.stroke();
+  ctx.fillStyle='#fff';ctx.font='bold 8px sans-serif';ctx.textAlign='center';
+  ctx.fillText('Auto:'+(autoOn?'ON':'OFF'),atx+28,aty+13);
 
   // SP counter
   ctx.fillStyle='#FFD700';ctx.font='bold 12px monospace';ctx.textAlign='right';
@@ -250,6 +295,18 @@ function drawSkillPanel(){
     }
   }
 
+  // Reset Skills button (bottom of panel)
+  const totalSpent=(p.skillLevels||[0,0,0,0]).reduce((a,b)=>a+b,0);
+  const resetCost=50*(p.level||1);
+  const hasSpent=totalSpent>0;
+  const rbx=px+pw/2-40,rby=py+ph-32;
+  ctx.fillStyle=hasSpent?'rgba(140,50,50,0.9)':'rgba(50,50,50,0.7)';
+  roundRect(ctx,rbx,rby,80,22,4);ctx.fill();
+  ctx.strokeStyle=hasSpent?'#ff6666':'#555';ctx.lineWidth=1;
+  roundRect(ctx,rbx,rby,80,22,4);ctx.stroke();
+  ctx.fillStyle=hasSpent?'#fff':'#666';ctx.font='bold 9px sans-serif';ctx.textAlign='center';
+  ctx.fillText('Reset '+resetCost+'G',rbx+40,rby+15);
+
   // Close button
   ctx.fillStyle='#888';ctx.font='bold 14px sans-serif';ctx.textAlign='center';
   ctx.fillText('✕',px+pw-14,py+16);
@@ -265,6 +322,21 @@ function handleSkillPanelClick(cx,cy){
   if(cx>=px+pw-24&&cx<=px+pw-4&&cy>=py+4&&cy<=py+24){showSkillPanel=false;return}
   // Outside panel
   if(cx<px||cx>px+pw||cy<py||cy>py+ph){showSkillPanel=false;return}
+
+  // Auto toggle click
+  const atx=px+10,aty=py+10;
+  if(cx>=atx&&cx<=atx+56&&cy>=aty&&cy<=aty+18){
+    game.settings.autoSkillAllocate=!game.settings.autoSkillAllocate;
+    if(typeof saveSettings==='function')saveSettings();
+    return;
+  }
+
+  // Reset Skills button
+  const rbx=px+pw/2-40,rby=py+ph-32;
+  if(cx>=rbx&&cx<=rbx+80&&cy>=rby&&cy<=rby+22){
+    if(typeof resetSkillPoints==='function')resetSkillPoints();
+    return;
+  }
 
   // Skill level up buttons
   let sy=py+72;

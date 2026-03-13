@@ -847,7 +847,7 @@ function drawCharStatsPanel(){
 function drawSettingsPanel(){
   if(!showSettings)return;
   const W=canvas.width,H=canvas.height;
-  const pw=340,ph=360;
+  const pw=340,ph=474;
   const px=(W-pw)/2,py=(H-ph)/2;
   const s=game.settings;
   ctx.save();
@@ -897,7 +897,10 @@ function drawSettingsPanel(){
     ['Show Damage Numbers','showDmgNumbers'],
     ['Show NPC Players','showNPCs'],
     ['Show World Chat','showChat'],
-    ['Bot Auto-Buy Potions','autoBuyPotions']
+    ['Bot Auto-Buy Potions','autoBuyPotions'],
+    ['Auto Stat Allocate','autoStatAllocate'],
+    ['Auto Talent Allocate','autoTalentAllocate'],
+    ['Auto Skill Allocate','autoSkillAllocate']
   ];
   toggles.forEach(([label,key])=>{
     ctx.textAlign='left';ctx.font='12px monospace';ctx.fillStyle='#aaa';ctx.fillText(label,lx,rowY(row)+14);
@@ -929,7 +932,7 @@ function drawToggle(x,y,on){
 
 function handleSettingsClick(cx2,cy2){
   const W=canvas.width,H=canvas.height;
-  const pw=340,ph=360;
+  const pw=340,ph=474;
   const px=(W-pw)/2,py=(H-ph)/2;
   const s=game.settings;
 
@@ -951,12 +954,12 @@ function handleSettingsClick(cx2,cy2){
   const speeds=[1,2,4];
   speeds.forEach((v,i)=>{const bx=px+160+i*50,by=rowY(2)+1;if(cx2>=bx&&cx2<=bx+42&&cy2>=by&&cy2<=by+20){s.gameSpeed=v;saveSettings()}});
   // Toggles (rows 3-6)
-  const toggleKeys=['showDmgNumbers','showNPCs','showChat','autoBuyPotions'];
+  const toggleKeys=['showDmgNumbers','showNPCs','showChat','autoBuyPotions','autoStatAllocate','autoTalentAllocate','autoSkillAllocate'];
   toggleKeys.forEach((key,i)=>{
     if(cx2>=px+260&&cx2<=px+310&&cy2>=rowY(3+i)&&cy2<=rowY(3+i)+24){s[key]=!s[key];saveSettings()}
   });
-  // New Game button (row 7)
-  const ngx=px+(pw-140)/2,ngy=rowY(7)+4;
+  // New Game button (row 10)
+  const ngx=px+(pw-140)/2,ngy=rowY(10)+4;
   if(cx2>=ngx&&cx2<=ngx+140&&cy2>=ngy&&cy2<=ngy+28){
     if(confirmNewGame){deleteSave();location.reload()}
     else{confirmNewGame=true}
@@ -1025,6 +1028,89 @@ function handleHelpClick(cx,cy){
   // Outside or X button
   if(cx<px||cx>px+pw||cy<py||cy>py+ph||(cx>=px+pw-28&&cx<=px+pw-8&&cy>=py+8&&cy<=py+28)){showHelp=false;return true}
   return true;
+}
+
+// --- QUICK ACTION BUTTONS (left sidebar below HUD) ---
+const QUICK_BTNS=[
+  {label:'Items',icon:'bag',color:'#e67e22',key:'I'},
+  {label:'Stats',icon:'chart',color:'#e74c3c',key:'C'},
+  {label:'Skills',icon:'star',color:'#3498db',key:'B'},
+  {label:'Talents',icon:'tree',color:'#f1c40f',key:'T'},
+  {label:'Quest',icon:'scroll',color:'#2ecc71',key:'Q'},
+  {label:'Craft',icon:'anvil',color:'#d35400',key:'K'},
+  {label:'Guild',icon:'shield',color:'#e91e63',key:'G'},
+  {label:'Enchant',icon:'gem',color:'#8e44ad',key:'N'},
+  {label:'Summon',icon:'portal',color:'#c0392b',key:'U'},
+  {label:'Menu',icon:'grid',color:'#95a5a6',key:'TAB'},
+];
+const QB_SIZE=34,QB_GAP=3,QB_X=10,QB_Y0=152;
+
+function drawQuickButtons(){
+  if(game.state!=='playing')return;
+  ctx.save();
+  for(let i=0;i<QUICK_BTNS.length;i++){
+    const btn=QUICK_BTNS[i];
+    const bx=QB_X,by=QB_Y0+i*(QB_SIZE+QB_GAP);
+    // Check if this panel is currently open for highlight
+    let active=false;
+    switch(i){
+      case 0:active=showInventory;break;
+      case 1:active=showCharStats;break;
+      case 2:active=typeof showSkillPanel!=='undefined'&&showSkillPanel;break;
+      case 3:active=talentSystem.panelOpen;break;
+      case 4:active=typeof questSystem!=='undefined'&&questSystem.boardOpen;break;
+      case 5:active=typeof craftingSystem!=='undefined'&&craftingSystem.panelOpen;break;
+      case 6:active=typeof guildSystem!=='undefined'&&guildSystem.panelOpen;break;
+      case 7:active=typeof enchantSystem!=='undefined'&&enchantSystem.panelOpen;break;
+      case 8:active=typeof gachaSystem!=='undefined'&&gachaSystem.panelOpen;break;
+      case 9:active=showTabMenu;break;
+    }
+    // Background
+    ctx.fillStyle=active?'rgba(255,255,255,0.15)':'rgba(0,0,10,0.7)';
+    roundRect(ctx,bx,by,QB_SIZE,QB_SIZE,6);ctx.fill();
+    ctx.strokeStyle=active?btn.color:btn.color+'88';ctx.lineWidth=active?2:1;
+    roundRect(ctx,bx,by,QB_SIZE,QB_SIZE,6);ctx.stroke();
+    // Icon (centered in button)
+    const ix=bx+QB_SIZE/2,iy=by+QB_SIZE/2-2;
+    ctx.fillStyle=btn.color;
+    if(btn.icon==='bag'){ctx.fillRect(ix-5,iy-5,10,10)}
+    else if(btn.icon==='chart'){ctx.fillRect(ix-6,iy-1,3,7);ctx.fillRect(ix-2,iy-5,3,11);ctx.fillRect(ix+3,iy-3,3,9)}
+    else if(btn.icon==='star'){ctx.beginPath();ctx.moveTo(ix,iy-7);ctx.lineTo(ix+4,iy+5);ctx.lineTo(ix-4,iy+5);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(ix,iy+7);ctx.lineTo(ix+4,iy-3);ctx.lineTo(ix-4,iy-3);ctx.closePath();ctx.fill()}
+    else if(btn.icon==='tree'){ctx.beginPath();ctx.moveTo(ix,iy-7);ctx.lineTo(ix+7,iy+5);ctx.lineTo(ix-7,iy+5);ctx.closePath();ctx.fill();ctx.fillRect(ix-1.5,iy+5,3,4)}
+    else if(btn.icon==='scroll'){ctx.fillRect(ix-4,iy-6,8,12);ctx.fillStyle='#111';ctx.fillRect(ix-2,iy-3,5,1);ctx.fillRect(ix-2,iy,5,1);ctx.fillRect(ix-2,iy+3,5,1)}
+    else if(btn.icon==='anvil'){ctx.fillRect(ix-5,iy-1,10,3);ctx.fillRect(ix-2,iy+2,5,4);ctx.fillRect(ix-6,iy-4,4,3)}
+    else if(btn.icon==='shield'){ctx.beginPath();ctx.moveTo(ix,iy-7);ctx.lineTo(ix+6,iy-3);ctx.lineTo(ix+5,iy+3);ctx.lineTo(ix,iy+7);ctx.lineTo(ix-5,iy+3);ctx.lineTo(ix-6,iy-3);ctx.closePath();ctx.fill()}
+    else if(btn.icon==='gem'){ctx.beginPath();ctx.moveTo(ix,iy-6);ctx.lineTo(ix+5,iy);ctx.lineTo(ix,iy+6);ctx.lineTo(ix-5,iy);ctx.closePath();ctx.fill()}
+    else if(btn.icon==='portal'){ctx.beginPath();ctx.arc(ix,iy,6,0,Math.PI*2);ctx.fill();ctx.fillStyle='#111';ctx.beginPath();ctx.arc(ix,iy,3,0,Math.PI*2);ctx.fill()}
+    else if(btn.icon==='grid'){ctx.fillRect(ix-6,iy-6,5,5);ctx.fillRect(ix+1,iy-6,5,5);ctx.fillRect(ix-6,iy+1,5,5);ctx.fillRect(ix+1,iy+1,5,5)}
+    // Label to the right
+    ctx.fillStyle=active?'#fff':'#aab';
+    ctx.font='8px sans-serif';ctx.textAlign='left';
+    ctx.fillText(btn.label,bx+QB_SIZE+4,by+QB_SIZE/2+3);
+  }
+  ctx.restore();
+}
+
+function handleQuickButtonClick(cx,cy){
+  for(let i=0;i<QUICK_BTNS.length;i++){
+    const bx=QB_X,by=QB_Y0+i*(QB_SIZE+QB_GAP);
+    if(cx>=bx&&cx<=bx+QB_SIZE&&cy>=by&&cy<=by+QB_SIZE){
+      switch(i){
+        case 0:showInventory=!showInventory;showCharStats=false;invSelectedIdx=-1;invSelectedSlot=null;break;
+        case 1:showCharStats=!showCharStats;showInventory=false;break;
+        case 2:if(typeof showSkillPanel!=='undefined')showSkillPanel=!showSkillPanel;break;
+        case 3:talentSystem.panelOpen=!talentSystem.panelOpen;break;
+        case 4:if(typeof questSystem!=='undefined')questSystem.boardOpen=!questSystem.boardOpen;break;
+        case 5:if(typeof craftingSystem!=='undefined')craftingSystem.panelOpen=!craftingSystem.panelOpen;break;
+        case 6:if(typeof guildSystem!=='undefined')guildSystem.panelOpen=!guildSystem.panelOpen;break;
+        case 7:if(typeof enchantSystem!=='undefined')enchantSystem.panelOpen=!enchantSystem.panelOpen;break;
+        case 8:if(typeof gachaSystem!=='undefined')gachaSystem.panelOpen=!gachaSystem.panelOpen;break;
+        case 9:showTabMenu=!showTabMenu;break;
+      }
+      return true;
+    }
+  }
+  return false;
 }
 
 // --- CONTROL HINTS BAR (bottom of screen, always visible) ---
@@ -1213,6 +1299,7 @@ function render(){
   drawSettingsPanel();
   drawHelpPanel();
   drawControlHints();
+  drawQuickButtons();
   if(showTabMenu)drawTabMenu();
   if(typeof afkSystem!=='undefined'&&afkSystem.showPopup&&typeof drawAfkPopup==='function')drawAfkPopup();
 }

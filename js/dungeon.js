@@ -374,6 +374,9 @@ dungeon.generateFloor = function(floor) {
       }
   }
 
+  // --- Ensure lava doesn't block connectivity between rooms ---
+  this._ensureConnectivity();
+
   // --- Place treasure chests in rooms (1-3) ---
   const numChests = ri(1, 3);
   const chestRooms = this.rooms.slice().sort(() => Math.random() - 0.5);
@@ -744,6 +747,63 @@ dungeon.findPath = function(wx1, wy1, wx2, wy2, maxR) {
     }
   }
   return null;
+};
+
+// Ensure all rooms, stairs, and exit remain reachable after lava placement.
+// Flood-fills from spawn room; iteratively removes blocking lava until connected.
+dungeon._ensureConnectivity = function() {
+  const W = this.DG_W, H = this.DG_H;
+  if (this.rooms.length === 0) return;
+  const spawnRoom = this.rooms[0];
+  const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+  const key = (x, y) => x + y * W;
+
+  // Collect all tiles that must be reachable
+  const targets = [];
+  for (const room of this.rooms) targets.push(key(room.cx, room.cy));
+  if (this.stairsPos) targets.push(key(Math.floor(this.stairsPos.x / TILE), Math.floor(this.stairsPos.y / TILE)));
+  if (this.exitPos) {
+    const etx = Math.floor(this.exitPos.x / TILE), ety = Math.floor(this.exitPos.y / TILE);
+    targets.push(key(etx, ety));
+  }
+
+  for (let iter = 0; iter < 30; iter++) {
+    // BFS flood fill from spawn room center
+    const reachable = new Set();
+    const queue = [[spawnRoom.cx, spawnRoom.cy]];
+    reachable.add(key(spawnRoom.cx, spawnRoom.cy));
+
+    while (queue.length > 0) {
+      const [cx, cy] = queue.shift();
+      for (const [dx, dy] of dirs) {
+        const nx = cx + dx, ny = cy + dy;
+        if (nx < 0 || nx >= W || ny < 0 || ny >= H) continue;
+        const nk = key(nx, ny);
+        if (reachable.has(nk)) continue;
+        if (this.isWalkable(nx, ny)) { reachable.add(nk); queue.push([nx, ny]); }
+      }
+    }
+
+    // All targets reachable? Done.
+    if (targets.every(t => reachable.has(t))) return;
+
+    // Remove all lava tiles adjacent to reachable area (peel one layer)
+    let removed = false;
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        if (this.tiles[y][x] !== 2) continue;
+        for (const [dx, dy] of dirs) {
+          const nx = x + dx, ny = y + dy;
+          if (nx >= 0 && nx < W && ny >= 0 && ny < H && reachable.has(key(nx, ny))) {
+            this.tiles[y][x] = 0;
+            removed = true;
+            break;
+          }
+        }
+      }
+    }
+    if (!removed) break; // No adjacent lava to remove — unreachable for other reasons
+  }
 };
 
 // Find a random walkable tile within dungeon

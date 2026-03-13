@@ -50,9 +50,9 @@ function update(dt){
   sfx.updateFade(dt);
   // Bot AI — use dungeon monsters when in dungeon
   if(botAI.enabled&&game.player){
-    talentBotLogic();
-    if(typeof jobBotLogic==='function')jobBotLogic();
-    if(typeof statPointSystem!=='undefined'&&statPointSystem.botAutoAllocate)statPointSystem.botAutoAllocate();
+    if(game.settings.autoTalentAllocate)talentBotLogic();
+    if(game.settings.autoSkillAllocate&&typeof jobBotLogic==='function')jobBotLogic();
+    if(game.settings.autoStatAllocate&&typeof statPointSystem!=='undefined'&&statPointSystem.botAutoAllocate)statPointSystem.botAutoAllocate();
     // Bot auto-enter portal when nearby (overworld, level 5+)
     if(!dungeon.active&&typeof isNearPortal==='function'&&isNearPortal()&&game.player.level>=5){
       dungeon.enterDungeon();
@@ -176,6 +176,8 @@ canvas.addEventListener('click',e=>{
   // AFK popup blocks everything
   if(typeof afkSystem!=='undefined'&&afkSystem.showPopup){if(typeof handleAfkClick==='function')handleAfkClick(cx2,cy2);return}
   if(typeof showTabMenu!=='undefined'&&showTabMenu){if(typeof handleTabMenuClick==='function')handleTabMenuClick(cx2,cy2);return}
+  // Quick action buttons (always accessible)
+  if(typeof handleQuickButtonClick==='function'&&handleQuickButtonClick(cx2,cy2))return;
   // Overlay panels (highest priority)
   if(showHelp){handleHelpClick(cx2,cy2);return}
   if(showSettings){handleSettingsClick(cx2,cy2);return}

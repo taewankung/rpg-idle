@@ -277,6 +277,56 @@ const talentSystem = {
     this.panelOpen = false;
   },
 
+  // --- Reset talents in-game (refund points, keep stats) ---
+  resetTalents() {
+    const p = game.player;
+    if (!p) return false;
+    const tree = this.getTree();
+    if (!tree || this.unlocked.length === 0) return false;
+    // Cost: 100 * player level gold
+    const cost = 100 * p.level;
+    if (p.gold < cost) {
+      addNotification('Need ' + cost + ' Gold to reset!', '#e74c3c');
+      return false;
+    }
+    p.gold -= cost;
+    // Remove each unlocked passive bonus
+    for (const idx of this.unlocked) {
+      const bIdx = idx < 5 ? 0 : 1;
+      const lIdx = idx % 5;
+      const talent = tree.branches[bIdx].talents[lIdx];
+      if (talent.type === 'passive') {
+        this._removePassive(talent);
+      }
+    }
+    // Restore default class skills
+    const cls = p._baseClassName || p.className;
+    const cd = CLASS_DATA[cls];
+    if (cd) p.skills = cd.skills.map(s => ({...s, cdTimer: 0}));
+    this.chosenBranch = -1;
+    this.unlocked = [];
+    this.snapshotBaseStats();
+    addNotification('Talents reset! (-' + cost + 'G)', '#FFD700');
+    addLog('Reset all talents for ' + cost + ' gold.', '#FFD700');
+    sfx.spell();
+    return true;
+  },
+
+  // --- Remove a single passive talent bonus ---
+  _removePassive(talent) {
+    const p = game.player;
+    if (!p || !this.baseStats) return;
+    if (talent.pct !== undefined && talent.stat) {
+      const base = this.baseStats[talent.stat] || 0;
+      const bonus = Math.round(base * talent.pct);
+      p[talent.stat] = (p[talent.stat] || 0) - bonus;
+      if (talent.stat === 'maxHp') p.hp = Math.min(p.hp, p.maxHp);
+      if (talent.stat === 'maxMp') p.mp = Math.min(p.mp, p.maxMp);
+    } else if (talent.val !== undefined && talent.stat) {
+      p[talent.stat] = (p[talent.stat] || 0) - talent.val;
+    }
+  },
+
   // --- Save/Load ---
   getSaveData() {
     return {
@@ -455,6 +505,27 @@ function drawTalentPanel() {
   ctx.fillText('X', closeX + 10, closeY + 10);
   ctx.textBaseline = 'alphabetic';
 
+  // Bottom buttons row: Auto toggle + Reset
+  const autoOn = game.settings.autoTalentAllocate;
+  const abx = px + _TP_W / 2 - 90, aby = py + _TP_H - 36;
+  ctx.fillStyle = autoOn ? 'rgba(20,120,40,0.9)' : 'rgba(80,30,30,0.9)';
+  roundRect(ctx, abx, aby, 80, 24, 5); ctx.fill();
+  ctx.strokeStyle = autoOn ? '#44ff88' : '#cc4444'; ctx.lineWidth = 1;
+  roundRect(ctx, abx, aby, 80, 24, 5); ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('Auto: ' + (autoOn ? 'ON' : 'OFF'), abx + 40, aby + 16);
+
+  // Reset button
+  const rbx = px + _TP_W / 2 + 10, rby = aby;
+  const hasPoints = talentSystem.unlocked.length > 0;
+  const resetCost = 100 * (p.level || 1);
+  ctx.fillStyle = hasPoints ? 'rgba(140,50,50,0.9)' : 'rgba(50,50,50,0.7)';
+  roundRect(ctx, rbx, rby, 80, 24, 5); ctx.fill();
+  ctx.strokeStyle = hasPoints ? '#ff6666' : '#555'; ctx.lineWidth = 1;
+  roundRect(ctx, rbx, rby, 80, 24, 5); ctx.stroke();
+  ctx.fillStyle = hasPoints ? '#fff' : '#666'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('Reset ' + resetCost + 'G', rbx + 40, rby + 16);
+
   // Reset text align
   ctx.textAlign = 'left';
 }
@@ -477,6 +548,21 @@ function handleTalentClick(mx, my) {
   const closeX = px + _TP_W - 28, closeY = py + 8;
   if (mx >= closeX && mx <= closeX + 20 && my >= closeY && my <= closeY + 20) {
     talentSystem.panelOpen = false;
+    return true;
+  }
+
+  // Auto toggle button
+  const abx = px + _TP_W / 2 - 90, aby = py + _TP_H - 36;
+  if (mx >= abx && mx <= abx + 80 && my >= aby && my <= aby + 24) {
+    game.settings.autoTalentAllocate = !game.settings.autoTalentAllocate;
+    if (typeof saveSettings === 'function') saveSettings();
+    return true;
+  }
+
+  // Reset button
+  const rbx = px + _TP_W / 2 + 10, rby = aby;
+  if (mx >= rbx && mx <= rbx + 80 && my >= rby && my <= rby + 24) {
+    talentSystem.resetTalents();
     return true;
   }
 

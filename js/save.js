@@ -94,7 +94,10 @@ function saveSettings() {
       showDmgNumbers: s.showDmgNumbers,
       showNPCs: s.showNPCs,
       showChat: s.showChat,
-      autoBuyPotions: s.autoBuyPotions
+      autoBuyPotions: s.autoBuyPotions,
+      autoStatAllocate: s.autoStatAllocate,
+      autoTalentAllocate: s.autoTalentAllocate,
+      autoSkillAllocate: s.autoSkillAllocate
     }));
   } catch (e) {}
 }
@@ -114,6 +117,9 @@ function loadSettings() {
     game.settings.showNPCs       = s.showNPCs       ?? true;
     game.settings.showChat       = s.showChat       ?? true;
     game.settings.autoBuyPotions = s.autoBuyPotions ?? true;
+    game.settings.autoStatAllocate = s.autoStatAllocate ?? true;
+    game.settings.autoTalentAllocate = s.autoTalentAllocate ?? true;
+    game.settings.autoSkillAllocate = s.autoSkillAllocate ?? true;
     sfx.volume = game.settings.volume;
     sfx.muted  = game.settings.muted;
   } catch (e) {}
@@ -164,6 +170,8 @@ function loadGame() {
     p.skillPoints = data.player.skillPoints || 0;
     p.skillLevels = data.player.skillLevels || [0,0,0,0];
     if(typeof applyAllJobPassives==='function')applyAllJobPassives(p);
+    // Catch-up: if job level seems too low for player level, grant missing job exp
+    if(p.jobLevel<Math.min(30,Math.floor(p.level*0.8))&&typeof jobLevelCatchUp==='function')jobLevelCatchUp(p);
     if(data.statPoints&&typeof statPointSystem!=='undefined')statPointSystem.load(data.statPoints);
 
     // Restore inventory (filter nulls)

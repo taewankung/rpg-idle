@@ -6,6 +6,7 @@ const botAI={
   stuckTimer:0,lastX:0,lastY:0,
   pathTimer:0,// Time since last path recalc
   _debugTimer:0,// periodic debug logging
+  _potionCd:0,// cooldown between potion uses
   settings:{hpThreshold:30,autoSkill:true,targetPriority:'nearest'},
   isValidTarget(t){return t&&!t.isDead&&t.entityType==='monster'},
 
@@ -56,9 +57,17 @@ const botAI={
       }
     }
 
-    // Auto potion
-    if(hpR<thresh){const pi=p.inventory.findIndex(i=>i&&i.type==='potion');
-      if(pi>=0){const pot=p.inventory[pi];p.hp=Math.min(p.maxHp,p.hp+(pot.stats.hp||50));p.inventory.splice(pi,1);addDmg(p.x,p.y-TILE,'+'+(pot.stats.hp||50),'#44FF44')}}
+    // Auto potion (with cooldown to avoid spam)
+    if(this._potionCd>0)this._potionCd-=dt;
+    if(this._potionCd<=0){
+      // HP potion at 30% HP
+      if(hpR<30){const pi=p.inventory.findIndex(i=>i&&i.type==='potion'&&i.stats.hp);
+        if(pi>=0){const pot=p.inventory[pi];const heal=pot.stats.hp||50;p.hp=Math.min(p.maxHp,p.hp+heal);p.inventory.splice(pi,1);addDmg(p.x,p.y-TILE,'+'+heal,'#44FF44');sfx.itemPickup();this._potionCd=1}}
+      // MP potion at 30% MP
+      const mpR=p.mp/p.maxMp*100;
+      if(this._potionCd<=0&&mpR<30){const mi=p.inventory.findIndex(i=>i&&i.type==='potion'&&i.stats.mp);
+        if(mi>=0){const pot=p.inventory[mi];const restore=pot.stats.mp||50;p.mp=Math.min(p.maxMp,p.mp+restore);p.inventory.splice(mi,1);addDmg(p.x,p.y-TILE,'+'+restore+' MP','#3498db');sfx.itemPickup();this._potionCd=1}}
+    }
     if(hpR<thresh&&this.state!=='retreating'){this.state='retreating';this.target=null;p._path=null}
     // Stuck detection for approaching/combat/roaming
     if(this.state==='approaching'||this.state==='combat'||this.state==='roaming'){if(this.checkStuck(p,dt))return}
@@ -258,23 +267,38 @@ const botAI={
   },
 
   pickTarget(p,mons){
-    const range=dungeon.active?Infinity:6*TILE; // In dungeon, find any monster on the floor
+    const range=dungeon.active?Infinity:6*TILE;
     const cands=mons.filter(m=>m.entityType==='monster'&&!m.isDead&&Math.hypot(m.x-p.x,m.y-p.y)<=range);
     if(!cands.length)return null;
-    let sorted;
-    if(this.settings.targetPriority==='lowestHp')sorted=cands.sort((a,b)=>a.hp-b.hp);
-    else if(this.settings.targetPriority==='highestExp')sorted=cands.sort((a,b)=>b.expReward-a.expReward);
-    else sorted=cands.sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y));
-    // Return first one that has a valid path (use larger maxR in dungeon)
+
+    // Score each candidate: lower score = better target
+    const scored=cands.map(m=>{
+      const dist=Math.hypot(m.x-p.x,m.y-p.y);
+      const lvDiff=Math.abs((m.level||1)-(p.level||1));
+      let score;
+      if(dist<TILE*2){
+        // Very close: fight immediately, just sort by distance
+        score=dist;
+      }else{
+        // Prefer level-matched monsters; distance as tiebreaker
+        // lvDiff weight: each level of difference costs ~1 tile of distance
+        score=dist+lvDiff*TILE*1.5;
+      }
+      // Apply user priority tweaks on top
+      if(this.settings.targetPriority==='lowestHp')score-=(1-m.hp/m.maxHp)*TILE*3;
+      else if(this.settings.targetPriority==='highestExp')score-=(m.expReward||0)*0.5;
+      return{m,score};
+    });
+    scored.sort((a,b)=>a.score-b.score);
+
     const maxR=dungeon.active?25:20;
-    for(const m of sorted){
+    for(const{m}of scored){
       const path=_findPath(p.x,p.y,m.x,m.y,maxR);
       if(path!==null)return m;
     }
-    // If no pathable target found in dungeon, try without path validation (move toward nearest)
-    if(dungeon.active&&sorted.length>0){
+    if(dungeon.active&&scored.length>0){
       console.log('BOT: no pathable target, picking nearest anyway');
-      return sorted[0];
+      return scored[0].m;
     }
     return null;
   },

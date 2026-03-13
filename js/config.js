@@ -73,6 +73,7 @@ const game={
   // Settings (saved to localStorage)
   settings:{
     volume:0.3,muted:false,gameSpeed:1,
-    showDmgNumbers:true,showNPCs:true,showChat:true,autoBuyPotions:true
+    showDmgNumbers:true,showNPCs:true,showChat:true,autoBuyPotions:true,
+    autoStatAllocate:true,autoTalentAllocate:true,autoSkillAllocate:true
   }
 };

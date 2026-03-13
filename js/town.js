@@ -444,18 +444,30 @@ function townBotLogic(p) {
   }
 
   // Step 2: After healed, check if we should buy potions
-  const potionCount = p.inventory.filter(i => i && i.type === 'potion').length;
-  if (game.settings.autoBuyPotions && p.gold >= 50 && potionCount < 5 && p.inventory.length < 20) {
-    // Auto-buy HP potions
-    const hpPot = town.shopItems[0]; // HP Potion
-    if (p.gold >= hpPot.value) {
-      p.gold -= hpPot.value;
-      const bought = JSON.parse(JSON.stringify(hpPot));
-      p.inventory.push(bought);
-      addLog('Bot bought ' + hpPot.name, '#FFDD44');
-      addNotification('Bot bought ' + hpPot.name, '#FFDD44');
-      // Return healer pos to stay in town while buying
-      return { x: town.shopNPC.x, y: town.shopNPC.y };
+  const hpPotCount = p.inventory.filter(i => i && i.type === 'potion' && i.stats.hp).length;
+  const mpPotCount = p.inventory.filter(i => i && i.type === 'potion' && i.stats.mp).length;
+  if (game.settings.autoBuyPotions && p.gold >= 50 && p.inventory.length < 20) {
+    // Auto-buy HP potions (keep 5 in stock)
+    if (hpPotCount < 5) {
+      const hpPot = town.shopItems[0]; // HP Potion
+      if (p.gold >= hpPot.value) {
+        p.gold -= hpPot.value;
+        p.inventory.push(JSON.parse(JSON.stringify(hpPot)));
+        addLog('Bot bought ' + hpPot.name, '#FFDD44');
+        addNotification('Bot bought ' + hpPot.name, '#FFDD44');
+        return { x: town.shopNPC.x, y: town.shopNPC.y };
+      }
+    }
+    // Auto-buy MP potions (keep 3 in stock)
+    if (mpPotCount < 3) {
+      const mpPot = town.shopItems[1]; // MP Potion
+      if (p.gold >= mpPot.value) {
+        p.gold -= mpPot.value;
+        p.inventory.push(JSON.parse(JSON.stringify(mpPot)));
+        addLog('Bot bought ' + mpPot.name, '#3498db');
+        addNotification('Bot bought ' + mpPot.name, '#3498db');
+        return { x: town.shopNPC.x, y: town.shopNPC.y };
+      }
     }
   }
 

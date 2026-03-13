@@ -356,38 +356,64 @@ function drawSkillBar(p){
   ctx.restore();
 }
 
+function getBotPanelRect(){
+  const pw=220,ph=220,px=canvas.width-pw-10,py=canvas.height-ph-14;
+  return{px,py,pw,ph};
+}
+
+function _drawBotChip(x,y,w,label,active,color){
+  ctx.fillStyle=active?(color||'rgba(30,120,60,0.95)'):'rgba(45,50,70,0.92)';
+  roundRect(ctx,x,y,w,18,4);ctx.fill();
+  ctx.strokeStyle=active?(color||'#55dd88'):'#667';ctx.lineWidth=1;roundRect(ctx,x,y,w,18,4);ctx.stroke();
+  ctx.fillStyle=active?'#fff':'#ccd';ctx.font='bold 8px monospace';ctx.textAlign='center';ctx.fillText(label,x+w/2,y+12);
+}
+
 function drawBotPanel(){
-  const pw=200,ph=165,px=canvas.width-pw-10,py=canvas.height-ph-14;
-  ctx.save();ctx.fillStyle='rgba(0,0,10,0.8)';roundRect(ctx,px,py,pw,ph,8);ctx.fill();
+  const{px,py,pw,ph}=getBotPanelRect();
+  ctx.save();ctx.fillStyle='rgba(0,0,10,0.84)';roundRect(ctx,px,py,pw,ph,8);ctx.fill();
   ctx.strokeStyle=botAI.enabled?'#20cc40':'#cc2020';ctx.lineWidth=1.5;roundRect(ctx,px,py,pw,ph,8);ctx.stroke();
-  ctx.fillStyle='#ccccff';ctx.font='bold 12px monospace';ctx.textAlign='left';ctx.fillText('BOT',px+10,py+18);
-  const bx2=px+pw-70,by2=py+6;
-  ctx.fillStyle=botAI.enabled?'rgba(20,120,40,0.9)':'rgba(120,20,20,0.9)';roundRect(ctx,bx2,by2,60,20,4);ctx.fill();
-  ctx.fillStyle='#fff';ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.fillText(botAI.enabled?'STOP':'START',bx2+30,by2+14);
-  ctx.textAlign='left';ctx.font='11px monospace';
-  const stateMap={idle:'Idle',roaming:'Roaming...',approaching:'Approaching...',combat:'Combat!',looting:'Looting...',retreating:'Retreating!'};
-  ctx.fillStyle='#888';ctx.fillText('Status:',px+10,py+38);
-  ctx.fillStyle=botAI.state==='combat'?'#ff8844':botAI.state==='retreating'?'#ff4444':'#44ff88';
-  ctx.fillText(stateMap[botAI.state]||'Idle',px+70,py+38);
-  ctx.fillStyle='#888';ctx.fillText('Kills:',px+10,py+54);ctx.fillStyle='#ff8888';ctx.fillText(''+game.killCount,px+70,py+54);
-  const elapsed=(Date.now()-game.sessionStart)/3600000;const expH=elapsed>0.001?Math.floor(game.sessionExp/elapsed):0;
-  ctx.fillStyle='#888';ctx.fillText('EXP/hr:',px+10,py+70);ctx.fillStyle='#ffdd44';ctx.fillText(expH.toLocaleString(),px+70,py+70);
-  ctx.fillStyle='#888';ctx.font='10px monospace';ctx.fillText('Retreat:',px+10,py+90);
-  const slW=pw-85,slX=px+65,slY=py+82;
-  ctx.fillStyle='#222';ctx.fillRect(slX,slY,slW,8);ctx.fillStyle='#ff4444';ctx.fillRect(slX,slY,slW*(botAI.settings.hpThreshold/100),8);
-  ctx.fillStyle='#faa';ctx.font='9px monospace';ctx.textAlign='right';ctx.fillText(botAI.settings.hpThreshold+'%',px+pw-6,slY+8);
-  ctx.textAlign='left';ctx.fillStyle='#888';ctx.font='10px monospace';ctx.fillText('Target:',px+10,py+108);
-  ctx.fillStyle='#88aaff';ctx.fillText(botAI.settings.targetPriority,px+65,py+108);
+  ctx.fillStyle='#ccccff';ctx.font='bold 12px monospace';ctx.textAlign='left';ctx.fillText('BOT AI',px+10,py+18);
+  const bx2=px+pw-72,by2=py+6;
+  ctx.fillStyle=botAI.enabled?'rgba(20,120,40,0.9)':'rgba(120,20,20,0.9)';roundRect(ctx,bx2,by2,62,20,4);ctx.fill();
+  ctx.fillStyle='#fff';ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.fillText(botAI.enabled?'STOP':'START',bx2+31,by2+14);
+
+  const elapsed=(Date.now()-game.sessionStart)/3600000,expH=elapsed>0.001?Math.floor(game.sessionExp/elapsed):0;
+  const statusColor=botAI.state==='combat'?'#ff8844':botAI.state==='retreating'?'#ff5555':'#55ff99';
+  ctx.textAlign='left';ctx.font='10px monospace';
+  ctx.fillStyle='#778';ctx.fillText('State',px+10,py+40);ctx.fillStyle=statusColor;ctx.fillText(botAI.getStateLabel(),px+62,py+40);
+  ctx.fillStyle='#778';ctx.fillText('Focus',px+10,py+54);ctx.fillStyle='#88aaff';ctx.fillText(botAI.getFocusLabel().substring(0,20),px+62,py+54);
+  ctx.fillStyle='#778';ctx.fillText('Reason',px+10,py+68);ctx.fillStyle='#ffdd88';ctx.fillText(botAI.getReasonLabel().substring(0,20),px+62,py+68);
+  ctx.fillStyle='#778';ctx.fillText('Farm',px+10,py+82);
+  const farmTxt=botAI.farmAnchor?Math.floor(botAI.farmAnchor.x/TILE)+','+Math.floor(botAI.farmAnchor.y/TILE):'-';
+  ctx.fillStyle='#9ce6ff';ctx.fillText(farmTxt,px+62,py+82);
+  ctx.fillStyle='#778';ctx.fillText('Kills',px+122,py+40);ctx.fillStyle='#ff8888';ctx.fillText(''+game.killCount,px+162,py+40);
+  ctx.fillStyle='#778';ctx.fillText('EXP/h',px+122,py+54);ctx.fillStyle='#ffdd44';ctx.fillText(expH.toLocaleString(),px+162,py+54);
+
+  ctx.fillStyle='#667';ctx.font='9px monospace';
+  ctx.fillText('Retreat',px+10,py+100);
+  ctx.fillText('Mode',px+10,py+122);
+  ctx.fillText('Chase',px+10,py+144);
+
+  _drawBotChip(px+62,py+90,56,botAI.settings.hpThreshold+'% ',true,'rgba(140,40,40,0.95)');
+  _drawBotChip(px+122,py+90,88,'Cycle HP',false);
+  _drawBotChip(px+62,py+112,148,botAI.settings.targetPriority.toUpperCase(),true,'rgba(50,70,140,0.95)');
+  _drawBotChip(px+62,py+134,56,botAI.settings.maxChaseDistance+' tiles',true,'rgba(50,110,140,0.95)');
+  _drawBotChip(px+122,py+134,88,'Cycle Chase',false);
+
+  _drawBotChip(px+10,py+160,48,'WEAK',botAI.settings.preferWeaker,'rgba(60,110,60,0.95)');
+  _drawBotChip(px+64,py+160,48,'LOOT',botAI.settings.lootNearbyFirst,'rgba(110,90,40,0.95)');
+  _drawBotChip(px+118,py+160,48,'SAFE',botAI.settings.avoidDangerousTargets,'rgba(110,50,50,0.95)');
+  _drawBotChip(px+172,py+160,38,'INV',botAI.settings.stopWhenInventoryAlmostFull,'rgba(80,70,120,0.95)');
+
   // Volume slider
-  ctx.fillStyle='#888';ctx.font='10px monospace';ctx.textAlign='left';ctx.fillText('Vol:',px+10,py+128);
-  const volX=px+40,volY=py+121,volW=pw-90;
+  ctx.fillStyle='#888';ctx.font='10px monospace';ctx.textAlign='left';ctx.fillText('Vol:',px+10,py+189);
+  const volX=px+40,volY=py+182,volW=pw-90;
   ctx.fillStyle='#222';ctx.fillRect(volX,volY,volW,8);
   ctx.fillStyle='#44aaff';ctx.fillRect(volX,volY,volW*sfx.volume,8);
-  // Mute button
-  const mx=px+pw-42,my=py+118;
+  const mx=px+pw-42,my=py+179;
   ctx.fillStyle=sfx.muted?'rgba(120,20,20,0.9)':'rgba(20,80,120,0.9)';roundRect(ctx,mx,my,36,16,3);ctx.fill();
   ctx.fillStyle='#fff';ctx.font='bold 8px monospace';ctx.textAlign='center';ctx.fillText(sfx.muted?'MUTE':'SND',mx+18,my+12);
-  ctx.fillStyle='#445';ctx.font='9px monospace';ctx.textAlign='center';ctx.fillText('[SPACE] toggle',px+pw/2,py+ph-6);
+  ctx.fillStyle='#445';ctx.font='9px monospace';ctx.fillText('[SPACE] toggle',px+pw/2,py+ph-6);
   ctx.restore();
 }
 

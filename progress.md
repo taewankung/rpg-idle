@@ -9,7 +9,12 @@ Original prompt: เพิ่มระบบ “Offline Expedition System (Deep 
 - 2026-03-14: Validation passed with `npm run test:expedition`. Latest screenshots still show minor text density in the planning/debrief headers, but the panel is functional and readable enough for this pass.
 - 2026-03-14: Interactive Playwright validation exposed a debrief layout issue: zone/duration/strategy/outcome grade were present in data but not clearly visible. Patched `js/offlineexpedition.js` header/layout so the debrief renders those fields explicitly above the reward columns.
 - 2026-03-14: Follow-up UI fix for dungeon viewport sizing: when dungeon floor size (`20x20`) is smaller than the browser viewport, camera now centers the floor instead of pinning it to the top-left, and dungeon minimap viewport bounds are clamped to the visible dungeon area.
+- 2026-03-14: Started Smarter Bot AI integration. Replaced the shallow bot heuristics in `js/bot.js` with score-based target evaluation, survival/retreat logic, loot prioritisation, farm repositioning, target abandon handling, sticky transitions, and readable stop reasons while keeping the original state machine states.
+- 2026-03-14: Expanded the bot HUD in `js/ui.js`, wired lightweight config toggles + persistence in `js/game.js`/`js/save.js`, and exposed `window.advanceTime()` / `window.render_game_to_text()` for deterministic browser validation.
+- 2026-03-14: Added `tests/smarter-bot.playwright.js` plus `npm run test:bot` to validate target choice, monster-only targeting, low-HP retreat, loot handling, inventory pressure, and backward-compatible save/load defaults.
+- 2026-03-14: Validation passed with `npm run test:bot` and a follow-up visual smoke run in the browser. Existing `npm run test:expedition` also still passes after the bot/UI/save changes.
 
 TODO / follow-up:
 - Consider a v2 polish pass for summary typography and denser text wrapping in the expedition panel.
 - Consider exposing `render_game_to_text` and deterministic time hooks if broader automated game coverage is needed later.
+- Validate live gameplay feel for longer sessions in mixed overworld/dungeon runs; current automated coverage focuses on deterministic combat/loot/retreat scenarios.

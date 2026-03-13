@@ -24,6 +24,11 @@ function startGame(cls){
   map.generate();
   if(typeof worldMap!=='undefined'){worldMap.generateZone(0);worldMap.currentZone=0;worldMap.extendWalkability()}
   game.player=createPlayer(cls,'Hero');
+  if(typeof botAI!=='undefined'){
+    botAI.applySettings();
+    botAI.target=null;botAI.roamTarget=null;botAI.retreatTarget=null;botAI.lootTarget=null;
+    botAI.state='idle';botAI.stopReason='ready';botAI.statusText='Scanning';botAI.focusText='Scanning';
+  }
   game.monsters=spawnMonsters();
   game.npcPlayers=createNPCs(ri(8,12));
   game.itemDrops=[];game.killCount=0;game.sessionExp=0;game.sessionStart=Date.now();
@@ -220,17 +225,25 @@ canvas.addEventListener('click',e=>{
     if(typeof gachaSystem!=='undefined'&&gachaSystem.checkNPCClick&&gachaSystem.checkNPCClick(cx2,cy2))return;
   }
   // Bot toggle
-  const pw=200,ph=165,bpx=canvas.width-pw-10,bpy=canvas.height-ph-14;
-  if(cx2>=bpx+pw-70&&cx2<=bpx+pw-10&&cy2>=bpy+6&&cy2<=bpy+26){botAI.enabled=!botAI.enabled;return}
+  const botRect=typeof getBotPanelRect==='function'?getBotPanelRect():{px:canvas.width-230,py:canvas.height-234,pw:220,ph:220};
+  const bpx=botRect.px,bpy=botRect.py,pw=botRect.pw,ph=botRect.ph;
+  if(cx2>=bpx+pw-72&&cx2<=bpx+pw-10&&cy2>=bpy+6&&cy2<=bpy+26){botAI.setEnabled(!botAI.enabled,game.player);if(game.player)saveGame();return}
+  if(cx2>=bpx+62&&cx2<=bpx+210&&cy2>=bpy+112&&cy2<=bpy+130){botAI.cycleSetting('targetPriority');if(game.player)saveGame();return}
+  if(cx2>=bpx+62&&cx2<=bpx+210&&cy2>=bpy+90&&cy2<=bpy+108){botAI.cycleSetting('hpThreshold');if(game.player)saveGame();return}
+  if(cx2>=bpx+62&&cx2<=bpx+210&&cy2>=bpy+134&&cy2<=bpy+152){botAI.cycleSetting('maxChaseDistance');if(game.player)saveGame();return}
+  if(cx2>=bpx+10&&cx2<=bpx+58&&cy2>=bpy+160&&cy2<=bpy+178){botAI.cycleSetting('preferWeaker');if(game.player)saveGame();return}
+  if(cx2>=bpx+64&&cx2<=bpx+112&&cy2>=bpy+160&&cy2<=bpy+178){botAI.cycleSetting('lootNearbyFirst');if(game.player)saveGame();return}
+  if(cx2>=bpx+118&&cx2<=bpx+166&&cy2>=bpy+160&&cy2<=bpy+178){botAI.cycleSetting('avoidDangerousTargets');if(game.player)saveGame();return}
+  if(cx2>=bpx+172&&cx2<=bpx+210&&cy2>=bpy+160&&cy2<=bpy+178){botAI.cycleSetting('stopWhenInventoryAlmostFull');if(game.player)saveGame();return}
   // Mute button
-  const mx=bpx+pw-42,my=bpy+118;
+  const mx=bpx+pw-42,my=bpy+179;
   if(cx2>=mx&&cx2<=mx+36&&cy2>=my&&cy2<=my+16){sfx.toggleMute();game.settings.muted=sfx.muted;saveSettings();return}
   // Volume slider click
-  const volX=bpx+40,volY=bpy+121,volW=pw-90;
+  const volX=bpx+40,volY=bpy+182,volW=pw-90;
   if(cx2>=volX&&cx2<=volX+volW&&cy2>=volY&&cy2<=volY+8){const v=Math.max(0,Math.min(1,(cx2-volX)/volW));sfx.setVolume(v);game.settings.volume=v;saveSettings();return}
   // Click monster
   const mons=dungeon.active?dungeon.monsters:game.monsters;
-  for(const m of mons){if(m.isDead)continue;const{x:sx2,y:sy2}=camera.worldToScreen(m.x,m.y);if(Math.hypot(cx2-sx2,cy2-sy2)<24){botAI.target=m;botAI.state='approaching';return}}
+  for(const m of mons){if(m.isDead||m.entityType!=='monster')continue;const{x:sx2,y:sy2}=camera.worldToScreen(m.x,m.y);if(Math.hypot(cx2-sx2,cy2-sy2)<24){botAI.target=m;botAI.stopReason='ready';botAI.statusText='Approaching';botAI.focusText=(m.type||'monster')+' Lv.'+(m.level||'?');botAI.state='approaching';botAI.targetLockTimer=0;return}}
 });
 
 // --- KEY TRACKING for smooth movement ---
@@ -242,7 +255,7 @@ window.addEventListener('keydown',e=>{
   // F1 or ? for help
   if(e.code==='F1'||(e.code==='Slash'&&e.shiftKey)){e.preventDefault();showHelp=!showHelp;return}
   switch(e.code){
-    case'Space':botAI.enabled=!botAI.enabled;break;
+    case'Space':botAI.setEnabled(!botAI.enabled,game.player);break;
     case'KeyI':if(!showSettings&&!talentSystem.panelOpen){showInventory=!showInventory;showCharStats=false;showHelp=false;town.shopOpen=false;invSelectedIdx=-1;invSelectedSlot=null}break;
     case'KeyC':if(!showSettings&&!talentSystem.panelOpen){showCharStats=!showCharStats;showInventory=false;showHelp=false;town.shopOpen=false}break;
     case'KeyT':if(!showSettings){talentSystem.panelOpen=!talentSystem.panelOpen;showInventory=false;showCharStats=false;town.shopOpen=false}break;
@@ -335,6 +348,37 @@ function updateManualMovement(dt){
   else p.dir=vy<0?'up':'down';
   p.state='walking';
 }
+
+window.advanceTime=(ms)=>{
+  const steps=Math.max(1,Math.round(ms/(1000/60)));
+  for(let i=0;i<steps;i++)update(1/60);
+  render();
+};
+
+window.render_game_to_text=()=>{
+  const p=game.player;
+  const mons=(typeof dungeon!=='undefined'&&dungeon.active)?dungeon.monsters:game.monsters;
+  const activeMons=(mons||[]).filter(m=>m&&!m.isDead&&m.entityType==='monster').slice(0,8).map(m=>({
+    type:m.type,level:m.level,hp:m.hp,maxHp:m.maxHp,
+    x:Math.round(m.x),y:Math.round(m.y),dist:p?Math.round(Math.hypot(m.x-p.x,m.y-p.y)):null
+  }));
+  return JSON.stringify({
+    note:'origin top-left, +x right, +y down',
+    state:game.state,
+    zone:typeof worldMap!=='undefined'&&worldMap.getZoneName?worldMap.getZoneName():(dungeon.active?'Dungeon':'Overworld'),
+    player:p?{x:Math.round(p.x),y:Math.round(p.y),hp:p.hp,maxHp:p.maxHp,mp:p.mp,maxMp:p.maxMp,inventory:p.inventory.length}:null,
+    bot:typeof botAI!=='undefined'?{
+      enabled:botAI.enabled,state:botAI.state,reason:botAI.stopReason,focus:botAI.getFocusLabel(),
+      settings:{
+        hpThreshold:botAI.settings.hpThreshold,maxChaseDistance:botAI.settings.maxChaseDistance,
+        preferWeaker:botAI.settings.preferWeaker,lootNearbyFirst:botAI.settings.lootNearbyFirst,
+        avoidDangerousTargets:botAI.settings.avoidDangerousTargets,stopWhenInventoryAlmostFull:botAI.settings.stopWhenInventoryAlmostFull
+      }
+    }:null,
+    drops:(game.itemDrops||[]).slice(0,6).map(d=>({name:d.item&&d.item.name,rarity:d.item&&d.item.rarity,x:Math.round(d.x),y:Math.round(d.y)})),
+    monsters:activeMons
+  });
+};
 
 // --- BOOTSTRAP ---
 initSprites();

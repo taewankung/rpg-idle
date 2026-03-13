@@ -44,7 +44,13 @@ function saveGame() {
       enabled: botAI.enabled,
       hpThreshold: botAI.settings.hpThreshold,
       targetPriority: botAI.settings.targetPriority,
-      autoSkill: botAI.settings.autoSkill
+      autoSkill: botAI.settings.autoSkill,
+      maxChaseDistance: botAI.settings.maxChaseDistance,
+      preferWeaker: botAI.settings.preferWeaker,
+      lootNearbyFirst: botAI.settings.lootNearbyFirst,
+      stopWhenInventoryAlmostFull: botAI.settings.stopWhenInventoryAlmostFull,
+      avoidDangerousTargets: botAI.settings.avoidDangerousTargets,
+      inventorySoftLimit: botAI.settings.inventorySoftLimit
     },
     // New systems
     talents: typeof talentSystem!=='undefined' ? talentSystem.getSaveData() : null,
@@ -192,10 +198,37 @@ function loadGame() {
 
     // Restore bot settings
     if (data.bot) {
-      botAI.enabled                 = data.bot.enabled ?? true;
-      botAI.settings.hpThreshold    = data.bot.hpThreshold ?? 30;
-      botAI.settings.targetPriority = data.bot.targetPriority ?? 'nearest';
-      botAI.settings.autoSkill      = data.bot.autoSkill ?? true;
+      botAI.applySettings({
+        hpThreshold: data.bot.hpThreshold ?? BOT_DEFAULT_SETTINGS.hpThreshold,
+        targetPriority: data.bot.targetPriority ?? BOT_DEFAULT_SETTINGS.targetPriority,
+        autoSkill: data.bot.autoSkill ?? true,
+        maxChaseDistance: data.bot.maxChaseDistance ?? BOT_DEFAULT_SETTINGS.maxChaseDistance,
+        preferWeaker: data.bot.preferWeaker ?? BOT_DEFAULT_SETTINGS.preferWeaker,
+        lootNearbyFirst: data.bot.lootNearbyFirst ?? BOT_DEFAULT_SETTINGS.lootNearbyFirst,
+        stopWhenInventoryAlmostFull: data.bot.stopWhenInventoryAlmostFull ?? BOT_DEFAULT_SETTINGS.stopWhenInventoryAlmostFull,
+        avoidDangerousTargets: data.bot.avoidDangerousTargets ?? BOT_DEFAULT_SETTINGS.avoidDangerousTargets,
+        inventorySoftLimit: data.bot.inventorySoftLimit ?? BOT_DEFAULT_SETTINGS.inventorySoftLimit
+      });
+      botAI.enabled = data.bot.enabled ?? true;
+      botAI.state = 'idle';
+      botAI.target = null;
+      botAI.roamTarget = null;
+      botAI.retreatTarget = null;
+      botAI.lootTarget = null;
+      botAI.stopReason = 'ready';
+      botAI.statusText = botAI.enabled ? 'Scanning' : 'Paused';
+      botAI.focusText = botAI.enabled ? 'Scanning' : 'Manual';
+    } else {
+      botAI.applySettings();
+      botAI.enabled = true;
+      botAI.state = 'idle';
+      botAI.target = null;
+      botAI.roamTarget = null;
+      botAI.retreatTarget = null;
+      botAI.lootTarget = null;
+      botAI.stopReason = 'ready';
+      botAI.statusText = 'Scanning';
+      botAI.focusText = 'Scanning';
     }
 
     // Restore counters

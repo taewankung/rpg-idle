@@ -231,6 +231,8 @@ class GameEngine {
             if (skillState.cooldownRemaining > 0) continue;
 
             if (skillData.healMultiplier) {
+                // Check if enough MP before using heal skill
+                if (player.currentMp < skillData.mpCost) continue;
                 // Use heal skill
                 const healAmount = Math.floor(this.getTotalStat('hp') * skillData.healMultiplier * (1 + skillState.level * 0.1));
                 player.currentHp = Math.min(player.currentHp + healAmount, this.getTotalStat('hp'));

@@ -248,6 +248,106 @@ function generatePetSprites() {
     });
   }
 
+  // Pet golden_slime: shiny gold blob with sparkle
+  for (let f = 0; f < 2; f++) {
+    genSprite('pet_golden_slime_' + f, 24, 24, (c) => {
+      const sq = f === 0, bw = sq ? 16 : 14, bh = sq ? 10 : 13;
+      const by = 24 - bh - 2;
+      // Shadow
+      c.fillStyle = 'rgba(0,0,0,0.15)';
+      c.beginPath(); c.ellipse(12, 23, bw / 2, 2, 0, 0, Math.PI * 2); c.fill();
+      // Body — gold
+      c.fillStyle = '#f1c40f';
+      c.beginPath(); c.ellipse(12, by + bh / 2, bw / 2, bh / 2, 0, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#d4a017';
+      c.beginPath(); c.ellipse(12, by + bh / 2 + 1, bw / 2, bh / 2 - 1, 0, 0, Math.PI * 2); c.fill();
+      // Shine
+      c.fillStyle = 'rgba(255,255,255,0.5)';
+      c.beginPath(); c.ellipse(10, by + 2, 3, 1.5, -0.3, 0, Math.PI * 2); c.fill();
+      // Eyes
+      c.fillStyle = '#fff'; c.fillRect(9, by + 2, 3, 2); c.fillRect(14, by + 2, 3, 2);
+      c.fillStyle = '#1a1a1a'; c.fillRect(10, by + 3, 1, 1); c.fillRect(15, by + 3, 1, 1);
+      // Sparkle
+      c.fillStyle = '#fff';
+      c.fillRect(18, 2, 1, 3); c.fillRect(17, 3, 3, 1);
+      c.fillRect(4, 5, 1, 2); c.fillRect(3, 6, 3, 1);
+      drawHeart(c, 20, 1);
+    });
+  }
+
+  // Pet shadow_wolf: dark purple wolf with glowing red eyes
+  for (let f = 0; f < 2; f++) {
+    genSprite('pet_shadow_wolf_' + f, 24, 24, (c) => {
+      const run = f === 1;
+      // Shadow
+      c.fillStyle = 'rgba(0,0,0,0.2)';
+      c.beginPath(); c.ellipse(12, 23, 9, 1.5, 0, 0, Math.PI * 2); c.fill();
+      // Body — dark purple-black
+      c.fillStyle = '#2c1e3f'; c.fillRect(4, 12, 16, 7);
+      // Legs
+      c.fillStyle = '#1a1230';
+      const lo = run ? 2 : 0;
+      c.fillRect(5, 18, 2, 5 - lo); c.fillRect(8, 18, 2, 5 + lo);
+      c.fillRect(13, 18, 2, 5 + lo); c.fillRect(16, 18, 2, 5 - lo);
+      // Head
+      c.fillStyle = '#2c1e3f';
+      c.fillRect(3, 7, 9, 6);
+      // Ears
+      c.beginPath(); c.moveTo(4, 7); c.lineTo(3, 3); c.lineTo(7, 6); c.fill();
+      c.beginPath(); c.moveTo(10, 7); c.lineTo(11, 4); c.lineTo(11, 7); c.fill();
+      // Red glowing eyes
+      c.fillStyle = '#e74c3c'; c.fillRect(4, 9, 2, 1); c.fillRect(8, 9, 2, 1);
+      // Shadow aura particles
+      c.fillStyle = 'rgba(128,0,255,0.3)';
+      c.fillRect(2, 14, 1, 1); c.fillRect(20, 11, 1, 1); c.fillRect(18, 16, 1, 1);
+      drawHeart(c, 20, 1);
+    });
+  }
+
+  // Pet phoenix: majestic fire bird with flame wings
+  for (let f = 0; f < 2; f++) {
+    genSprite('pet_phoenix_' + f, 24, 24, (c) => {
+      const b = f === 1;
+      // Shadow
+      c.fillStyle = 'rgba(255,100,0,0.15)';
+      c.beginPath(); c.ellipse(12, 23, 7, 2, 0, 0, Math.PI * 2); c.fill();
+      // Tail feathers — flame
+      c.fillStyle = '#e74c3c';
+      c.beginPath(); c.moveTo(12, 18); c.lineTo(6, 22); c.lineTo(10, 17); c.fill();
+      c.beginPath(); c.moveTo(12, 18); c.lineTo(18, 22); c.lineTo(14, 17); c.fill();
+      c.fillStyle = '#f39c12';
+      c.beginPath(); c.moveTo(12, 19); c.lineTo(8, 23); c.lineTo(11, 18); c.fill();
+      // Body — orange-red
+      c.fillStyle = '#e67e22'; c.fillRect(8, 12, 8, 7);
+      // Belly
+      c.fillStyle = '#f9e79f';
+      c.beginPath(); c.ellipse(12, 16, 3, 3, 0, 0, Math.PI * 2); c.fill();
+      // Legs
+      c.fillStyle = '#d4a017'; c.fillRect(9, 19, 2, 3); c.fillRect(13, 19, 2, 3);
+      // Wings — flame gradient
+      const wf = b ? -2 : 0;
+      c.fillStyle = '#e74c3c';
+      c.beginPath(); c.moveTo(8, 13); c.lineTo(1, 6 + wf); c.lineTo(5, 14); c.closePath(); c.fill();
+      c.beginPath(); c.moveTo(16, 13); c.lineTo(23, 6 + wf); c.lineTo(19, 14); c.closePath(); c.fill();
+      c.fillStyle = '#f39c12';
+      c.beginPath(); c.moveTo(8, 14); c.lineTo(3, 8 + wf); c.lineTo(6, 14); c.closePath(); c.fill();
+      c.beginPath(); c.moveTo(16, 14); c.lineTo(21, 8 + wf); c.lineTo(18, 14); c.closePath(); c.fill();
+      // Head
+      c.fillStyle = '#e67e22'; c.fillRect(8, 4, 8, 6);
+      // Crest — flame on head
+      c.fillStyle = '#e74c3c';
+      c.beginPath(); c.moveTo(10, 4); c.lineTo(9, 0); c.lineTo(12, 4); c.fill();
+      c.fillStyle = '#f39c12';
+      c.beginPath(); c.moveTo(13, 4); c.lineTo(14, 1); c.lineTo(15, 4); c.fill();
+      // Eyes
+      c.fillStyle = '#f1c40f'; c.fillRect(9, 6, 2, 2); c.fillRect(13, 6, 2, 2);
+      c.fillStyle = '#1a1a1a'; c.fillRect(10, 6, 1, 2); c.fillRect(14, 6, 1, 2);
+      // Beak
+      c.fillStyle = '#d4a017'; c.fillRect(11, 8, 2, 2);
+      drawHeart(c, 20, 0);
+    });
+  }
+
   // Soul gem item sprite (16x16): glowing purple/blue crystal
   genSprite('soul_gem', 16, 16, (c) => {
     // Glow

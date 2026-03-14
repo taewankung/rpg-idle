@@ -1339,18 +1339,41 @@ function _drawResultCard(x, y, w, h, result) {
   const isLarge = w > 120;
   const name = result.kind === 'item' ? result.item.name : result.pet.name;
 
+  // Draw item/pet icon
+  const icoSize = isLarge ? 24 : 16;
+  const icoX = x + w / 2 - icoSize / 2;
+  const icoY = y + (isLarge ? 6 : 2);
+  let hasIcon = false;
+  ctx.imageSmoothingEnabled = false;
+  if (result.kind === 'item' && typeof _getItemIcon === 'function') {
+    const iconName = _getItemIcon(result.item);
+    if (iconName && spriteCache[iconName]) {
+      ctx.drawImage(spriteCache[iconName], icoX, icoY, icoSize, icoSize);
+      hasIcon = true;
+    }
+  } else if (result.kind === 'pet') {
+    const petKey = 'pet_' + result.pet.type + '_0';
+    if (spriteCache[petKey]) {
+      ctx.drawImage(spriteCache[petKey], icoX, icoY, icoSize, icoSize);
+      hasIcon = true;
+    }
+  }
+  ctx.imageSmoothingEnabled = true;
+
+  const textOff = hasIcon ? (isLarge ? icoSize + 4 : icoSize) : 0;
+
   // Item name
   ctx.font = isLarge ? 'bold 12px monospace' : 'bold 9px monospace';
   ctx.textAlign = 'center';
   ctx.fillStyle = rc;
   const displayName = isLarge ? name : name.substring(0, 10);
-  ctx.fillText(displayName, x + w / 2, y + (isLarge ? 20 : 14));
+  ctx.fillText(displayName, x + w / 2, y + textOff + (isLarge ? 20 : 14));
 
   // Rarity label
   ctx.font = isLarge ? '10px monospace' : '7px monospace';
   ctx.fillStyle = rc;
   const rarLabel = rarity.charAt(0).toUpperCase() + rarity.slice(1);
-  ctx.fillText(rarLabel, x + w / 2, y + (isLarge ? 34 : 22));
+  ctx.fillText(rarLabel, x + w / 2, y + textOff + (isLarge ? 34 : 22));
 
   // Stats
   if (result.kind === 'item' && result.item.stats) {
@@ -1359,11 +1382,11 @@ function _drawResultCard(x, y, w, h, result) {
     const stats = result.item.stats;
     const statArr = Object.entries(stats).map(([k, v]) => k.toUpperCase() + ':' + (k === 'crit' ? (v * 100).toFixed(0) + '%' : k === 'spd' ? v.toFixed(1) : v));
     const statStr = statArr.join(' ');
-    ctx.fillText(statStr.substring(0, isLarge ? 30 : 14), x + w / 2, y + (isLarge ? 50 : 30));
+    ctx.fillText(statStr.substring(0, isLarge ? 30 : 14), x + w / 2, y + textOff + (isLarge ? 50 : 30));
   } else if (result.kind === 'pet' && result.pet.desc) {
     ctx.font = isLarge ? '9px monospace' : '7px monospace';
     ctx.fillStyle = '#bbb';
-    ctx.fillText(result.pet.desc.substring(0, isLarge ? 30 : 14), x + w / 2, y + (isLarge ? 50 : 30));
+    ctx.fillText(result.pet.desc.substring(0, isLarge ? 30 : 14), x + w / 2, y + textOff + (isLarge ? 50 : 30));
   }
 
   // NEW badge

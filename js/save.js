@@ -77,6 +77,7 @@ function saveGame() {
     enchant: typeof enchantSystem!=='undefined' ? enchantSystem.save() : null,
     guild: typeof guildSystem!=='undefined' ? guildSystem.save() : null,
     gacha: typeof gachaSystem!=='undefined' ? gachaSystem.save() : null,
+    cosmetic: typeof cosmeticShop!=='undefined' ? cosmeticShop.save() : null,
     statPoints: typeof statPointSystem!=='undefined' ? statPointSystem.save() : null,
     progression: typeof progressionSystem!=='undefined' ? {
       version: progressionSystem.version
@@ -295,6 +296,7 @@ function loadGame() {
     if(typeof enchantSystem!=='undefined'){enchantSystem.generateSprites();enchantSystem.initTownNPC();if(data.enchant)enchantSystem.load(data.enchant)}
     if(typeof guildSystem!=='undefined'){guildSystem.generateSprites();guildSystem.initTownNPC();if(data.guild)guildSystem.load(data.guild)}
     if(typeof gachaSystem!=='undefined'){gachaSystem.generateSprites();gachaSystem.initTownNPC();if(data.gacha)gachaSystem.load(data.gacha)}
+    if(typeof cosmeticShop!=='undefined'){cosmeticShop.generateSprites();cosmeticShop.initTownNPC();if(data.cosmetic)cosmeticShop.load(data.cosmetic)}
 
     if(typeof statPointSystem!=='undefined'&&statPointSystem.applyStats)statPointSystem.applyStats(game.player);
     if(typeof petSystem!=='undefined'&&petSystem.active&&petSystem.recalcStats)petSystem.recalcStats();

@@ -318,6 +318,17 @@ function generateItems() {
     c.beginPath();c.moveTo(8,1);c.lineTo(13,5);c.lineTo(13,11);c.lineTo(8,15);c.lineTo(3,11);c.lineTo(3,5);c.closePath();c.fill();
     c.fillStyle='rgba(255,255,255,0.5)';c.beginPath();c.moveTo(8,3);c.lineTo(11,5);c.lineTo(8,8);c.closePath();c.fill();
   });
+  genSprite('icon_iron_bar',16,16,(c)=>{
+    c.fillStyle='#6b7280';c.fillRect(2,6,12,5);
+    c.fillStyle='#9ca3af';c.fillRect(3,7,10,3);
+    c.fillStyle='#bdc3c7';c.fillRect(4,7,3,1);
+  });
+  genSprite('icon_steel_bar',16,16,(c)=>{
+    c.fillStyle='#9ca3af';c.fillRect(2,6,12,5);
+    c.fillStyle='#d5d8dc';c.fillRect(3,7,10,3);
+    c.fillStyle='#fff';c.fillRect(4,7,4,1);
+    c.fillStyle='#85c1e9';c.fillRect(12,6,2,1);c.fillRect(13,7,1,1);
+  });
   genSprite('icon_ore',16,16,(c)=>{
     c.fillStyle='#6b7280';c.beginPath();c.moveTo(2,12);c.lineTo(4,6);c.lineTo(8,4);c.lineTo(13,5);c.lineTo(14,10);c.lineTo(12,14);c.lineTo(5,14);c.closePath();c.fill();
     c.fillStyle='#9ca3af';c.beginPath();c.moveTo(4,7);c.lineTo(8,5);c.lineTo(11,6);c.lineTo(9,9);c.closePath();c.fill();

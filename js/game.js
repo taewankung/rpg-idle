@@ -44,6 +44,7 @@ function startGame(cls){
   if(typeof enchantSystem!=='undefined')enchantSystem.initTownNPC();
   if(typeof guildSystem!=='undefined')guildSystem.initTownNPC();
   if(typeof gachaSystem!=='undefined')gachaSystem.initTownNPC();
+  if(typeof cosmeticShop!=='undefined'){cosmeticShop.generateSprites();cosmeticShop.initTownNPC()}
   camera.update(game.player);
   addLog('Welcome, Hero the '+cls+'!','#FFD700',{actor:game.player});
   saveGame();
@@ -203,6 +204,7 @@ canvas.addEventListener('click',e=>{
   if(typeof enchantSystem!=='undefined'&&enchantSystem.panelOpen){if(typeof handleEnchantClick==='function')handleEnchantClick(cx2,cy2);return}
   if(typeof guildSystem!=='undefined'&&guildSystem.panelOpen){if(typeof handleGuildClick==='function')handleGuildClick(cx2,cy2);return}
   if(typeof gachaSystem!=='undefined'&&gachaSystem.panelOpen){if(typeof handleGachaClick==='function')handleGachaClick(cx2,cy2);return}
+  if(typeof cosmeticShop!=='undefined'&&cosmeticShop.panelOpen){cosmeticShop._handlePanelClick(cx2,cy2);return}
   if(typeof showSkillPanel!=='undefined'&&showSkillPanel){if(typeof handleSkillPanelClick==='function')handleSkillPanelClick(cx2,cy2);return}
   if(typeof handleCombatLogClick==='function'&&handleCombatLogClick(cx2,cy2))return;
   if(town.shopOpen){checkTownNPCClick(cx2,cy2);return}
@@ -224,6 +226,7 @@ canvas.addEventListener('click',e=>{
     if(typeof enchantSystem!=='undefined'&&enchantSystem.checkNPCClick&&enchantSystem.checkNPCClick(cx2,cy2))return;
     if(typeof guildSystem!=='undefined'&&guildSystem.checkNPCClick&&guildSystem.checkNPCClick(cx2,cy2))return;
     if(typeof gachaSystem!=='undefined'&&gachaSystem.checkNPCClick&&gachaSystem.checkNPCClick(cx2,cy2))return;
+    if(typeof cosmeticShop!=='undefined'&&cosmeticShop.checkNPCClick&&cosmeticShop.checkNPCClick(cx2,cy2))return;
   }
   // Bot toggle
   const botRect=typeof getBotPanelRect==='function'?getBotPanelRect():{px:canvas.width-230,py:canvas.height-234,pw:220,ph:220};
@@ -282,6 +285,7 @@ window.addEventListener('keydown',e=>{
       else if(typeof enchantSystem!=='undefined'&&enchantSystem.panelOpen){enchantSystem.panelOpen=false}
       else if(typeof guildSystem!=='undefined'&&guildSystem.panelOpen){guildSystem.panelOpen=false}
       else if(typeof gachaSystem!=='undefined'&&gachaSystem.panelOpen){gachaSystem.panelOpen=false}
+      else if(typeof cosmeticShop!=='undefined'&&cosmeticShop.panelOpen){cosmeticShop.panelOpen=false}
       else if(typeof showSkillPanel!=='undefined'&&showSkillPanel){showSkillPanel=false}
       else if(questSystem.boardOpen){questSystem.boardOpen=false}
       else if(town.shopOpen){town.shopOpen=false}

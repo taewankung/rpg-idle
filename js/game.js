@@ -83,7 +83,7 @@ function update(dt){
     for(let i=game.itemDrops.length-1;i>=0;i--){
       const d=game.itemDrops[i];
       if(Math.hypot(d.x-game.player.x,d.y-game.player.y)<TILE){
-        if(game.player.inventory.length<20){
+        if(game.player.inventory.length<getMaxInventory()){
           game.player.inventory.push(d.item);autoEquip(game.player,d.item);
           addLog('Picked up '+d.item.name,'#FFDD44',{actor:game.player});sfx.itemPickup();
           if(typeof questSystem!=='undefined')questSystem.onItemPickup(d.item);
@@ -378,7 +378,7 @@ window.render_game_to_text=()=>{
     zone:typeof worldMap!=='undefined'&&worldMap.getZoneName?worldMap.getZoneName():(dungeon.active?'Dungeon':'Overworld'),
     player:p?{
       x:Math.round(p.x),y:Math.round(p.y),level:p.level,gold:p.gold,hp:p.hp,maxHp:p.maxHp,mp:p.mp,maxMp:p.maxMp,
-      atk:p.atk,def:p.def,inventory:p.inventory.length,
+      atk:p.atk,def:p.def,inventory:p.inventory.length+'/'+getMaxInventory(),
       statTraining:typeof statPointSystem!=='undefined'?{unspent:statPointSystem.unspent,bought:statPointSystem.getPurchasedPoints?statPointSystem.getPurchasedPoints():0}:null,
       skillRanks:p.skillLevels||[0,0,0,0]
     }:null,

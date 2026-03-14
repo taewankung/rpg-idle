@@ -525,7 +525,8 @@ function _rarityStars(r){return{common:'★',uncommon:'★★',rare:'★★★',
 // --- INVENTORY PANEL (press I) ---
 function drawInventoryPanel(){
   const p=game.player;if(!p)return;
-  const pw=280,ph=460,px=canvas.width-pw-10,py=80;
+  const maxInvRows=Math.ceil(getMaxInventory()/5);
+  const pw=280,ph=200+maxInvRows*46+60,px=canvas.width-pw-10,py=Math.max(10,80-Math.max(0,maxInvRows-4)*20);
   ctx.save();
   // Panel background
   ctx.fillStyle='rgba(5,5,20,0.94)';roundRect(ctx,px,py,pw,ph,10);ctx.fill();
@@ -573,11 +574,14 @@ function drawInventoryPanel(){
   });
 
   // --- Item grid ---
+  const maxInv=getMaxInventory();
   const cols=5,slotS=42,gap=4;
   const gx=px+(pw-(cols*slotS+(cols-1)*gap))/2,gy=eqY+slotH+12;
-  const rows=4;
+  const rows=Math.ceil(maxInv/cols);
   for(let r=0;r<rows;r++)for(let c2=0;c2<cols;c2++){
-    const idx=r*cols+c2,sx=gx+c2*(slotS+gap),sy=gy+r*(slotS+gap);
+    const idx=r*cols+c2;
+    if(idx>=maxInv)continue;
+    const sx=gx+c2*(slotS+gap),sy=gy+r*(slotS+gap);
     const isHov=invTooltipIdx===idx;
     const isSel=invSelectedIdx===idx&&invSelectedSlot===null;
     ctx.fillStyle=isHov?'#15152a':isSel?'#1a1a30':'#0a0a1a';
@@ -609,7 +613,19 @@ function drawInventoryPanel(){
 
   // --- Inventory count ---
   ctx.fillStyle='#556';ctx.font='9px monospace';ctx.textAlign='left';
-  ctx.fillText(p.inventory.length+'/20 items',px+12,py+ph-36);
+  ctx.fillText(p.inventory.length+'/'+getMaxInventory()+' items',px+12,py+ph-36);
+
+  // --- Expand Inventory button ---
+  const upgCost=getNextInvUpgradeCost();
+  if(upgCost!==null){
+    const ebx=px+pw-110,eby=py+ph-42,ebw=100,ebh=18;
+    const canUpg=p.gold>=upgCost;
+    ctx.fillStyle=canUpg?'rgba(40,100,40,0.9)':'rgba(40,40,40,0.9)';
+    roundRect(ctx,ebx,eby,ebw,ebh,4);ctx.fill();
+    ctx.strokeStyle=canUpg?'#4a4':'#444';ctx.lineWidth=1;roundRect(ctx,ebx,eby,ebw,ebh,4);ctx.stroke();
+    ctx.fillStyle=canUpg?'#8f8':'#666';ctx.font='bold 8px monospace';ctx.textAlign='center';
+    ctx.fillText('+5 Slots ('+upgCost+'g)',ebx+ebw/2,eby+13);
+  }
 
   // --- Action buttons (when item selected) ---
   if(invSelectedIdx>=0&&invSelectedSlot===null&&p.inventory[invSelectedIdx]){
@@ -695,7 +711,8 @@ function _drawItemTooltip(item,tx,ty,p){
 // --- Handle inventory clicks ---
 function handleInventoryClick(cx,cy){
   const p=game.player;if(!p)return false;
-  const pw=280,ph=460,px=canvas.width-pw-10,py=80;
+  const maxInvRows=Math.ceil(getMaxInventory()/5);
+  const pw=280,ph=200+maxInvRows*46+60,px=canvas.width-pw-10,py=Math.max(10,80-Math.max(0,maxInvRows-4)*20);
   // Outside panel
   if(cx<px||cx>px+pw||cy<py||cy>py+ph){showInventory=false;invSelectedIdx=-1;invSelectedSlot=null;return true}
 
@@ -707,20 +724,43 @@ function handleInventoryClick(cx,cy){
   for(let i=0;i<3;i++){
     const sx=eqStartX+i*(slotW+slotGap),sy=eqY;
     if(cx>=sx&&cx<=sx+slotW&&cy>=sy&&cy<=sy+slotH){
-      if(invSelectedSlot===slotKeys[i])invSelectedSlot=null; // toggle off
+      if(invSelectedSlot===slotKeys[i])invSelectedSlot=null;
       else{invSelectedSlot=slotKeys[i];invSelectedIdx=-1}
       return true;
     }
   }
 
+  // Expand inventory button
+  const upgCost=getNextInvUpgradeCost();
+  if(upgCost!==null){
+    const ebx=px+pw-110,eby=py+ph-42,ebw=100,ebh=18;
+    if(cx>=ebx&&cx<=ebx+ebw&&cy>=eby&&cy<=eby+ebh){
+      if(p.gold>=upgCost){
+        p.gold-=upgCost;
+        p._invUpgrades=(p._invUpgrades||0)+1;
+        addNotification('+5 Inventory Slots!','#44FF44');
+        addLog('Expanded inventory to '+getMaxInventory()+' slots for '+upgCost+'g','#44FF44');
+        sfx.itemPickup();
+        saveGame();
+      }else{
+        addNotification('Not enough gold!','#FF4444');
+      }
+      return true;
+    }
+  }
+
   // Item grid clicks
+  const maxInv=getMaxInventory();
   const cols=5,slotS=42,gap=4;
   const gx=px+(pw-(cols*slotS+(cols-1)*gap))/2,gy=eqY+slotH+12;
-  for(let r=0;r<4;r++)for(let c2=0;c2<cols;c2++){
-    const idx=r*cols+c2,sx=gx+c2*(slotS+gap),sy=gy+r*(slotS+gap);
+  const rows=Math.ceil(maxInv/cols);
+  for(let r=0;r<rows;r++)for(let c2=0;c2<cols;c2++){
+    const idx=r*cols+c2;
+    if(idx>=maxInv)continue;
+    const sx=gx+c2*(slotS+gap),sy=gy+r*(slotS+gap);
     if(cx>=sx&&cx<=sx+slotS&&cy>=sy&&cy<=sy+slotS){
       if(p.inventory[idx]){
-        if(invSelectedIdx===idx&&invSelectedSlot===null)invSelectedIdx=-1; // toggle off
+        if(invSelectedIdx===idx&&invSelectedSlot===null)invSelectedIdx=-1;
         else{invSelectedIdx=idx;invSelectedSlot=null}
       }
       return true;
@@ -796,7 +836,7 @@ function _doInventoryAction(action,idx){
 function _doUnequip(slot){
   const p=game.player;if(!p)return;
   const eq=p.equipment[slot];if(!eq)return;
-  if(p.inventory.length>=20){addLog('Inventory full!','#FF4444',{actor:p});return}
+  if(p.inventory.length>=getMaxInventory()){addLog('Inventory full!','#FF4444',{actor:p});return}
   // Remove stats
   for(const[k,v]of Object.entries(eq.stats))if(k in p)p[k]-=v;
   p.inventory.push(eq);p.equipment[slot]=null;
@@ -979,6 +1019,7 @@ function drawSettingsPanel(){
     ['Show NPC Players','showNPCs'],
     ['Show World Chat','showChat'],
     ['Bot Auto-Buy Potions','autoBuyPotions'],
+    ['Bot Auto-Sell Items','autoSellItems'],
     ['Auto Stat Allocate','autoStatAllocate'],
     ['Auto Talent Allocate','autoTalentAllocate'],
     ['Auto Skill Allocate','autoSkillAllocate']
@@ -1035,7 +1076,7 @@ function handleSettingsClick(cx2,cy2){
   const speeds=[1,2,4];
   speeds.forEach((v,i)=>{const bx=px+160+i*50,by=rowY(2)+1;if(cx2>=bx&&cx2<=bx+42&&cy2>=by&&cy2<=by+20){s.gameSpeed=v;saveSettings()}});
   // Toggles (rows 3-6)
-  const toggleKeys=['showDmgNumbers','showNPCs','showChat','autoBuyPotions','autoStatAllocate','autoTalentAllocate','autoSkillAllocate'];
+  const toggleKeys=['showDmgNumbers','showNPCs','showChat','autoBuyPotions','autoSellItems','autoStatAllocate','autoTalentAllocate','autoSkillAllocate'];
   toggleKeys.forEach((key,i)=>{
     if(cx2>=px+260&&cx2<=px+310&&cy2>=rowY(3+i)&&cy2<=rowY(3+i)+24){s[key]=!s[key];saveSettings()}
   });

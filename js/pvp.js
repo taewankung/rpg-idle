@@ -873,7 +873,7 @@ const pvpArena = {
     if (item.type === 'potion') {
       // Arena Potion: full heal consumable
       const pot = { name: 'Arena Potion', type: 'potion', rarity: 'epic', stats: { hp: 9999, mp: 9999 }, level: p.level, value: 500 };
-      if (p.inventory.length < 20) {
+      if (p.inventory.length < getMaxInventory()) {
         p.inventory.push(pot);
         addNotification('Bought Arena Potion!', '#AA44FF');
         addLog('Bought Arena Potion (Full HP/MP restore)', '#AA44FF');
@@ -891,7 +891,7 @@ const pvpArena = {
         stats: { atk: Math.round(8 + p.level * 2.5), crit: 0.08 },
         level: p.level, value: 1000
       };
-      if (p.inventory.length < 20) {
+      if (p.inventory.length < getMaxInventory()) {
         p.inventory.push(wpn);
         addNotification('Bought ' + wpn.name + '!', '#FF8800');
         addLog('Bought ' + wpn.name, '#FF8800');
@@ -907,7 +907,7 @@ const pvpArena = {
         stats: { def: Math.round(6 + p.level * 2), hp: Math.round(30 + p.level * 8) },
         level: p.level, value: 1500
       };
-      if (p.inventory.length < 20) {
+      if (p.inventory.length < getMaxInventory()) {
         p.inventory.push(arm);
         addNotification('Bought Arena Plate!', '#FF8800');
         addLog('Bought Arena Plate', '#FF8800');

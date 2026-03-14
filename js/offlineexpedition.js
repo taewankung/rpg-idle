@@ -1177,7 +1177,7 @@ const offlineExpeditionSystem = {
     for (let i = 0; i < rewards.length; i++) {
       const reward = rewards[i];
       if (!reward) continue;
-      if (player.inventory.length < 20) {
+      if (player.inventory.length < getMaxInventory()) {
         const pushed = { ...reward };
         player.inventory.push(pushed);
         if (pushed.type !== 'material' && pushed.type !== 'potion' && typeof autoEquip === 'function') {

@@ -267,7 +267,7 @@ const gachaSystem = {
       addNotification('Not enough Gold! Need ' + cost + 'g', '#FF4444');
       return [];
     }
-    if (p.inventory.length >= 20 && bannerIdx !== 1) {
+    if (p.inventory.length >= getMaxInventory() && bannerIdx !== 1) {
       addNotification('Inventory full! Sell items first.', '#FF4444');
       return [];
     }
@@ -304,7 +304,7 @@ const gachaSystem = {
     for (const r of results) {
       if (r.kind === 'item' && r.item) {
         if (r.item.type === 'potion' || !r.item.type) continue;
-        if (p.inventory.length < 20) {
+        if (p.inventory.length < getMaxInventory()) {
           p.inventory.push(r.item);
           autoEquip(p, r.item);
         } else {
@@ -728,7 +728,7 @@ const gachaSystem = {
   botAutoSummon(player) {
     if (!this.autoSummon || !player) return;
     if (player.gold < this.autoGoldThreshold) return;
-    if (player.inventory.length >= 20) return;
+    if (player.inventory.length >= getMaxInventory()) return;
     // Single weapon pull, skip animation
     const savedSkip = this.skipAnim;
     this.skipAnim = true;

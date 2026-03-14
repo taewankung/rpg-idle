@@ -30,7 +30,8 @@ function saveGame() {
       jobLevel: p.jobLevel || 1,
       jobExp: p.jobExp || 0,
       skillPoints: p.skillPoints || 0,
-      skillLevels: p.skillLevels || [0,0,0,0]
+      skillLevels: p.skillLevels || [0,0,0,0],
+      invUpgrades: p._invUpgrades || 0
     },
     inventory: p.inventory.map(i => i ? {...i} : null),
     equipment: {
@@ -106,6 +107,7 @@ function saveSettings() {
       showChat: s.showChat,
       combatLogFilter: s.combatLogFilter,
       autoBuyPotions: s.autoBuyPotions,
+      autoSellItems: s.autoSellItems,
       autoStatAllocate: s.autoStatAllocate,
       autoTalentAllocate: s.autoTalentAllocate,
       autoSkillAllocate: s.autoSkillAllocate
@@ -129,6 +131,7 @@ function loadSettings() {
     game.settings.showChat       = s.showChat       ?? true;
     game.settings.combatLogFilter= s.combatLogFilter?? 'self';
     game.settings.autoBuyPotions = s.autoBuyPotions ?? true;
+    game.settings.autoSellItems  = s.autoSellItems  ?? true;
     game.settings.autoStatAllocate = s.autoStatAllocate ?? true;
     game.settings.autoTalentAllocate = s.autoTalentAllocate ?? true;
     game.settings.autoSkillAllocate = s.autoSkillAllocate ?? true;
@@ -187,6 +190,7 @@ function loadGame() {
     p.jobExp = data.player.jobExp || 0;
     p.skillPoints = data.player.skillPoints || 0;
     p.skillLevels = data.player.skillLevels || [0,0,0,0];
+    p._invUpgrades = data.player.invUpgrades || 0;
     if(typeof applyAllJobPassives==='function')applyAllJobPassives(p);
     // Catch-up: if job level seems too low for player level, grant missing job exp
     if(p.jobLevel<Math.min(30,Math.floor(p.level*0.8))&&typeof jobLevelCatchUp==='function')jobLevelCatchUp(p);

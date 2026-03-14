@@ -210,7 +210,7 @@ const craftingSystem = {
       addNotification('Missing materials!', '#FF4444');
       return;
     }
-    if (p.inventory.length >= 20) {
+    if (p.inventory.length >= getMaxInventory()) {
       addNotification('Inventory full!', '#FF4444');
       return;
     }
@@ -243,7 +243,7 @@ const craftingSystem = {
         addNotification('Crafting failed!', '#FF4444');
         return;
       }
-      if (p.inventory.length < 20) {
+      if (p.inventory.length < getMaxInventory()) {
         p.inventory.push(item);
         autoEquip(p, item);
         sfx.spell();
@@ -473,7 +473,7 @@ const craftingSystem = {
     for (let i = 0; i < this.recipes.length; i++) {
       const recipe = this.recipes[i];
       if (!this.hasInputs(recipe, player.inventory)) continue;
-      if (player.inventory.length >= 20) continue;
+      if (player.inventory.length >= getMaxInventory()) continue;
       // Score the output
       const info = this._outputInfo(recipe);
       let score = 0;
@@ -487,7 +487,7 @@ const craftingSystem = {
       const recipe = this.recipes[bestIdx];
       const consumed = this.consumeInputs(recipe, player.inventory);
       const item = this.produceOutput(recipe, consumed, player.className);
-      if (item && player.inventory.length < 20) {
+      if (item && player.inventory.length < getMaxInventory()) {
         player.inventory.push(item);
         autoEquip(player, item);
         addNotification('Bot crafted: ' + item.name, RARITY_COLORS[item.rarity] || '#fff');

@@ -58,6 +58,19 @@ const CLASS_DEFS={
 };
 const CLASS_LIST=['Knight','Mage','Ranger','Priest'];
 
+// --- INVENTORY EXPANSION CONFIG ---
+const INVENTORY_BASE = 20;
+const INVENTORY_PER_UPGRADE = 5;
+const INVENTORY_MAX = 50;
+const INVENTORY_UPGRADE_COSTS = [500, 1500, 3000, 5000, 8000, 12000];
+function getMaxInventory() {
+  return game.player ? Math.min(INVENTORY_MAX, INVENTORY_BASE + (game.player._invUpgrades || 0) * INVENTORY_PER_UPGRADE) : INVENTORY_BASE;
+}
+function getNextInvUpgradeCost() {
+  const lvl = game.player ? (game.player._invUpgrades || 0) : 0;
+  return lvl < INVENTORY_UPGRADE_COSTS.length ? INVENTORY_UPGRADE_COSTS[lvl] : null;
+}
+
 // --- GLOBAL GAME STATE ---
 const game={
   state:'classSelect',player:null,monsters:[],npcPlayers:[],itemDrops:[],
@@ -75,6 +88,7 @@ const game={
     volume:0.3,muted:false,gameSpeed:1,
     showDmgNumbers:true,showNPCs:true,showChat:true,autoBuyPotions:true,
     autoStatAllocate:true,autoTalentAllocate:true,autoSkillAllocate:true,
+    autoSellItems:true,
     combatLogFilter:'self'
   }
 };

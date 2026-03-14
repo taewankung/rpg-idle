@@ -314,7 +314,7 @@ const botAI = {
   },
 
   getBestNearbyLoot(p) {
-    if (!game.itemDrops || !game.itemDrops.length || p.inventory.length >= 20) return null;
+    if (!game.itemDrops || !game.itemDrops.length || p.inventory.length >= getMaxInventory()) return null;
     let best = null;
     let bestScore = -9999;
     for (const drop of game.itemDrops) {
@@ -364,7 +364,7 @@ const botAI = {
     const nearbyThreats = this.getNearbyMonsters(mons, p.x, p.y, TILE * 3);
     const threatScore = this.getThreatScoreAt(p, mons, p.x, p.y);
     const softFull = this.settings.stopWhenInventoryAlmostFull && p.inventory.length >= this.settings.inventorySoftLimit;
-    const hardFull = p.inventory.length >= 20;
+    const hardFull = p.inventory.length >= getMaxInventory();
     const inTown = !dungeon.active && map.getTile(Math.floor(p.x / TILE), Math.floor(p.y / TILE)) === 5;
 
     if ((softFull || hardFull) && inTown) return { retreat: false, hold: true, reason: 'inventory_full' };
@@ -839,7 +839,7 @@ const botAI = {
         this.focusText = _botItemShortName(targetLoot.item);
 
         if (dist < TILE) {
-          if (p.inventory.length < 20) {
+          if (p.inventory.length < getMaxInventory()) {
             p.inventory.push(targetLoot.item);
             autoEquip(p, targetLoot.item);
             addLog('Picked up ' + targetLoot.item.name, '#FFDD44');
@@ -883,14 +883,25 @@ const botAI = {
 
         const inTown = map.getTile(Math.floor(p.x / TILE), Math.floor(p.y / TILE)) === 5;
         if (this.stopReason === 'inventory_full' && inTown) {
+          // Try auto-sell first
+          if (game.settings.autoSellItems && typeof botAutoSell === 'function' && botAutoSell(p)) {
+            this.focusText = 'Selling';
+            this.statusText = 'Selling items';
+            break; // stay in retreating state, sell one per tick
+          }
           this.target = null;
           this.roamTarget = null;
           this.retreatTarget = null;
           p._path = null;
           p._pathIdx = 0;
           p.state = 'idle';
-          this.setState('idle', 'inventory_full', this.getReasonLabel('inventory_full'), true);
-          this.focusText = 'Town';
+          // If still full after selling, hold in town; otherwise resume
+          if (p.inventory.length >= this.settings.inventorySoftLimit) {
+            this.setState('idle', 'inventory_full', this.getReasonLabel('inventory_full'), true);
+            this.focusText = 'Town';
+          } else {
+            this.setState('idle', 'ready', 'Scanning', true);
+          }
           break;
         }
 

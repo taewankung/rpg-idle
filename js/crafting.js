@@ -300,7 +300,7 @@ const craftingSystem = {
   initTownNPC() {
     const tcx = Math.floor(MAP_W / 2), tcy = Math.floor(MAP_H / 2);
     this.anvilNPC = {
-      x: (tcx - 1) * TILE + TILE / 2,
+      x: (tcx - 2) * TILE + TILE / 2,
       y: (tcy + 2) * TILE + TILE / 2,
       name: 'Anvil'
     };

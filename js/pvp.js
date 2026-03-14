@@ -124,7 +124,7 @@ const pvpArena = {
   initTownNPC() {
     const tcx = Math.floor(MAP_W / 2), tcy = Math.floor(MAP_H / 2);
     this.arenaNPC = {
-      x: (tcx - 3) * TILE + TILE / 2,
+      x: (tcx - 5) * TILE + TILE / 2,
       y: (tcy + 3) * TILE + TILE / 2,
       name: 'Arena Master'
     };

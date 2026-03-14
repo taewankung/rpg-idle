@@ -610,7 +610,7 @@ const gachaSystem = {
     const tcx = Math.floor(MAP_W / 2);
     const tcy = Math.floor(MAP_H / 2);
     this.npcPos = {
-      x: (tcx) * TILE + TILE / 2,
+      x: (tcx + 1) * TILE + TILE / 2,
       y: (tcy + 3) * TILE + TILE / 2,
       name: 'Summoning Altar'
     };

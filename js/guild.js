@@ -45,7 +45,7 @@ const guildSystem = {
   questIdCounter: 0,
 
   // NPC position in town
-  npcPos: { x: (gcx + 2) * TILE + TILE / 2, y: (gcy + 3) * TILE + TILE / 2, name: 'Guild Master' },
+  npcPos: { x: (gcx + 4) * TILE + TILE / 2, y: (gcy + 3) * TILE + TILE / 2, name: 'Guild Master' },
 
   // ---- INIT ----
   init() {

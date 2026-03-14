@@ -105,7 +105,7 @@ function update(dt){
   if(typeof updateAchievementPopup==='function')updateAchievementPopup(dt);
   if(typeof updateLeaderboard==='function')updateLeaderboard(dt);
   if(typeof craftingSystem!=='undefined'&&craftingSystem.updateCrafting)craftingSystem.updateCrafting(dt);
-  if(typeof worldMap!=='undefined'&&worldMap.updateParticles)worldMap.updateParticles(dt);
+  if(typeof worldMap!=='undefined'&&worldMap.update)worldMap.update(dt);
   if(typeof pvpArena!=='undefined'&&pvpArena.active)pvpArena.update(dt);
   if(typeof pvpArena!=='undefined'&&pvpArena.autoArena&&botAI.enabled){pvpArena.autoTimer-=dt;if(pvpArena.autoTimer<=0&&!pvpArena.active&&!dungeon.active){pvpArena.startMatch()}}
   if(typeof classChangeSystem!=='undefined'&&classChangeSystem.updateQuest)classChangeSystem.updateQuest(dt);

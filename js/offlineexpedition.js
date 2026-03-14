@@ -1246,8 +1246,8 @@ const offlineExpeditionSystem = {
   },
 
   getPanelLayout() {
-    const width = Math.min(980, canvas.width - 40);
-    const height = Math.min(640, canvas.height - 40);
+    const width = Math.min(820, canvas.width - 40);
+    const height = Math.min(560, canvas.height - 40);
     return {
       x: Math.floor((canvas.width - width) / 2),
       y: Math.floor((canvas.height - height) / 2),
@@ -1328,74 +1328,92 @@ const offlineExpeditionSystem = {
     ctxRef.restore();
   },
 
-  renderOfflineExpeditionPanel(drawCtx) {
-    if (!this.panelOpen) return;
-    const ctxRef = drawCtx || ctx;
-    const layout = this.getPanelLayout();
-    this._clickMap = {};
-
-    ctxRef.save();
-    ctxRef.fillStyle = 'rgba(0,0,0,0.74)';
-    ctxRef.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctxRef.fillStyle = 'rgba(9,14,24,0.98)';
-    roundRect(ctxRef, layout.x, layout.y, layout.w, layout.h, 14);
-    ctxRef.fill();
-    ctxRef.strokeStyle = '#37516e';
-    ctxRef.lineWidth = 2;
-    roundRect(ctxRef, layout.x, layout.y, layout.w, layout.h, 14);
-    ctxRef.stroke();
-
-    ctxRef.textAlign = 'left';
-    ctxRef.fillStyle = '#eef6ff';
-    ctxRef.font = 'bold 22px sans-serif';
-    ctxRef.fillText(this.pendingSummary ? 'Expedition Debrief' : 'Offline Expedition Command', layout.x + 20, layout.y + 30);
-    ctxRef.fillStyle = '#89a8c4';
-    ctxRef.font = '11px sans-serif';
-    ctxRef.fillText(
-      this.pendingSummary
-        ? 'Review the mission report, then claim rewards and penalties in one step.'
-        : 'Plan one offline mission at a time. Expedition sessions replace normal AFK rewards for that offline save window.',
-      layout.x + 20,
-      layout.y + 48
-    );
-
-    if (this.pendingSummary) {
-      const report = this.pendingSummary;
-      ctxRef.fillStyle = '#eef6ff';
-      ctxRef.font = 'bold 18px sans-serif';
-      ctxRef.fillText(report.name, layout.x + 20, layout.y + 72);
-      ctxRef.fillStyle = '#8eb1cb';
-      ctxRef.font = '11px monospace';
-      ctxRef.fillText(report.zone + '  |  ' + report.durationLabel + '  |  ' + report.strategyName, layout.x + 20, layout.y + 92);
-      ctxRef.fillStyle = report.gradeIndex <= 1 ? '#5ed39d' : report.gradeIndex === 2 ? '#ffd166' : '#ff8b8b';
-      ctxRef.font = 'bold 12px monospace';
-      ctxRef.fillText('Outcome Grade: ' + report.outcomeGrade, layout.x + 20, layout.y + 110);
-    }
-
-    const closeRect = { x: layout.x + layout.w - 34, y: layout.y + 10, w: 22, h: 22 };
-    this.registerClickable('close', closeRect);
-    ctxRef.fillStyle = 'rgba(180,40,40,0.85)';
-    roundRect(ctxRef, closeRect.x, closeRect.y, closeRect.w, closeRect.h, 5);
-    ctxRef.fill();
-    ctxRef.fillStyle = '#fff';
-    ctxRef.font = 'bold 14px sans-serif';
-    ctxRef.textAlign = 'center';
-    ctxRef.fillText('X', closeRect.x + closeRect.w / 2, closeRect.y + 16);
-
-    if (this.pendingSummary) {
-      this.drawSummaryPanel(ctxRef, layout);
-      ctxRef.restore();
-      return;
-    }
-
-    this.drawPlanningPanel(ctxRef, layout);
-    ctxRef.restore();
+  _drawPanelBg(c, layout) {
+    c.fillStyle = 'rgba(0,0,0,0.74)';
+    c.fillRect(0, 0, canvas.width, canvas.height);
+    c.fillStyle = 'rgba(12,16,28,0.97)';
+    roundRect(c, layout.x, layout.y, layout.w, layout.h, 12);
+    c.fill();
+    c.strokeStyle = '#2e4460';
+    c.lineWidth = 1.5;
+    roundRect(c, layout.x, layout.y, layout.w, layout.h, 12);
+    c.stroke();
   },
 
-  drawPlanningPanel(drawCtx, layout) {
-    const listRect = { x: layout.x + 16, y: layout.y + 70, w: 270, h: layout.h - 88 };
-    const detailRect = { x: listRect.x + listRect.w + 16, y: listRect.y, w: layout.w - listRect.w - 48, h: listRect.h };
+  _drawCloseBtn(c, layout) {
+    const r = { x: layout.x + layout.w - 32, y: layout.y + 8, w: 24, h: 24 };
+    this.registerClickable('close', r);
+    c.fillStyle = 'rgba(200,50,50,0.8)';
+    roundRect(c, r.x, r.y, r.w, r.h, 4);
+    c.fill();
+    c.fillStyle = '#fff';
+    c.font = 'bold 13px sans-serif';
+    c.textAlign = 'center';
+    c.fillText('X', r.x + r.w / 2, r.y + 17);
+    c.textAlign = 'left';
+  },
+
+  _drawSection(c, x, y, w, h, opts) {
+    c.fillStyle = opts && opts.bg || 'rgba(8,14,26,0.7)';
+    roundRect(c, x, y, w, h, 6);
+    c.fill();
+    if (opts && opts.border) {
+      c.strokeStyle = opts.border;
+      c.lineWidth = 1;
+      roundRect(c, x, y, w, h, 6);
+      c.stroke();
+    }
+  },
+
+  _drawGradeBadge(c, grade, gradeIndex, x, y) {
+    const colors = ['#2ecc71', '#5ed39d', '#ffd166', '#ff8b8b', '#ff5555'];
+    const bgColors = ['rgba(46,204,113,0.2)', 'rgba(94,211,157,0.2)', 'rgba(255,209,102,0.2)', 'rgba(255,139,139,0.2)', 'rgba(255,85,85,0.2)'];
+    const idx = Math.min(gradeIndex || 0, 4);
+    const text = grade || 'Unknown';
+    const tw = c.measureText(text).width + 16;
+    c.fillStyle = bgColors[idx];
+    roundRect(c, x, y, tw, 20, 4);
+    c.fill();
+    c.strokeStyle = colors[idx];
+    c.lineWidth = 1;
+    roundRect(c, x, y, tw, 20, 4);
+    c.stroke();
+    c.fillStyle = colors[idx];
+    c.font = 'bold 11px sans-serif';
+    c.fillText(text, x + 8, y + 14);
+    return tw;
+  },
+
+  renderOfflineExpeditionPanel(drawCtx) {
+    if (!this.panelOpen) return;
+    const c = drawCtx || ctx;
+    const layout = this.getPanelLayout();
+    this._clickMap = {};
+    c.save();
+
+    this._drawPanelBg(c, layout);
+    this._drawCloseBtn(c, layout);
+
+    // Title
+    c.textAlign = 'left';
+    c.fillStyle = '#e8f0fa';
+    c.font = 'bold 18px sans-serif';
+    c.fillText(this.pendingSummary ? 'Expedition Debrief' : 'Offline Expedition', layout.x + 16, layout.y + 26);
+
+    if (this.pendingSummary) {
+      this.drawSummaryPanel(c, layout);
+    } else {
+      this.drawPlanningPanel(c, layout);
+    }
+
+    c.restore();
+  },
+
+  drawPlanningPanel(c, layout) {
+    const pad = 12;
+    const listW = 240;
+    const listRect = { x: layout.x + pad, y: layout.y + 40, w: listW, h: layout.h - 40 - pad };
+    const detailRect = { x: listRect.x + listW + pad, y: listRect.y, w: layout.w - listW - pad * 3, h: listRect.h };
     const available = this.getAvailableExpeditions();
     const selected = this.getSelectedDefinition();
     const selectedDuration = this.getDurationOption(selected, this.selectedDurationSec);
@@ -1403,310 +1421,370 @@ const offlineExpeditionSystem = {
     const canStart = this.canStartExpedition(selected.id, { strategyId: selectedStrategy.id, durationSec: selectedDuration.seconds });
     const scorePreview = this.calculateExpeditionScores(selected, { strategyId: selectedStrategy.id, durationSec: selectedDuration.seconds });
 
-    drawCtx.fillStyle = 'rgba(15,22,36,0.94)';
-    roundRect(drawCtx, listRect.x, listRect.y, listRect.w, listRect.h, 10);
-    drawCtx.fill();
-    drawCtx.strokeStyle = '#23384d';
-    roundRect(drawCtx, listRect.x, listRect.y, listRect.w, listRect.h, 10);
-    drawCtx.stroke();
+    // --- Left: expedition list ---
+    this._drawSection(c, listRect.x, listRect.y, listRect.w, listRect.h, { border: '#1e3248' });
+    c.textAlign = 'left';
+    c.fillStyle = '#b0c8dd';
+    c.font = 'bold 11px sans-serif';
+    c.fillText('MISSIONS', listRect.x + 10, listRect.y + 16);
 
-    drawCtx.textAlign = 'left';
-    drawCtx.fillStyle = '#dcecff';
-    drawCtx.font = 'bold 14px sans-serif';
-    drawCtx.fillText('Expeditions', listRect.x + 12, listRect.y + 22);
-
-    const rowH = 80;
+    const rowH = 56;
+    const rowGap = 4;
     for (let i = 0; i < available.length; i++) {
-      const expedition = available[i];
-      const rowY = listRect.y + 34 + i * (rowH + 8);
-      const rowRect = { x: listRect.x + 10, y: rowY, w: listRect.w - 20, h: rowH };
-      this.registerClickable('expedition:' + expedition.id, rowRect);
-      drawCtx.fillStyle = expedition.selected ? 'rgba(40,72,108,0.9)' : 'rgba(10,16,26,0.94)';
-      roundRect(drawCtx, rowRect.x, rowRect.y, rowRect.w, rowRect.h, 8);
-      drawCtx.fill();
-      drawCtx.strokeStyle = expedition.selected ? '#7ec8ff' : '#23384d';
-      roundRect(drawCtx, rowRect.x, rowRect.y, rowRect.w, rowRect.h, 8);
-      drawCtx.stroke();
-
-      drawCtx.fillStyle = expedition.unlocked ? '#ecf5ff' : '#71879b';
-      drawCtx.font = 'bold 13px sans-serif';
-      drawCtx.fillText(expedition.name, rowRect.x + 10, rowRect.y + 18);
-      drawCtx.fillStyle = '#88abc6';
-      drawCtx.font = '11px monospace';
-      drawCtx.fillText(expedition.zone, rowRect.x + 10, rowRect.y + 36);
-      drawCtx.fillText('Lv.' + expedition.minLevel + ' / Rec Lv.' + expedition.recommendedLevel, rowRect.x + 10, rowRect.y + 52);
-      drawCtx.fillStyle = expedition.unlocked ? '#ffd166' : '#ff8b8b';
-      drawCtx.fillText(expedition.unlocked ? this.getRiskLabel(expedition.riskLevel) : 'Locked', rowRect.x + rowRect.w - 92, rowRect.y + 18);
-      drawCtx.fillStyle = '#8aa0b5';
-      drawCtx.fillText(this.getRewardBiasLabel(expedition.rewardBias), rowRect.x + rowRect.w - 92, rowRect.y + 36);
-      drawCtx.fillText(this.formatDuration(expedition.durationOptions[0].seconds) + '+', rowRect.x + rowRect.w - 92, rowRect.y + 52);
-      if (expedition.active) {
-        drawCtx.fillStyle = '#5ed39d';
-        drawCtx.fillText('ACTIVE', rowRect.x + rowRect.w - 92, rowRect.y + 68);
+      const exp = available[i];
+      const ry = listRect.y + 26 + i * (rowH + rowGap);
+      const rr = { x: listRect.x + 6, y: ry, w: listRect.w - 12, h: rowH };
+      this.registerClickable('expedition:' + exp.id, rr);
+      if (exp.selected) {
+        c.fillStyle = 'rgba(40,80,130,0.7)';
+        roundRect(c, rr.x, rr.y, rr.w, rr.h, 5);
+        c.fill();
+        c.strokeStyle = '#5aa8e0';
+        c.lineWidth = 1;
+        roundRect(c, rr.x, rr.y, rr.w, rr.h, 5);
+        c.stroke();
+      } else {
+        c.fillStyle = 'rgba(14,22,36,0.6)';
+        roundRect(c, rr.x, rr.y, rr.w, rr.h, 5);
+        c.fill();
+      }
+      c.fillStyle = exp.unlocked ? '#e4eef8' : '#5a6a7a';
+      c.font = 'bold 12px sans-serif';
+      c.fillText(exp.name, rr.x + 8, rr.y + 16);
+      c.fillStyle = '#7a9ab5';
+      c.font = '10px monospace';
+      c.fillText(exp.zone + '  Lv.' + exp.minLevel + '+', rr.x + 8, rr.y + 30);
+      c.fillStyle = exp.unlocked ? '#ffd166' : '#ff7070';
+      c.font = '10px sans-serif';
+      c.fillText(exp.unlocked ? this.getRiskLabel(exp.riskLevel) : 'Locked', rr.x + 8, rr.y + 44);
+      if (exp.active) {
+        c.fillStyle = '#5ed39d';
+        c.font = 'bold 9px sans-serif';
+        c.fillText('ACTIVE', rr.x + rr.w - 46, rr.y + 16);
       }
     }
 
-    drawCtx.fillStyle = 'rgba(15,22,36,0.94)';
-    roundRect(drawCtx, detailRect.x, detailRect.y, detailRect.w, detailRect.h, 10);
-    drawCtx.fill();
-    drawCtx.strokeStyle = '#23384d';
-    roundRect(drawCtx, detailRect.x, detailRect.y, detailRect.w, detailRect.h, 10);
-    drawCtx.stroke();
+    // --- Right: detail ---
+    this._drawSection(c, detailRect.x, detailRect.y, detailRect.w, detailRect.h, { border: '#1e3248' });
+    var cy = detailRect.y + 10;
+    var cx = detailRect.x + 14;
+    var cw = detailRect.w - 28;
 
-    drawCtx.textAlign = 'left';
-    drawCtx.fillStyle = '#eef6ff';
-    drawCtx.font = 'bold 18px sans-serif';
-    drawCtx.fillText(selected.name, detailRect.x + 16, detailRect.y + 26);
-    drawCtx.fillStyle = '#8eb1cb';
-    drawCtx.font = '11px monospace';
-    drawCtx.fillText(selected.zone + '  |  ' + this.getRiskLabel(selected.riskLevel) + '  |  Bias: ' + this.getRewardBiasLabel(selected.rewardBias), detailRect.x + 16, detailRect.y + 46);
-    drawCtx.fillStyle = this.isExpeditionUnlocked(selected) ? '#71d69d' : '#ff8b8b';
-    drawCtx.fillText(this.isExpeditionUnlocked(selected) ? 'Unlocked' : 'Requires Lv.' + selected.minLevel, detailRect.x + 16, detailRect.y + 64);
+    // Header
+    c.textAlign = 'left';
+    c.fillStyle = '#e8f0fa';
+    c.font = 'bold 16px sans-serif';
+    c.fillText(selected.name, cx, cy + 14);
+    cy += 22;
+    c.fillStyle = '#7a9ab5';
+    c.font = '10px monospace';
+    c.fillText(selected.zone + '  |  ' + this.getRiskLabel(selected.riskLevel) + '  |  ' + this.getRewardBiasLabel(selected.rewardBias), cx, cy + 10);
+    cy += 16;
+    c.fillStyle = this.isExpeditionUnlocked(selected) ? '#5ed39d' : '#ff7070';
+    c.font = '10px sans-serif';
+    c.fillText(this.isExpeditionUnlocked(selected) ? 'Unlocked' : 'Requires Lv.' + selected.minLevel, cx, cy + 10);
+    cy += 16;
+    c.fillStyle = '#8faabb';
+    cy += this.drawWrappedText(c, selected.flavor, cx, cy + 10, cw, 14, '#8faabb', '11px sans-serif');
+    cy += 16;
 
-    drawCtx.fillStyle = '#d5e3f0';
-    this.drawWrappedText(drawCtx, selected.flavor, detailRect.x + 16, detailRect.y + 86, detailRect.w - 32, 16, '#d5e3f0', '12px sans-serif');
+    // Duration buttons
+    c.fillStyle = '#b0c8dd';
+    c.font = 'bold 10px sans-serif';
+    c.fillText('DURATION', cx, cy + 10);
+    cy += 16;
+    var btnGap = 6;
+    var btnW = Math.floor((cw - btnGap * (selected.durationOptions.length - 1)) / selected.durationOptions.length);
+    for (var i = 0; i < selected.durationOptions.length; i++) {
+      var opt = selected.durationOptions[i];
+      var bx = cx + i * (btnW + btnGap);
+      var br = { x: bx, y: cy, w: btnW, h: 24 };
+      this.registerClickable('duration:' + opt.seconds, br);
+      var sel = opt.seconds === this.selectedDurationSec;
+      c.fillStyle = sel ? 'rgba(50,100,160,0.8)' : 'rgba(20,30,48,0.8)';
+      roundRect(c, br.x, br.y, br.w, br.h, 4);
+      c.fill();
+      if (sel) { c.strokeStyle = '#70b8f0'; c.lineWidth = 1; roundRect(c, br.x, br.y, br.w, br.h, 4); c.stroke(); }
+      c.fillStyle = sel ? '#fff' : '#8faabb';
+      c.font = 'bold 11px sans-serif';
+      c.textAlign = 'center';
+      c.fillText(opt.label, br.x + br.w / 2, br.y + 16);
+    }
+    c.textAlign = 'left';
+    cy += 32;
 
-    const contentW = detailRect.w - 32;
-    const durationGroup = { x: detailRect.x + 16, y: detailRect.y + 126, w: contentW, h: 66 };
-    const strategyGroup = { x: detailRect.x + 16, y: durationGroup.y + durationGroup.h + 10, w: contentW, h: 102 };
-    const scoreGroup = { x: detailRect.x + 16, y: strategyGroup.y + strategyGroup.h + 10, w: contentW, h: 96 };
-    const footerButtonH = 28;
-    const footerButtonY = detailRect.y + detailRect.h - 42;
-    const actionGroup = {
-      x: detailRect.x + 16,
-      y: scoreGroup.y + scoreGroup.h + 10,
-      w: contentW,
-      h: Math.max(84, footerButtonY - (scoreGroup.y + scoreGroup.h + 10) - 10)
-    };
+    // Strategy buttons
+    c.fillStyle = '#b0c8dd';
+    c.font = 'bold 10px sans-serif';
+    c.fillText('STRATEGY', cx, cy + 10);
+    cy += 16;
+    var sBtnW = Math.floor((cw - btnGap * (this.strategies.length - 1)) / this.strategies.length);
+    for (var i = 0; i < this.strategies.length; i++) {
+      var strat = this.strategies[i];
+      var bx = cx + i * (sBtnW + btnGap);
+      var br = { x: bx, y: cy, w: sBtnW, h: 24 };
+      this.registerClickable('strategy:' + strat.id, br);
+      var sel = strat.id === this.selectedStrategyId;
+      c.fillStyle = sel ? 'rgba(50,100,160,0.8)' : 'rgba(20,30,48,0.8)';
+      roundRect(c, br.x, br.y, br.w, br.h, 4);
+      c.fill();
+      if (sel) { c.strokeStyle = '#70b8f0'; c.lineWidth = 1; roundRect(c, br.x, br.y, br.w, br.h, 4); c.stroke(); }
+      c.fillStyle = sel ? '#fff' : '#8faabb';
+      c.font = 'bold 10px sans-serif';
+      c.textAlign = 'center';
+      c.fillText(strat.name, br.x + br.w / 2, br.y + 16);
+    }
+    c.textAlign = 'left';
+    cy += 32;
 
-    this.drawOptionGroup(drawCtx, 'Duration', durationGroup, selected.durationOptions, function(option) {
-      return option.label;
-    }, this.selectedDurationSec, 'duration');
+    // Strategy description
+    c.fillStyle = '#7a9ab5';
+    c.font = '10px sans-serif';
+    c.fillText(selectedStrategy.desc, cx, cy + 10);
+    cy += 20;
 
-    this.drawOptionGroup(drawCtx, 'Strategy', strategyGroup, this.strategies, function(strategy) {
-      return strategy.name;
-    }, this.selectedStrategyId, 'strategy');
+    // Build Forecast - compact horizontal
+    c.fillStyle = '#b0c8dd';
+    c.font = 'bold 10px sans-serif';
+    c.fillText('BUILD FORECAST', cx, cy + 10);
+    cy += 16;
+    this._drawSection(c, cx, cy, cw, 50, { bg: 'rgba(8,14,26,0.5)' });
+    c.fillStyle = '#8eb1cb';
+    c.font = '10px monospace';
+    var col = Math.floor(cw / 4);
+    c.fillText('CMB ' + scorePreview.combatScore, cx + 8, cy + 14);
+    c.fillText('SRV ' + scorePreview.survivalScore, cx + col + 8, cy + 14);
+    c.fillText('UTL ' + scorePreview.utilityScore, cx + col * 2 + 8, cy + 14);
+    c.fillText('LCK ' + scorePreview.luckScore, cx + col * 3 + 8, cy + 14);
+    c.fillStyle = '#98b5cc';
+    c.font = '10px sans-serif';
+    c.fillText('Success: ' + Math.round(scorePreview.successBaseline * 100) + '%', cx + 8, cy + 32);
+    c.fillText('Challenge: ' + scorePreview.challengeScore, cx + col * 2 + 8, cy + 32);
+    cy += 58;
 
-    drawCtx.fillStyle = 'rgba(10,18,30,0.9)';
-    roundRect(drawCtx, scoreGroup.x, scoreGroup.y, scoreGroup.w, scoreGroup.h, 8);
-    drawCtx.fill();
-    drawCtx.strokeStyle = '#23384d';
-    roundRect(drawCtx, scoreGroup.x, scoreGroup.y, scoreGroup.w, scoreGroup.h, 8);
-    drawCtx.stroke();
-    drawCtx.fillStyle = '#dcecff';
-    drawCtx.font = 'bold 13px sans-serif';
-    drawCtx.textAlign = 'left';
-    drawCtx.fillText('Build Forecast', scoreGroup.x + 12, scoreGroup.y + 20);
-    drawCtx.fillStyle = '#8eb1cb';
-    drawCtx.font = '11px monospace';
-    drawCtx.fillText('Combat ' + scorePreview.combatScore, scoreGroup.x + 12, scoreGroup.y + 40);
-    drawCtx.fillText('Survival ' + scorePreview.survivalScore, scoreGroup.x + 152, scoreGroup.y + 40);
-    drawCtx.fillText('Utility ' + scorePreview.utilityScore, scoreGroup.x + 12, scoreGroup.y + 58);
-    drawCtx.fillText('Luck ' + scorePreview.luckScore, scoreGroup.x + 152, scoreGroup.y + 58);
-    drawCtx.fillStyle = '#d5e3f0';
-    drawCtx.font = '12px sans-serif';
-    drawCtx.fillText('Success est.: ' + Math.round(scorePreview.successBaseline * 100) + '% pre-events', scoreGroup.x + 12, scoreGroup.y + 78);
-    drawCtx.fillText('Challenge score: ' + scorePreview.challengeScore, scoreGroup.x + 12, scoreGroup.y + 94);
-
-    drawCtx.fillStyle = 'rgba(10,18,30,0.9)';
-    roundRect(drawCtx, actionGroup.x, actionGroup.y, actionGroup.w, actionGroup.h, 8);
-    drawCtx.fill();
-    drawCtx.strokeStyle = '#23384d';
-    roundRect(drawCtx, actionGroup.x, actionGroup.y, actionGroup.w, actionGroup.h, 8);
-    drawCtx.stroke();
-    drawCtx.fillStyle = '#dcecff';
-    drawCtx.font = 'bold 13px sans-serif';
-    drawCtx.textAlign = 'left';
-    drawCtx.fillText('Mission Notes', actionGroup.x + 12, actionGroup.y + 20);
-    drawCtx.fillStyle = '#9ab4ca';
-    drawCtx.font = '11px sans-serif';
-    drawCtx.fillText('- Expedition rewards start from AFK base values.', actionGroup.x + 12, actionGroup.y + 40);
-    drawCtx.fillText('- Strategy changes success, injury, materials, and rares.', actionGroup.x + 12, actionGroup.y + 56);
-    drawCtx.fillText('- One active run only. The offline window replaces AFK rewards.', actionGroup.x + 12, actionGroup.y + 72);
-
+    // Active run status or launch button
+    var btnY = detailRect.y + detailRect.h - 40;
     if (this.activeRun) {
-      const activeDef = this.getDefinition(this.activeRun.id) || selected;
-      const activeStrategy = this.getStrategy(this.activeRun.strategyId) || selectedStrategy;
-      const remaining = Math.max(0, Math.ceil((this.activeRun.endsAt - Date.now()) / 1000));
-      drawCtx.fillStyle = '#5ed39d';
-      drawCtx.fillText(activeDef.name + ' is active with ' + activeStrategy.name + '.', actionGroup.x + 12, actionGroup.y + 88);
-      drawCtx.fillText('Remaining: ' + this.formatDuration(remaining), actionGroup.x + 12, actionGroup.y + 104);
-      const cancelRect = { x: detailRect.x + detailRect.w - 176, y: footerButtonY, w: 160, h: footerButtonH };
-      this.registerClickable('cancel', cancelRect);
-      drawCtx.fillStyle = 'rgba(190,92,66,0.95)';
-      roundRect(drawCtx, cancelRect.x, cancelRect.y, cancelRect.w, cancelRect.h, 6);
-      drawCtx.fill();
-      drawCtx.strokeStyle = '#ffc0aa';
-      roundRect(drawCtx, cancelRect.x, cancelRect.y, cancelRect.w, cancelRect.h, 6);
-      drawCtx.stroke();
-      drawCtx.fillStyle = '#fff';
-      drawCtx.font = 'bold 13px sans-serif';
-      drawCtx.textAlign = 'center';
-      drawCtx.fillText('Cancel Expedition', cancelRect.x + cancelRect.w / 2, cancelRect.y + 19);
+      var activeDef = this.getDefinition(this.activeRun.id) || selected;
+      var activeStrat = this.getStrategy(this.activeRun.strategyId) || selectedStrategy;
+      var remaining = Math.max(0, Math.ceil((this.activeRun.endsAt - Date.now()) / 1000));
+      c.fillStyle = '#5ed39d';
+      c.font = '11px sans-serif';
+      c.fillText(activeDef.name + ' running (' + activeStrat.name + ') — ' + this.formatDuration(remaining) + ' left', cx, cy + 10);
+
+      var cancelR = { x: detailRect.x + detailRect.w - 150, y: btnY, w: 136, h: 28 };
+      this.registerClickable('cancel', cancelR);
+      c.fillStyle = 'rgba(180,70,50,0.9)';
+      roundRect(c, cancelR.x, cancelR.y, cancelR.w, cancelR.h, 5);
+      c.fill();
+      c.fillStyle = '#fff';
+      c.font = 'bold 12px sans-serif';
+      c.textAlign = 'center';
+      c.fillText('Cancel Run', cancelR.x + cancelR.w / 2, cancelR.y + 19);
     } else {
-      const startRect = { x: detailRect.x + detailRect.w - 176, y: footerButtonY, w: 160, h: footerButtonH };
-      this.registerClickable('start', startRect);
-      drawCtx.fillStyle = canStart.ok ? 'rgba(56,142,60,0.95)' : 'rgba(82,88,97,0.95)';
-      roundRect(drawCtx, startRect.x, startRect.y, startRect.w, startRect.h, 6);
-      drawCtx.fill();
-      drawCtx.strokeStyle = canStart.ok ? '#abefb0' : '#a0a8b2';
-      roundRect(drawCtx, startRect.x, startRect.y, startRect.w, startRect.h, 6);
-      drawCtx.stroke();
-      drawCtx.fillStyle = '#fff';
-      drawCtx.font = 'bold 13px sans-serif';
-      drawCtx.textAlign = 'center';
-      drawCtx.fillText(canStart.ok ? 'Launch Expedition' : canStart.reason, startRect.x + startRect.w / 2, startRect.y + 19);
+      var startR = { x: detailRect.x + detailRect.w - 150, y: btnY, w: 136, h: 28 };
+      this.registerClickable('start', startR);
+      c.fillStyle = canStart.ok ? 'rgba(46,160,60,0.9)' : 'rgba(70,74,82,0.9)';
+      roundRect(c, startR.x, startR.y, startR.w, startR.h, 5);
+      c.fill();
+      if (canStart.ok) { c.strokeStyle = '#88e898'; c.lineWidth = 1; roundRect(c, startR.x, startR.y, startR.w, startR.h, 5); c.stroke(); }
+      c.fillStyle = '#fff';
+      c.font = 'bold 12px sans-serif';
+      c.textAlign = 'center';
+      c.fillText(canStart.ok ? 'Launch' : canStart.reason, startR.x + startR.w / 2, startR.y + 19);
     }
+    c.textAlign = 'left';
   },
 
-  drawOptionGroup(drawCtx, title, rect, options, labelFn, selectedValue, prefix) {
-    drawCtx.textAlign = 'left';
-    drawCtx.fillStyle = 'rgba(10,18,30,0.9)';
-    roundRect(drawCtx, rect.x, rect.y, rect.w, rect.h, 8);
-    drawCtx.fill();
-    drawCtx.strokeStyle = '#23384d';
-    roundRect(drawCtx, rect.x, rect.y, rect.w, rect.h, 8);
-    drawCtx.stroke();
-    drawCtx.textAlign = 'left';
-    drawCtx.fillStyle = '#dcecff';
-    drawCtx.font = 'bold 13px sans-serif';
-    drawCtx.fillText(title, rect.x + 12, rect.y + 20);
-
-    const gap = 8;
-    const buttonW = Math.floor((rect.w - 24 - gap * (options.length - 1)) / options.length);
-    for (let i = 0; i < options.length; i++) {
-      const option = options[i];
-      const value = prefix === 'duration' ? option.seconds : option.id;
-      const buttonRect = { x: rect.x + 12 + i * (buttonW + gap), y: rect.y + 32, w: buttonW, h: rect.h - 44 };
-      this.registerClickable(prefix + ':' + value, buttonRect);
-      const selected = value === selectedValue;
-      drawCtx.fillStyle = selected ? 'rgba(56,96,142,0.95)' : 'rgba(16,28,44,0.95)';
-      roundRect(drawCtx, buttonRect.x, buttonRect.y, buttonRect.w, buttonRect.h, 6);
-      drawCtx.fill();
-      drawCtx.strokeStyle = selected ? '#9fd6ff' : '#2a4158';
-      roundRect(drawCtx, buttonRect.x, buttonRect.y, buttonRect.w, buttonRect.h, 6);
-      drawCtx.stroke();
-      drawCtx.fillStyle = '#eef6ff';
-      drawCtx.font = 'bold 12px sans-serif';
-      drawCtx.textAlign = 'center';
-      drawCtx.fillText(labelFn(option), buttonRect.x + buttonRect.w / 2, buttonRect.y + 17);
-    }
-    drawCtx.textAlign = 'left';
-  },
-
-  drawSummaryPanel(drawCtx, layout) {
+  drawSummaryPanel(c, layout) {
     const report = this.pendingSummary;
-    const rewardRect = { x: layout.x + 18, y: layout.y + 126, w: Math.floor((layout.w - 54) * 0.52), h: layout.h - 196 };
-    const debriefRect = { x: rewardRect.x + rewardRect.w + 18, y: rewardRect.y, w: layout.w - rewardRect.w - 54, h: rewardRect.h };
-    const claimRect = { x: layout.x + layout.w - 188, y: layout.y + layout.h - 48, w: 172, h: 30 };
-    this.registerClickable('claim', claimRect);
+    const pad = 12;
+    var cy = layout.y + 36;
+    var cx = layout.x + pad;
+    var fullW = layout.w - pad * 2;
 
-    drawCtx.fillStyle = 'rgba(15,22,36,0.94)';
-    roundRect(drawCtx, rewardRect.x, rewardRect.y, rewardRect.w, rewardRect.h, 10);
-    drawCtx.fill();
-    drawCtx.strokeStyle = '#23384d';
-    roundRect(drawCtx, rewardRect.x, rewardRect.y, rewardRect.w, rewardRect.h, 10);
-    drawCtx.stroke();
+    // --- Mission header bar ---
+    this._drawSection(c, cx, cy, fullW, 52, { bg: 'rgba(8,14,26,0.6)', border: '#1e3248' });
+    c.textAlign = 'left';
+    c.fillStyle = '#e8f0fa';
+    c.font = 'bold 15px sans-serif';
+    c.fillText(report.name, cx + 12, cy + 18);
+    c.fillStyle = '#7a9ab5';
+    c.font = '10px monospace';
+    c.fillText(report.zone + '  |  ' + report.durationLabel + '  |  ' + report.strategyName, cx + 12, cy + 34);
+    // Grade badge on right
+    c.font = 'bold 11px sans-serif';
+    this._drawGradeBadge(c, report.outcomeGrade, report.gradeIndex, cx + fullW - 120, cy + 12);
+    // Chances compact
+    c.fillStyle = '#8faabb';
+    c.font = '10px sans-serif';
+    c.fillText('Success ' + Math.round((report.successChance || 0) * 100) + '%  |  Injury ' + Math.round((report.injuryChance || 0) * 100) + '%', cx + 12, cy + 47);
+    cy += 58;
 
-    drawCtx.fillStyle = '#dcecff';
-    drawCtx.font = 'bold 14px sans-serif';
-    drawCtx.fillText('Mission Rewards', rewardRect.x + 14, rewardRect.y + 22);
-    drawCtx.fillStyle = '#ffd166';
-    drawCtx.font = 'bold 18px sans-serif';
-    drawCtx.fillText('+' + this.formatNum(report.gold) + ' Gold', rewardRect.x + 18, rewardRect.y + 54);
-    drawCtx.fillStyle = '#74c7ff';
-    drawCtx.fillText('+' + this.formatNum(report.exp) + ' EXP', rewardRect.x + 18, rewardRect.y + 82);
-    drawCtx.fillStyle = '#d5e3f0';
-    drawCtx.font = '12px sans-serif';
-    drawCtx.fillText('Success chance: ' + Math.round((report.successChance || 0) * 100) + '%', rewardRect.x + 18, rewardRect.y + 108);
-    drawCtx.fillText('Injury chance: ' + Math.round((report.injuryChance || 0) * 100) + '%', rewardRect.x + 18, rewardRect.y + 126);
+    // --- Two columns ---
+    var colGap = 10;
+    var leftW = Math.floor(fullW * 0.48);
+    var rightW = fullW - leftW - colGap;
+    var leftX = cx;
+    var rightX = cx + leftW + colGap;
+    var colTop = cy;
 
-    const materialGroups = this.groupRewardsByName(report.materials);
-    const itemGroups = this.groupRewardsByName(report.items);
-    drawCtx.fillStyle = '#eef6ff';
-    drawCtx.font = 'bold 13px sans-serif';
-    drawCtx.fillText('Materials', rewardRect.x + 18, rewardRect.y + 156);
-    drawCtx.fillText('Item Drops', rewardRect.x + 18, rewardRect.y + 248);
+    // ===== LEFT COLUMN: Rewards =====
+    var ly = colTop;
+    var colH = layout.y + layout.h - colTop - 44;
+    this._drawSection(c, leftX, ly, leftW, colH, { bg: 'rgba(8,14,26,0.5)', border: '#1e3248' });
+    ly += 6;
 
-    drawCtx.font = '11px sans-serif';
+    // Gold & EXP - compact row
+    c.fillStyle = '#ffd166';
+    c.font = 'bold 16px sans-serif';
+    c.fillText('+' + this.formatNum(report.gold) + 'g', leftX + 12, ly + 16);
+    c.fillStyle = '#74c7ff';
+    var goldTW = c.measureText('+' + this.formatNum(report.gold) + 'g').width;
+    c.fillText('+' + this.formatNum(report.exp) + ' EXP', leftX + 22 + goldTW, ly + 16);
+    ly += 28;
+
+    // Divider
+    c.strokeStyle = '#1e3248';
+    c.beginPath(); c.moveTo(leftX + 10, ly); c.lineTo(leftX + leftW - 10, ly); c.stroke();
+    ly += 6;
+
+    // Materials
+    var materialGroups = this.groupRewardsByName(report.materials);
+    c.fillStyle = '#b0c8dd';
+    c.font = 'bold 10px sans-serif';
+    c.fillText('MATERIALS', leftX + 12, ly + 10);
+    ly += 16;
     if (!materialGroups.length) {
-      drawCtx.fillStyle = '#8ca2b7';
-      drawCtx.fillText('None', rewardRect.x + 20, rewardRect.y + 176);
+      c.fillStyle = '#5a6a7a';
+      c.font = '10px sans-serif';
+      c.fillText('None', leftX + 14, ly + 10);
+      ly += 16;
     } else {
-      for (let i = 0; i < materialGroups.length && i < 4; i++) {
-        const material = materialGroups[i];
-        drawCtx.fillStyle = RARITY_COLORS[material.rarity] || '#fff';
-        drawCtx.fillText(material.name + (material.count > 1 ? ' x' + material.count : ''), rewardRect.x + 20, rewardRect.y + 176 + i * 18);
+      c.font = '11px sans-serif';
+      for (var i = 0; i < materialGroups.length && i < 5; i++) {
+        var mat = materialGroups[i];
+        c.fillStyle = RARITY_COLORS[mat.rarity] || '#ccc';
+        c.fillText(mat.name + (mat.count > 1 ? ' x' + mat.count : ''), leftX + 14, ly + 10);
+        ly += 16;
       }
     }
+    ly += 4;
+
+    // Items
+    var itemGroups = this.groupRewardsByName(report.items);
+    c.fillStyle = '#b0c8dd';
+    c.font = 'bold 10px sans-serif';
+    c.fillText('ITEM DROPS', leftX + 12, ly + 10);
+    ly += 16;
     if (!itemGroups.length) {
-      drawCtx.fillStyle = '#8ca2b7';
-      drawCtx.fillText('None', rewardRect.x + 20, rewardRect.y + 268);
+      c.fillStyle = '#5a6a7a';
+      c.font = '10px sans-serif';
+      c.fillText('None', leftX + 14, ly + 10);
+      ly += 16;
     } else {
-      for (let i = 0; i < itemGroups.length && i < 4; i++) {
-        const item = itemGroups[i];
-        drawCtx.fillStyle = RARITY_COLORS[item.rarity] || '#fff';
-        drawCtx.fillText(item.name + (item.count > 1 ? ' x' + item.count : ''), rewardRect.x + 20, rewardRect.y + 268 + i * 18);
+      c.font = '11px sans-serif';
+      for (var i = 0; i < itemGroups.length && i < 5; i++) {
+        var item = itemGroups[i];
+        c.fillStyle = RARITY_COLORS[item.rarity] || '#ccc';
+        c.fillText(item.name + (item.count > 1 ? ' x' + item.count : ''), leftX + 14, ly + 10);
+        ly += 16;
       }
     }
+    ly += 4;
 
-    drawCtx.fillStyle = '#eef6ff';
-    drawCtx.font = 'bold 13px sans-serif';
-    drawCtx.fillText('Build Match', rewardRect.x + 18, rewardRect.y + 344);
-    drawCtx.fillStyle = '#8eb1cb';
-    drawCtx.font = '11px monospace';
-    drawCtx.fillText('Combat ' + (report.buildScores ? report.buildScores.combat : 0), rewardRect.x + 18, rewardRect.y + 364);
-    drawCtx.fillText('Survival ' + (report.buildScores ? report.buildScores.survival : 0), rewardRect.x + 18, rewardRect.y + 382);
-    drawCtx.fillText('Utility ' + (report.buildScores ? report.buildScores.utility : 0), rewardRect.x + 18, rewardRect.y + 400);
-    drawCtx.fillText('Luck ' + (report.buildScores ? report.buildScores.luck : 0), rewardRect.x + 18, rewardRect.y + 418);
+    // Build scores - compact horizontal
+    c.strokeStyle = '#1e3248';
+    c.beginPath(); c.moveTo(leftX + 10, ly); c.lineTo(leftX + leftW - 10, ly); c.stroke();
+    ly += 8;
+    c.fillStyle = '#b0c8dd';
+    c.font = 'bold 10px sans-serif';
+    c.fillText('BUILD', leftX + 12, ly + 10);
+    ly += 16;
+    c.fillStyle = '#7a9ab5';
+    c.font = '10px monospace';
+    var bs = report.buildScores || {};
+    var halfCol = Math.floor((leftW - 24) / 2);
+    c.fillText('CMB ' + (bs.combat || 0), leftX + 14, ly + 10);
+    c.fillText('SRV ' + (bs.survival || 0), leftX + 14 + halfCol, ly + 10);
+    ly += 14;
+    c.fillText('UTL ' + (bs.utility || 0), leftX + 14, ly + 10);
+    c.fillText('LCK ' + (bs.luck || 0), leftX + 14 + halfCol, ly + 10);
 
-    drawCtx.fillStyle = 'rgba(15,22,36,0.94)';
-    roundRect(drawCtx, debriefRect.x, debriefRect.y, debriefRect.w, debriefRect.h, 10);
-    drawCtx.fill();
-    drawCtx.strokeStyle = '#23384d';
-    roundRect(drawCtx, debriefRect.x, debriefRect.y, debriefRect.w, debriefRect.h, 10);
-    drawCtx.stroke();
+    // ===== RIGHT COLUMN: Debrief + Events + Penalty =====
+    var ry = colTop;
+    this._drawSection(c, rightX, ry, rightW, colH, { bg: 'rgba(8,14,26,0.5)', border: '#1e3248' });
+    ry += 6;
 
-    drawCtx.fillStyle = '#dcecff';
-    drawCtx.font = 'bold 14px sans-serif';
-    drawCtx.fillText('Debrief', debriefRect.x + 14, debriefRect.y + 22);
-    drawCtx.fillStyle = '#d5e3f0';
-    this.drawWrappedText(drawCtx, report.flavorSummary, debriefRect.x + 16, debriefRect.y + 48, debriefRect.w - 32, 18, '#d5e3f0', '12px sans-serif');
+    // Debrief flavor text
+    c.fillStyle = '#b0c8dd';
+    c.font = 'bold 10px sans-serif';
+    c.fillText('DEBRIEF', rightX + 12, ry + 10);
+    ry += 16;
+    ry += this.drawWrappedText(c, report.flavorSummary, rightX + 12, ry + 4, rightW - 24, 14, '#9ab4ca', '11px sans-serif');
+    ry += 12;
 
-    drawCtx.fillStyle = '#eef6ff';
-    drawCtx.font = 'bold 13px sans-serif';
-    drawCtx.fillText('Event Log', debriefRect.x + 16, debriefRect.y + 130);
-    drawCtx.font = '11px sans-serif';
+    // Divider
+    c.strokeStyle = '#1e3248';
+    c.beginPath(); c.moveTo(rightX + 10, ry); c.lineTo(rightX + rightW - 10, ry); c.stroke();
+    ry += 8;
+
+    // Event Log
+    c.fillStyle = '#b0c8dd';
+    c.font = 'bold 10px sans-serif';
+    c.fillText('EVENT LOG', rightX + 12, ry + 10);
+    ry += 16;
     if (!report.eventLog || !report.eventLog.length) {
-      drawCtx.fillStyle = '#8ca2b7';
-      drawCtx.fillText('No notable events.', debriefRect.x + 16, debriefRect.y + 150);
+      c.fillStyle = '#5a6a7a';
+      c.font = '10px sans-serif';
+      c.fillText('No notable events.', rightX + 12, ry + 10);
+      ry += 16;
     } else {
-      for (let i = 0; i < report.eventLog.length && i < 5; i++) {
-        drawCtx.fillStyle = '#a6bdd0';
-        this.drawWrappedText(drawCtx, '- ' + report.eventLog[i], debriefRect.x + 16, debriefRect.y + 150 + i * 34, debriefRect.w - 32, 14, '#a6bdd0', '11px sans-serif');
+      for (var i = 0; i < report.eventLog.length && i < 5; i++) {
+        ry += this.drawWrappedText(c, '- ' + report.eventLog[i], rightX + 12, ry + 4, rightW - 24, 13, '#8faabb', '10px sans-serif');
+        ry += 6;
       }
     }
+    ry += 4;
 
-    drawCtx.fillStyle = '#eef6ff';
-    drawCtx.font = 'bold 13px sans-serif';
-    drawCtx.fillText('Penalty / Injury', debriefRect.x + 16, debriefRect.y + 344);
-    drawCtx.fillStyle = report.penalty ? '#ff9d7a' : '#8ccca0';
-    drawCtx.font = '11px sans-serif';
-    drawCtx.fillText(report.penalty ? report.penalty.label + '  |  -' + Math.round(report.penalty.hpLossPct * 100) + '% HP on claim' : 'No lasting penalty.', debriefRect.x + 16, debriefRect.y + 364);
+    // Divider
+    c.strokeStyle = '#1e3248';
+    c.beginPath(); c.moveTo(rightX + 10, ry); c.lineTo(rightX + rightW - 10, ry); c.stroke();
+    ry += 8;
+
+    // Penalty
+    c.fillStyle = '#b0c8dd';
+    c.font = 'bold 10px sans-serif';
+    c.fillText('PENALTY', rightX + 12, ry + 10);
+    ry += 16;
     if (report.penalty) {
-      this.drawWrappedText(drawCtx, report.penalty.text, debriefRect.x + 16, debriefRect.y + 384, debriefRect.w - 32, 14, '#ffb59c', '11px sans-serif');
+      c.fillStyle = '#ff9d7a';
+      c.font = '11px sans-serif';
+      c.fillText(report.penalty.label + '  |  -' + Math.round(report.penalty.hpLossPct * 100) + '% HP', rightX + 12, ry + 10);
+      ry += 16;
+      this.drawWrappedText(c, report.penalty.text, rightX + 12, ry + 4, rightW - 24, 13, '#ffb59c', '10px sans-serif');
+    } else {
+      c.fillStyle = '#5ed39d';
+      c.font = '11px sans-serif';
+      c.fillText('No lasting penalty.', rightX + 12, ry + 10);
     }
 
-    drawCtx.fillStyle = 'rgba(56,142,60,0.95)';
-    roundRect(drawCtx, claimRect.x, claimRect.y, claimRect.w, claimRect.h, 6);
-    drawCtx.fill();
-    drawCtx.strokeStyle = '#abefb0';
-    roundRect(drawCtx, claimRect.x, claimRect.y, claimRect.w, claimRect.h, 6);
-    drawCtx.stroke();
-    drawCtx.fillStyle = '#fff';
-    drawCtx.font = 'bold 13px sans-serif';
-    drawCtx.textAlign = 'center';
-    drawCtx.fillText('Claim Expedition Rewards', claimRect.x + claimRect.w / 2, claimRect.y + 20);
+    // --- Claim button centered at bottom ---
+    var claimW = 180;
+    var claimRect = { x: layout.x + Math.floor((layout.w - claimW) / 2), y: layout.y + layout.h - 38, w: claimW, h: 28 };
+    this.registerClickable('claim', claimRect);
+    c.fillStyle = 'rgba(46,160,60,0.9)';
+    roundRect(c, claimRect.x, claimRect.y, claimRect.w, claimRect.h, 5);
+    c.fill();
+    c.strokeStyle = '#88e898';
+    c.lineWidth = 1;
+    roundRect(c, claimRect.x, claimRect.y, claimRect.w, claimRect.h, 5);
+    c.stroke();
+    c.fillStyle = '#fff';
+    c.font = 'bold 12px sans-serif';
+    c.textAlign = 'center';
+    c.fillText('Claim Rewards', claimRect.x + claimRect.w / 2, claimRect.y + 19);
+    c.textAlign = 'left';
   },
 
   handleClick(cx, cy) {

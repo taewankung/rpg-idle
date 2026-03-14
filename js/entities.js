@@ -68,7 +68,7 @@ function spawnMonsters(){
 }
 
 function updateMonster(m,dt){
-  if(m.isDead){m.respawnTimer-=dt;if(m.respawnTimer<=0){const d=MON_DATA[m.type];m.hp=ri(d.hpR[0],d.hpR[1]);m.maxHp=m.hp;m.x=m.patrolCenter.x;m.y=m.patrolCenter.y;m.isDead=false;m.state='patrol'}return}
+  if(m.isDead){m.respawnTimer-=dt;if(m.respawnTimer<=0){const d=MON_DATA[m.type]||(typeof ZONE_MON_DATA!=='undefined'?ZONE_MON_DATA[m.type]:null)||(typeof DUNGEON_MON_DATA!=='undefined'?DUNGEON_MON_DATA[m.type]:null);if(!d){m.hp=m.maxHp;m.x=m.patrolCenter.x;m.y=m.patrolCenter.y;m.isDead=false;m.state='patrol'}else{m.hp=ri(d.hpR[0],d.hpR[1]);m.maxHp=m.hp;m.x=m.patrolCenter.x;m.y=m.patrolCenter.y;m.isDead=false;m.state='patrol'}}return}
   if(m.slowTimer>0)m.slowTimer-=dt;
   m.animTimer+=dt;if(m.animTimer>0.25){m.frame=(m.frame+1)%2;m.animTimer=0}
   if(m.attackTimer>0)m.attackTimer-=dt;

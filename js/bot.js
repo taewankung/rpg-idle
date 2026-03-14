@@ -876,7 +876,14 @@ const botAI = {
             followPath(p, dt);
             p.state = 'walking';
           } else {
-            p.state = 'idle';
+            // No safe point found — if stuck too long, recover to idle so bot doesn't loop forever
+            if (this.stateTimer > 4) {
+              this.retreatTarget = null;
+              this.setState('idle', 'ready', 'Scanning', true);
+              p._path = null;
+            } else {
+              p.state = 'idle';
+            }
           }
           break;
         }

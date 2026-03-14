@@ -663,6 +663,9 @@ function _bossAbility_summon(boss) {
 // MAIN UPDATE
 // ============================================================
 function updateWorldBoss(dt) {
+  // Never update world boss while inside dungeon
+  if (typeof dungeon !== 'undefined' && dungeon.active) return;
+
   // --- Countdown phase ---
   if (!worldBoss.active) {
     worldBoss.spawnTimer -= dt;
@@ -920,6 +923,7 @@ function onWorldBossHit(attackerName, amount) {
 
 // Draw the world boss entity in the game world
 function drawWorldBoss() {
+  if (typeof dungeon !== 'undefined' && dungeon.active) return;
   const boss = worldBoss.active;
   if (!boss || boss.isDead) return;
 

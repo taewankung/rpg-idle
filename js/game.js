@@ -141,6 +141,15 @@ function gameLoop(ts){
 }
 
 // --- INPUT ---
+canvas.addEventListener('wheel',e=>{
+  const delta=Math.sign(e.deltaY);
+  // Cosmetic shop scroll
+  if(typeof cosmeticShop!=='undefined'&&cosmeticShop.panelOpen){if(cosmeticShop.handleScroll(delta)){e.preventDefault();return}}
+  // Character stats panel scroll
+  if(typeof showCharStats!=='undefined'&&showCharStats){charStatsScroll=(charStatsScroll||0)+delta*30;e.preventDefault();return}
+  // Inventory scroll
+  if(typeof showInventory!=='undefined'&&showInventory){invScroll=(invScroll||0)+delta*30;e.preventDefault();return}
+},{passive:false});
 canvas.addEventListener('mousemove',e=>{
   const r=canvas.getBoundingClientRect();mouseX=(e.clientX-r.left)*(canvas.width/r.width);mouseY=(e.clientY-r.top)*(canvas.height/r.height);
   if(game.state==='classSelect'){
@@ -167,7 +176,7 @@ canvas.addEventListener('mousemove',e=>{
   }
   // Stat point hover detection
   if(showCharStats&&typeof statPointSystem!=='undefined'){
-    statPointSystem.handleStatHover(mouseX,mouseY);
+    statPointSystem.handleStatHover(mouseX,mouseY+(charStatsScroll||0));
   }
 });
 
@@ -191,7 +200,7 @@ canvas.addEventListener('click',e=>{
   if(showSettings){handleSettingsClick(cx2,cy2);return}
   if(showInventory){handleInventoryClick(cx2,cy2);return}
   if(showCharStats&&typeof statPointSystem!=='undefined'){
-    if(statPointSystem.handleStatClick(cx2,cy2))return;
+    if(statPointSystem.handleStatClick(cx2,cy2+charStatsScroll))return;
   }
   if(typeof achievementSystem!=='undefined'&&achievementSystem.panelOpen){handleAchievementClick(cx2,cy2);return}
   if(typeof leaderboard!=='undefined'&&leaderboard.panelOpen){handleLeaderboardClick(cx2,cy2);return}

@@ -1340,9 +1340,9 @@ function _drawResultCard(x, y, w, h, result) {
   const name = result.kind === 'item' ? result.item.name : result.pet.name;
 
   // Draw item/pet icon
-  const icoSize = isLarge ? 24 : 16;
+  const icoSize = isLarge ? 40 : 20;
   const icoX = x + w / 2 - icoSize / 2;
-  const icoY = y + (isLarge ? 6 : 2);
+  const icoY = y + (isLarge ? 8 : 3);
   let hasIcon = false;
   ctx.imageSmoothingEnabled = false;
   if (result.kind === 'item' && typeof _getItemIcon === 'function') {
@@ -1360,7 +1360,7 @@ function _drawResultCard(x, y, w, h, result) {
   }
   ctx.imageSmoothingEnabled = true;
 
-  const textOff = hasIcon ? (isLarge ? icoSize + 4 : icoSize) : 0;
+  const textOff = hasIcon ? (isLarge ? icoSize + 2 : icoSize) : 0;
 
   // Item name
   ctx.font = isLarge ? 'bold 12px monospace' : 'bold 9px monospace';

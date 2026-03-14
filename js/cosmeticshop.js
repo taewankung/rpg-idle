@@ -3,14 +3,35 @@
 // ============================================================
 
 const SKIN_DEFS = {
-  shadow:   { name:'Shadow',   price:5000,  rarity:'rare',      tint:'#0a0020', opacity:0.55, desc:'Shrouded in darkness' },
-  crimson:  { name:'Crimson',  price:5000,  rarity:'rare',      tint:'#cc0000', opacity:0.40, desc:'Forged in blood' },
-  frost:    { name:'Frost',    price:5000,  rarity:'rare',      tint:'#0066cc', opacity:0.40, desc:'Cold as winter' },
-  toxic:    { name:'Toxic',    price:5000,  rarity:'rare',      tint:'#00aa22', opacity:0.40, desc:'Venomous aura' },
-  sakura:   { name:'Sakura',   price:8000,  rarity:'epic',      tint:'#ff66aa', opacity:0.40, desc:'Cherry blossom spirit' },
-  golden:   { name:'Golden',   price:10000, rarity:'epic',      tint:'#ddaa00', opacity:0.45, desc:'Blessed by the gods' },
-  celestial:{ name:'Celestial',price:12000, rarity:'epic',      tint:'#88ccff', opacity:0.35, desc:'Heavenly radiance' },
-  phantom:  { name:'Phantom',  price:20000, rarity:'legendary', tint:'#8833cc', opacity:0.50, desc:'Between worlds' }
+  // --- Rare (5000g) ---
+  shadow:     { name:'Shadow Cloak',    price:5000,  rarity:'rare', tint:'#0a0020', opacity:0.55, desc:'Vanish into darkness',
+                aura:{color:'#1a0033',alt:'#330055',count:4,speed:1.5,size:2,style:'smoke'} },
+  crimson:    { name:'Blood Knight',    price:5000,  rarity:'rare', tint:'#cc0000', opacity:0.40, desc:'Armor forged in blood',
+                aura:{color:'#ff2200',alt:'#880000',count:3,speed:2,size:2,style:'drip'} },
+  frost:      { name:'Frostborne',      price:5000,  rarity:'rare', tint:'#0066cc', opacity:0.40, desc:'Frozen warrior of the north',
+                aura:{color:'#aaeeff',alt:'#44aaff',count:5,speed:1,size:2,style:'snowflake'} },
+  sylvan:     { name:'Sylvan Spirit',   price:5000,  rarity:'rare', tint:'#1a6b2a', opacity:0.38, desc:'One with the ancient forest',
+                aura:{color:'#44dd44',alt:'#88ff44',count:4,speed:0.8,size:2,style:'leaf'} },
+  // --- Epic (8000-12000g) ---
+  dragonborn: { name:'Dragonborn',      price:8000,  rarity:'epic', tint:'#cc4400', opacity:0.42, desc:'Dragon scales burn with fury',
+                aura:{color:'#ff6600',alt:'#ffaa00',count:6,speed:2.5,size:3,style:'flame'} },
+  stormcall:  { name:'Stormcaller',     price:8000,  rarity:'epic', tint:'#2244aa', opacity:0.38, desc:'Thunder courses through veins',
+                aura:{color:'#ffff44',alt:'#44aaff',count:4,speed:3,size:2,style:'spark'} },
+  sakura:     { name:'Sakura Bloom',    price:10000, rarity:'epic', tint:'#ff66aa', opacity:0.38, desc:'Cherry blossom warrior',
+                aura:{color:'#ffaacc',alt:'#ff88bb',count:6,speed:0.6,size:3,style:'petal'} },
+  abyssal:    { name:'Abyssal Lord',    price:10000, rarity:'epic', tint:'#220044', opacity:0.50, desc:'Demon king from the abyss',
+                aura:{color:'#8800cc',alt:'#ff00aa',count:5,speed:2,size:3,style:'flame'} },
+  celestial:  { name:'Celestial',       price:12000, rarity:'epic', tint:'#88ccff', opacity:0.35, desc:'Blessed by the heavens',
+                aura:{color:'#ffffcc',alt:'#ffdd88',count:5,speed:0.7,size:2,style:'glow'} },
+  // --- Legendary (15000-30000g) ---
+  phoenix:    { name:'Phoenix Reborn',  price:15000, rarity:'legendary', tint:'#dd6600', opacity:0.45, desc:'Rise from the ashes eternal',
+                aura:{color:'#ff4400',alt:'#ffcc00',count:8,speed:3,size:3,style:'flame'} },
+  astral:     { name:'Astral Walker',   price:20000, rarity:'legendary', tint:'#4422aa', opacity:0.40, desc:'Walk among the stars',
+                aura:{color:'#aaaaff',alt:'#ff88ff',count:7,speed:1.2,size:2,style:'star'} },
+  voidking:   { name:'Void Emperor',    price:25000, rarity:'legendary', tint:'#110022', opacity:0.55, desc:'Ruler of the endless void',
+                aura:{color:'#aa00ff',alt:'#000000',count:6,speed:2,size:4,style:'vortex'} },
+  seraphim:   { name:'Seraphim',        price:30000, rarity:'legendary', tint:'#fff8e0', opacity:0.30, desc:'Six-winged divine avatar',
+                aura:{color:'#FFD700',alt:'#ffffff',count:8,speed:0.5,size:3,style:'halo'} }
 };
 
 const EFFECT_THEMES = {
@@ -127,6 +148,153 @@ const cosmeticShop = {
     if (!this.equippedSkin) return null;
     const skinKey = 'skin_' + this.equippedSkin + '_' + baseKey;
     return spriteCache[skinKey] ? skinKey : null;
+  },
+
+  // --- DRAW SKIN AURA around player ---
+  drawSkinAura(sx, sy) {
+    if (!this.equippedSkin) return;
+    const skin = SKIN_DEFS[this.equippedSkin];
+    if (!skin || !skin.aura) return;
+    const a = skin.aura;
+    const t = Date.now() / 1000;
+    ctx.save();
+
+    if (a.style === 'flame') {
+      for (let i = 0; i < a.count; i++) {
+        const angle = (Math.PI * 2 * i / a.count) + t * a.speed;
+        const r = 10 + Math.sin(t * 3 + i * 1.7) * 4;
+        const py = -Math.abs(Math.sin(t * 4 + i * 2)) * 8;
+        ctx.globalAlpha = 0.4 + Math.sin(t * 5 + i) * 0.3;
+        ctx.fillStyle = i % 2 === 0 ? a.color : a.alt;
+        ctx.beginPath();
+        ctx.arc(sx + Math.cos(angle) * r, sy + Math.sin(angle) * r * 0.5 + py, a.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (a.style === 'snowflake') {
+      for (let i = 0; i < a.count; i++) {
+        const ox = Math.sin(t * 0.7 + i * 2.1) * 14;
+        const oy = ((t * 12 + i * 17) % 32) - 16;
+        ctx.globalAlpha = 0.5 + Math.sin(t * 2 + i) * 0.3;
+        ctx.fillStyle = i % 2 === 0 ? a.color : a.alt;
+        ctx.fillRect(sx + ox - 1, sy + oy - 1, a.size, a.size);
+      }
+    } else if (a.style === 'leaf') {
+      for (let i = 0; i < a.count; i++) {
+        const ox = Math.sin(t * 0.5 + i * 1.8) * 16;
+        const oy = Math.cos(t * 0.3 + i * 2.5) * 12;
+        const rot = t * 2 + i;
+        ctx.globalAlpha = 0.5 + Math.sin(t + i) * 0.3;
+        ctx.fillStyle = i % 2 === 0 ? a.color : a.alt;
+        ctx.save();
+        ctx.translate(sx + ox, sy + oy);
+        ctx.rotate(rot);
+        ctx.fillRect(-a.size, -1, a.size * 2, 2);
+        ctx.restore();
+      }
+    } else if (a.style === 'spark') {
+      for (let i = 0; i < a.count; i++) {
+        const phase = t * a.speed + i * 1.5;
+        const flash = Math.random() > 0.7;
+        if (!flash && Math.sin(phase) < 0) continue;
+        const ox = Math.sin(phase) * 14;
+        const oy = Math.cos(phase * 1.3) * 10;
+        ctx.globalAlpha = 0.6 + Math.random() * 0.4;
+        ctx.fillStyle = i % 2 === 0 ? a.color : a.alt;
+        ctx.fillRect(sx + ox - 1, sy + oy - 1, 2, a.size + Math.random() * 3);
+      }
+    } else if (a.style === 'smoke') {
+      for (let i = 0; i < a.count; i++) {
+        const ox = Math.sin(t * 0.8 + i * 2.3) * 12;
+        const oy = -((t * 8 + i * 13) % 20);
+        ctx.globalAlpha = 0.15 + Math.sin(t + i) * 0.1;
+        ctx.fillStyle = i % 2 === 0 ? a.color : a.alt;
+        ctx.beginPath();
+        ctx.arc(sx + ox, sy + oy, a.size + 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (a.style === 'drip') {
+      for (let i = 0; i < a.count; i++) {
+        const ox = Math.sin(i * 2.5) * 8;
+        const oy = ((t * 15 + i * 20) % 24);
+        ctx.globalAlpha = 0.5 - oy / 48;
+        ctx.fillStyle = i % 2 === 0 ? a.color : a.alt;
+        ctx.fillRect(sx + ox - 1, sy + oy - 2, 2, a.size + 1);
+      }
+    } else if (a.style === 'petal') {
+      for (let i = 0; i < a.count; i++) {
+        const angle = t * a.speed + i * (Math.PI * 2 / a.count);
+        const r = 14 + Math.sin(t * 1.5 + i) * 5;
+        const oy = Math.sin(t * 0.8 + i * 1.2) * 4;
+        ctx.globalAlpha = 0.5 + Math.sin(t * 2 + i) * 0.3;
+        ctx.fillStyle = i % 2 === 0 ? a.color : a.alt;
+        ctx.save();
+        ctx.translate(sx + Math.cos(angle) * r, sy + Math.sin(angle) * r * 0.5 + oy);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, a.size, a.size * 0.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    } else if (a.style === 'glow') {
+      ctx.globalAlpha = 0.12 + Math.sin(t * 1.5) * 0.06;
+      const grad = ctx.createRadialGradient(sx, sy, 2, sx, sy, 18);
+      grad.addColorStop(0, a.color);
+      grad.addColorStop(1, 'transparent');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(sx, sy, 18, 0, Math.PI * 2);
+      ctx.fill();
+      for (let i = 0; i < a.count; i++) {
+        const angle = t * a.speed + i * (Math.PI * 2 / a.count);
+        ctx.globalAlpha = 0.3 + Math.sin(t * 2 + i) * 0.2;
+        ctx.fillStyle = i % 2 === 0 ? a.color : a.alt;
+        ctx.beginPath();
+        ctx.arc(sx + Math.cos(angle) * 14, sy + Math.sin(angle) * 14 * 0.5, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (a.style === 'star') {
+      for (let i = 0; i < a.count; i++) {
+        const angle = t * a.speed * 0.5 + i * (Math.PI * 2 / a.count);
+        const r = 12 + Math.sin(t * 2 + i * 1.3) * 6;
+        const twinkle = Math.sin(t * 6 + i * 3) > 0.3;
+        if (!twinkle) continue;
+        ctx.globalAlpha = 0.5 + Math.sin(t * 4 + i) * 0.4;
+        ctx.fillStyle = i % 3 === 0 ? a.alt : a.color;
+        const px2 = sx + Math.cos(angle) * r, py2 = sy + Math.sin(angle) * r * 0.6;
+        ctx.fillRect(px2 - 1, py2, 3, 1);
+        ctx.fillRect(px2, py2 - 1, 1, 3);
+      }
+    } else if (a.style === 'vortex') {
+      for (let i = 0; i < a.count; i++) {
+        const angle = t * a.speed + i * (Math.PI * 2 / a.count);
+        const r = 8 + i * 2 + Math.sin(t * 3) * 3;
+        ctx.globalAlpha = 0.4 - i * 0.04;
+        ctx.fillStyle = i % 2 === 0 ? a.color : a.alt;
+        ctx.beginPath();
+        ctx.arc(sx + Math.cos(angle) * r, sy + Math.sin(angle) * r * 0.6, a.size - i * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (a.style === 'halo') {
+      // Golden ring above head
+      ctx.globalAlpha = 0.4 + Math.sin(t * 2) * 0.15;
+      ctx.strokeStyle = a.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(sx, sy - 20, 8, 3, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      // Light rays
+      for (let i = 0; i < a.count; i++) {
+        const angle = t * a.speed + i * (Math.PI * 2 / a.count);
+        const r = 16 + Math.sin(t * 1.5 + i) * 4;
+        ctx.globalAlpha = 0.2 + Math.sin(t * 2 + i * 0.8) * 0.15;
+        ctx.fillStyle = i % 2 === 0 ? a.color : a.alt;
+        ctx.beginPath();
+        ctx.arc(sx + Math.cos(angle) * r, sy + Math.sin(angle) * r * 0.5, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    ctx.restore();
   },
 
   // --- GET EFFECT THEME ---
@@ -273,6 +441,25 @@ const cosmeticShop = {
     }
 
     ctx.restore();
+
+    // Scrollbar
+    const items = this.activeTab === 'skins' ? Object.keys(SKIN_DEFS) : Object.keys(EFFECT_THEMES);
+    const totalH = items.length * 64;
+    if (totalH > contentH) {
+      const barX = px + pw - 10, barH = contentH - 8;
+      const thumbH = Math.max(20, (contentH / totalH) * barH);
+      const maxScroll = totalH - contentH;
+      const thumbY = contentY + 4 + (this.scrollOffset / maxScroll) * (barH - thumbH);
+      // Track
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      roundRect(ctx, barX, contentY + 4, 6, barH, 3);
+      ctx.fill();
+      // Thumb
+      ctx.fillStyle = 'rgba(155,89,182,0.5)';
+      roundRect(ctx, barX, thumbY, 6, thumbH, 3);
+      ctx.fill();
+    }
+
     ctx.restore();
   },
 
@@ -297,12 +484,48 @@ const cosmeticShop = {
       roundRect(ctx, px + 12, y, pw - 24, rowH, 6);
       ctx.stroke();
 
-      // Color preview swatch
-      ctx.fillStyle = skin.tint;
-      ctx.globalAlpha = 1;
-      roundRect(ctx, px + 20, y + 8, 44, 44, 4);
+      // Preview swatch with aura
+      const swX = px + 20, swY = y + 8, swS = 44;
+      const t = Date.now() / 1000;
+      const au = skin.aura;
+
+      // Dark bg
+      ctx.fillStyle = '#0a0a1a';
+      roundRect(ctx, swX, swY, swS, swS, 6);
       ctx.fill();
-      // Mini character silhouette on swatch
+
+      // Rarity glow behind character
+      ctx.save();
+      ctx.globalAlpha = 0.2 + Math.sin(t * 2) * 0.1;
+      const grd = ctx.createRadialGradient(swX + swS/2, swY + swS/2, 2, swX + swS/2, swY + swS/2, swS/2);
+      grd.addColorStop(0, rc);
+      grd.addColorStop(1, 'transparent');
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.arc(swX + swS/2, swY + swS/2, swS/2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Mini aura particles
+      if (au) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(swX, swY, swS, swS);
+        ctx.clip();
+        const cx2 = swX + swS/2, cy2 = swY + swS/2;
+        for (let i = 0; i < Math.min(au.count, 5); i++) {
+          const ang = (Math.PI * 2 * i / Math.min(au.count, 5)) + t * (au.speed || 1);
+          const r2 = 12 + Math.sin(t * 2 + i * 1.5) * 4;
+          ctx.globalAlpha = 0.5 + Math.sin(t * 3 + i) * 0.3;
+          ctx.fillStyle = i % 2 === 0 ? au.color : au.alt;
+          ctx.beginPath();
+          ctx.arc(cx2 + Math.cos(ang) * r2, cy2 + Math.sin(ang) * r2, au.size * 0.7, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      // Character sprite
       const prefix = (typeof classChangeSystem !== 'undefined' && classChangeSystem.getSpritePrefix)
         ? classChangeSystem.getSpritePrefix(game.player) : (game.player.className || 'knight').toLowerCase();
       const previewKey = 'skin_' + id + '_' + prefix + '_down_0';
@@ -310,9 +533,15 @@ const cosmeticShop = {
       if (baseSpr) {
         ctx.globalAlpha = 1;
         ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(baseSpr, px + 22, y + 10, 40, 40);
+        ctx.drawImage(baseSpr, swX + 2, swY + 2, 40, 40);
       }
       ctx.globalAlpha = 1;
+
+      // Rarity border
+      ctx.strokeStyle = rc;
+      ctx.lineWidth = equipped ? 2 : 1;
+      roundRect(ctx, swX, swY, swS, swS, 6);
+      ctx.stroke();
 
       // Name
       ctx.textAlign = 'left';
@@ -386,25 +615,43 @@ const cosmeticShop = {
       roundRect(ctx, px + 12, y, pw - 24, rowH, 6);
       ctx.stroke();
 
-      // Effect preview — animated particles
+      // Effect preview swatch
+      const swX = px + 20, swY = y + 8, swS = 44;
       const t = Date.now() / 1000;
+
+      // Dark bg
+      ctx.fillStyle = '#0a0a1a';
+      roundRect(ctx, swX, swY, swS, swS, 6);
+      ctx.fill();
+
+      // Animated particles
       ctx.save();
+      ctx.beginPath();
+      ctx.rect(swX, swY, swS, swS);
+      ctx.clip();
+      const ecx = swX + swS/2, ecy = swY + swS/2;
       for (let i = 0; i < 8; i++) {
         const a = Math.PI * 2 * i / 8 + t * 2;
         const r = 12 + Math.sin(t * 3 + i) * 4;
         ctx.fillStyle = i % 2 === 0 ? ef.particle : ef.particleAlt;
         ctx.globalAlpha = 0.6 + Math.sin(t * 4 + i) * 0.4;
         ctx.beginPath();
-        ctx.arc(px + 42 + Math.cos(a) * r, y + 30 + Math.sin(a) * r, 3, 0, Math.PI * 2);
+        ctx.arc(ecx + Math.cos(a) * r, ecy + Math.sin(a) * r, 3, 0, Math.PI * 2);
         ctx.fill();
       }
       // Center glow
       ctx.globalAlpha = 0.3 + Math.sin(t * 2) * 0.2;
       ctx.fillStyle = ef.hit;
       ctx.beginPath();
-      ctx.arc(px + 42, y + 30, 8, 0, Math.PI * 2);
+      ctx.arc(ecx, ecy, 8, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
+
+      // Rarity border
+      ctx.strokeStyle = rc;
+      ctx.lineWidth = equipped ? 2 : 1;
+      roundRect(ctx, swX, swY, swS, swS, 6);
+      ctx.stroke();
 
       // Name
       ctx.textAlign = 'left';
@@ -579,7 +826,10 @@ const cosmeticShop = {
   handleScroll(delta) {
     if (!this.panelOpen) return false;
     const items = this.activeTab === 'skins' ? Object.keys(SKIN_DEFS) : Object.keys(EFFECT_THEMES);
-    const maxScroll = Math.max(0, items.length * 64 - 350);
+    const ph = 500, contentY_offset = 40 + 28 + 12; // tabY + tabH + gap
+    const contentH = ph - contentY_offset - 12;
+    const totalH = items.length * 64;
+    const maxScroll = Math.max(0, totalH - contentH);
     this.scrollOffset = Math.max(0, Math.min(maxScroll, this.scrollOffset + delta * 40));
     return true;
   },

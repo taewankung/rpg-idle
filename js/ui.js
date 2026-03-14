@@ -5,6 +5,9 @@ let showInventory=false,showCharStats=false,showHelp=false,showTabMenu=false,mou
 let waterFrame=0,waterTimer=0,blinkTimer=0;
 let invTooltipIdx=-1,invTooltipSlot=null; // tooltip state for inventory
 let invSelectedIdx=-1,invSelectedSlot=null; // selected item for actions
+let charStatsScroll=0; // scroll offset for character stats panel
+let invFilter='all'; // inventory filter: 'all','equip','potion','gem'
+let invScroll=0; // inventory scroll offset
 
 function roundRect(c,x,y,w,h,r){r=Math.min(r,w/2,h/2);c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath()}
 
@@ -76,6 +79,7 @@ function drawEntity(e,isPlayer,isNPC){
     const prefix=(typeof classChangeSystem!=='undefined'&&classChangeSystem.getSpritePrefix)?classChangeSystem.getSpritePrefix(e):(e.className||'knight').toLowerCase();
     let key=prefix+'_'+(e.dir||'down')+'_'+(e.frame%3);
     if(isPlayer&&typeof cosmeticShop!=='undefined'&&cosmeticShop.equippedSkin){const sk=cosmeticShop.getSkinSpriteKey(key);if(sk)key=sk}
+    if(isPlayer&&typeof cosmeticShop!=='undefined'&&cosmeticShop.drawSkinAura)cosmeticShop.drawSkinAura(sx,sy);
     const spr=spriteCache[key];if(spr)ctx.drawImage(spr,sx-16,sy-16,32,32);
     else{ctx.fillStyle=isPlayer?'#44ff88':'#4488ff';ctx.fillRect(sx-12,sy-12,24,24)}
   }else{
@@ -529,10 +533,24 @@ function _itemStatText(item){
 function _rarityStars(r){return{common:'★',uncommon:'★★',rare:'★★★',epic:'★★★★',legendary:'★★★★★'}[r]||'★'}
 
 // --- INVENTORY PANEL (press I) ---
+// Helper: get filtered inventory items as [{item,realIdx}]
+function _getFilteredInv(p){
+  const out=[];
+  for(let i=0;i<p.inventory.length;i++){
+    const it=p.inventory[i];if(!it)continue;
+    if(invFilter==='all'
+      ||(invFilter==='equip'&&(it.type==='weapon'||it.type==='armor'||it.type==='accessory'))
+      ||(invFilter==='potion'&&it.type==='potion')
+      ||(invFilter==='gem'&&it.type==='gem')
+      ||(invFilter==='misc'&&it.type!=='weapon'&&it.type!=='armor'&&it.type!=='accessory'&&it.type!=='potion'&&it.type!=='gem')
+    )out.push({item:it,realIdx:i});
+  }
+  return out;
+}
+
 function drawInventoryPanel(){
   const p=game.player;if(!p)return;
-  const maxInvRows=Math.ceil(getMaxInventory()/5);
-  const pw=280,ph=200+maxInvRows*46+60,px=canvas.width-pw-10,py=Math.max(10,80-Math.max(0,maxInvRows-4)*20);
+  const pw=280,ph=480,px=canvas.width-pw-10,py=20;
   ctx.save();
   // Panel background
   ctx.fillStyle='rgba(5,5,20,0.94)';roundRect(ctx,px,py,pw,ph,10);ctx.fill();
@@ -551,25 +569,19 @@ function drawInventoryPanel(){
     const sx=eqStartX+i*(slotW+slotGap),sy=eqY;
     const eq=p.equipment[slot];
     const isHov=invTooltipSlot===slot;
-    // Background
     ctx.fillStyle=isHov?'#15152a':'#0a0a1a';
     roundRect(ctx,sx,sy,slotW,slotH,4);ctx.fill();
     if(eq){
       ctx.strokeStyle=RARITY_COLORS[eq.rarity]||'#555';ctx.lineWidth=2;
       roundRect(ctx,sx,sy,slotW,slotH,4);ctx.stroke();
-      // Icon
       _drawItemIcon(sx+3,sy+4,24,eq);
-      // Name (truncated)
       ctx.fillStyle=RARITY_COLORS[eq.rarity]||'#ccc';ctx.font='bold 8px monospace';ctx.textAlign='left';
       ctx.fillText(eq.name.substring(0,10),sx+28,sy+16);
-      // Stat summary
       ctx.fillStyle='#8f8';ctx.font='7px monospace';
       ctx.fillText(_itemStatText(eq).substring(0,14),sx+28,sy+26);
-      // Slot label
       ctx.fillStyle='#556';ctx.font='7px monospace';ctx.textAlign='center';
       ctx.fillText(slotLabels[i],sx+slotW/2,sy+slotH-4);
     }else{
-      // Empty slot
       ctx.setLineDash([3,3]);ctx.strokeStyle='#334';ctx.lineWidth=1;
       roundRect(ctx,sx,sy,slotW,slotH,4);ctx.stroke();ctx.setLineDash([]);
       ctx.fillStyle='#445';ctx.font='9px monospace';ctx.textAlign='center';
@@ -579,52 +591,102 @@ function drawInventoryPanel(){
     }
   });
 
-  // --- Item grid ---
-  const maxInv=getMaxInventory();
+  // --- Category tabs ---
+  const tabY=eqY+slotH+8;
+  const tabs=[
+    {id:'all',    label:'All',    color:'#aaccee'},
+    {id:'equip',  label:'Equip',  color:'#3498db'},
+    {id:'potion', label:'Potion', color:'#2ecc71'},
+    {id:'gem',    label:'Gem',    color:'#aa44ff'},
+    {id:'misc',   label:'Misc',   color:'#888'}
+  ];
+  const tabW=Math.floor((pw-20)/tabs.length)-2;
+  tabs.forEach((tab,i)=>{
+    const tx=px+10+i*(tabW+2);
+    const active=invFilter===tab.id;
+    ctx.fillStyle=active?tab.color+'44':'rgba(20,20,40,0.8)';
+    roundRect(ctx,tx,tabY,tabW,20,4);ctx.fill();
+    ctx.strokeStyle=active?tab.color:'#333';ctx.lineWidth=active?1.5:0.5;
+    roundRect(ctx,tx,tabY,tabW,20,4);ctx.stroke();
+    ctx.fillStyle=active?tab.color:'#667';ctx.font='bold 8px monospace';ctx.textAlign='center';
+    // Count items for this tab
+    let cnt=0;
+    if(tab.id==='all')cnt=p.inventory.length;
+    else for(const it of p.inventory){if(!it)continue;if(tab.id==='equip'&&(it.type==='weapon'||it.type==='armor'||it.type==='accessory'))cnt++;else if(tab.id==='potion'&&it.type==='potion')cnt++;else if(tab.id==='gem'&&it.type==='gem')cnt++;else if(tab.id==='misc'&&it.type!=='weapon'&&it.type!=='armor'&&it.type!=='accessory'&&it.type!=='potion'&&it.type!=='gem')cnt++;}
+    ctx.fillText(tab.label+(cnt>0?' '+cnt:''),tx+tabW/2,tabY+14);
+  });
+
+  // --- Filtered item grid ---
+  const filtered=_getFilteredInv(p);
   const cols=5,slotS=42,gap=4;
-  const gx=px+(pw-(cols*slotS+(cols-1)*gap))/2,gy=eqY+slotH+12;
-  const rows=Math.ceil(maxInv/cols);
-  for(let r=0;r<rows;r++)for(let c2=0;c2<cols;c2++){
-    const idx=r*cols+c2;
-    if(idx>=maxInv)continue;
-    const sx=gx+c2*(slotS+gap),sy=gy+r*(slotS+gap);
-    const isHov=invTooltipIdx===idx;
-    const isSel=invSelectedIdx===idx&&invSelectedSlot===null;
+  const gridY=tabY+26;
+  const gridH=ph-(gridY-py)-58; // space for buttons at bottom
+  const gridRows=Math.floor(gridH/(slotS+gap));
+  const totalRows=Math.ceil(filtered.length/cols);
+  const maxScroll=Math.max(0,(totalRows-gridRows)*(slotS+gap));
+  invScroll=Math.max(0,Math.min(maxScroll,invScroll));
+  const gx=px+(pw-(cols*slotS+(cols-1)*gap))/2;
+
+  // Clip grid area
+  ctx.save();
+  ctx.beginPath();ctx.rect(px+4,gridY,pw-8,gridH);ctx.clip();
+
+  for(let vi=0;vi<filtered.length;vi++){
+    const r=Math.floor(vi/cols),c2=vi%cols;
+    const sx=gx+c2*(slotS+gap),sy=gridY+r*(slotS+gap)-invScroll;
+    if(sy+slotS<gridY||sy>gridY+gridH)continue;
+    const {item,realIdx}=filtered[vi];
+    const isHov=invTooltipIdx===realIdx;
+    const isSel=invSelectedIdx===realIdx&&invSelectedSlot===null;
     ctx.fillStyle=isHov?'#15152a':isSel?'#1a1a30':'#0a0a1a';
     roundRect(ctx,sx,sy,slotS,slotS,3);ctx.fill();
-    const item=p.inventory[idx];
-    if(item){
-      // Rarity border
-      ctx.strokeStyle=RARITY_COLORS[item.rarity]||'#555';ctx.lineWidth=isSel?2:1;
-      roundRect(ctx,sx,sy,slotS,slotS,3);ctx.stroke();
-      // Icon
-      _drawItemIcon(sx+2,sy+2,20,item);
-      // Name (truncated)
-      ctx.fillStyle=RARITY_COLORS[item.rarity]||'#aaa';ctx.font='7px monospace';ctx.textAlign='center';
-      ctx.fillText(item.name.substring(0,7),sx+slotS/2,sy+28);
-      // Stat hint
-      ctx.fillStyle='#888';ctx.font='6px monospace';
-      const hint=item.type==='potion'?'Heal '+(item.stats.hp||0):_itemStatText(item).substring(0,12);
-      ctx.fillText(hint,sx+slotS/2,sy+37);
-      // Potion stack count
-      if(item.type==='potion'){
-        const potCount=p.inventory.filter(x=>x&&x.type==='potion'&&x.name===item.name).length;
-        if(potCount>1){ctx.fillStyle='#fff';ctx.font='bold 8px monospace';ctx.textAlign='right';ctx.fillText('x'+potCount,sx+slotS-2,sy+12)}
-      }
-    }else{
+    // Rarity border
+    ctx.strokeStyle=RARITY_COLORS[item.rarity]||'#555';ctx.lineWidth=isSel?2:1;
+    roundRect(ctx,sx,sy,slotS,slotS,3);ctx.stroke();
+    // Icon
+    _drawItemIcon(sx+2,sy+2,20,item);
+    // Name (truncated)
+    ctx.fillStyle=RARITY_COLORS[item.rarity]||'#aaa';ctx.font='7px monospace';ctx.textAlign='center';
+    ctx.fillText(item.name.substring(0,7),sx+slotS/2,sy+28);
+    // Stat hint
+    ctx.fillStyle='#888';ctx.font='6px monospace';
+    const hint=item.type==='potion'?'Heal '+(item.stats.hp||0):item.type==='gem'?item.monsterType||'Gem':_itemStatText(item).substring(0,12);
+    ctx.fillText(hint,sx+slotS/2,sy+37);
+    // Potion stack count
+    if(item.type==='potion'){
+      const potCount=p.inventory.filter(x=>x&&x.type==='potion'&&x.name===item.name).length;
+      if(potCount>1){ctx.fillStyle='#fff';ctx.font='bold 8px monospace';ctx.textAlign='right';ctx.fillText('x'+potCount,sx+slotS-2,sy+12)}
+    }
+  }
+  // Empty slots if filter is 'all'
+  if(invFilter==='all'){
+    const maxInv=getMaxInventory();
+    for(let vi=filtered.length;vi<maxInv;vi++){
+      const r=Math.floor(vi/cols),c2=vi%cols;
+      const sx=gx+c2*(slotS+gap),sy=gridY+r*(slotS+gap)-invScroll;
+      if(sy+slotS<gridY||sy>gridY+gridH)continue;
       ctx.strokeStyle='#1a1a2a';ctx.lineWidth=1;
       roundRect(ctx,sx,sy,slotS,slotS,3);ctx.stroke();
     }
   }
+  ctx.restore(); // end clip
+
+  // Scrollbar
+  if(totalRows>gridRows){
+    const sbH=Math.max(15,gridH*gridRows/totalRows);
+    const sbY=gridY+((gridH-sbH)*invScroll/maxScroll);
+    ctx.fillStyle='rgba(100,140,180,0.3)';roundRect(ctx,px+pw-8,sbY,4,sbH,2);ctx.fill();
+  }
 
   // --- Inventory count ---
+  const bottomY=gridY+gridH+4;
   ctx.fillStyle='#556';ctx.font='9px monospace';ctx.textAlign='left';
-  ctx.fillText(p.inventory.length+'/'+getMaxInventory()+' items',px+12,py+ph-36);
+  ctx.fillText(p.inventory.length+'/'+getMaxInventory()+' items'+(invFilter!=='all'?' (showing '+filtered.length+')':''),px+12,bottomY+10);
 
   // --- Expand Inventory button ---
   const upgCost=getNextInvUpgradeCost();
   if(upgCost!==null){
-    const ebx=px+pw-110,eby=py+ph-42,ebw=100,ebh=18;
+    const ebx=px+pw-110,eby=bottomY+1,ebw=100,ebh=18;
     const canUpg=p.gold>=upgCost;
     ctx.fillStyle=canUpg?'rgba(40,100,40,0.9)':'rgba(40,40,40,0.9)';
     roundRect(ctx,ebx,eby,ebw,ebh,4);ctx.fill();
@@ -634,31 +696,33 @@ function drawInventoryPanel(){
   }
 
   // --- Action buttons (when item selected) ---
+  const actY=bottomY+22;
   if(invSelectedIdx>=0&&invSelectedSlot===null&&p.inventory[invSelectedIdx]){
     const item=p.inventory[invSelectedIdx];
-    const btnY=py+ph-30,btnH=22;
+    const btnH=22;
     const btns=[];
     if(item.type==='potion')btns.push({label:'Use',color:'#2ecc71',action:'use'});
+    else if(item.type==='gem')btns.push({label:'Summon',color:'#aa44ff',action:'use'});
     else btns.push({label:'Equip',color:'#3498db',action:'equip'});
     btns.push({label:'Sell '+item.value+'g',color:'#f1c40f',action:'sell'});
     btns.push({label:'Drop',color:'#e74c3c',action:'drop'});
     const btnW=Math.floor((pw-20)/btns.length)-4;
     btns.forEach((b,i)=>{
       const bx=px+10+i*(btnW+4);
-      ctx.fillStyle=b.color+'44';roundRect(ctx,bx,btnY,btnW,btnH,4);ctx.fill();
-      ctx.strokeStyle=b.color;ctx.lineWidth=1;roundRect(ctx,bx,btnY,btnW,btnH,4);ctx.stroke();
+      ctx.fillStyle=b.color+'44';roundRect(ctx,bx,actY,btnW,btnH,4);ctx.fill();
+      ctx.strokeStyle=b.color;ctx.lineWidth=1;roundRect(ctx,bx,actY,btnW,btnH,4);ctx.stroke();
       ctx.fillStyle='#fff';ctx.font='bold 9px sans-serif';ctx.textAlign='center';
-      ctx.fillText(b.label,bx+btnW/2,btnY+15);
+      ctx.fillText(b.label,bx+btnW/2,actY+15);
     });
   }
   // --- Selected equipment action ---
   else if(invSelectedSlot!==null&&p.equipment[invSelectedSlot]){
-    const btnY=py+ph-30,btnH=22,btnW=80;
+    const btnH=22,btnW=80;
     const bx=px+(pw-btnW)/2;
-    ctx.fillStyle='#e7434344';roundRect(ctx,bx,btnY,btnW,btnH,4);ctx.fill();
-    ctx.strokeStyle='#e74c3c';ctx.lineWidth=1;roundRect(ctx,bx,btnY,btnW,btnH,4);ctx.stroke();
+    ctx.fillStyle='#e7434344';roundRect(ctx,bx,actY,btnW,btnH,4);ctx.fill();
+    ctx.strokeStyle='#e74c3c';ctx.lineWidth=1;roundRect(ctx,bx,actY,btnW,btnH,4);ctx.stroke();
     ctx.fillStyle='#fff';ctx.font='bold 9px sans-serif';ctx.textAlign='center';
-    ctx.fillText('Unequip',bx+btnW/2,btnY+15);
+    ctx.fillText('Unequip',bx+btnW/2,actY+15);
   }
 
   // --- Tooltip ---
@@ -717,8 +781,7 @@ function _drawItemTooltip(item,tx,ty,p){
 // --- Handle inventory clicks ---
 function handleInventoryClick(cx,cy){
   const p=game.player;if(!p)return false;
-  const maxInvRows=Math.ceil(getMaxInventory()/5);
-  const pw=280,ph=200+maxInvRows*46+60,px=canvas.width-pw-10,py=Math.max(10,80-Math.max(0,maxInvRows-4)*20);
+  const pw=280,ph=480,px=canvas.width-pw-10,py=20;
   // Outside panel
   if(cx<px||cx>px+pw||cy<py||cy>py+ph){showInventory=false;invSelectedIdx=-1;invSelectedSlot=null;return true}
 
@@ -736,10 +799,42 @@ function handleInventoryClick(cx,cy){
     }
   }
 
+  // Tab clicks
+  const tabY=eqY+slotH+8;
+  const tabIds=['all','equip','potion','gem','misc'];
+  const tabW=Math.floor((pw-20)/tabIds.length)-2;
+  for(let i=0;i<tabIds.length;i++){
+    const tx=px+10+i*(tabW+2);
+    if(cx>=tx&&cx<=tx+tabW&&cy>=tabY&&cy<=tabY+20){
+      invFilter=tabIds[i];invScroll=0;invSelectedIdx=-1;invSelectedSlot=null;
+      return true;
+    }
+  }
+
+  // Filtered item grid clicks
+  const filtered=_getFilteredInv(p);
+  const cols=5,slotS=42,gap=4;
+  const gridY=tabY+26;
+  const gridH=ph-(gridY-py)-58;
+  const gx=px+(pw-(cols*slotS+(cols-1)*gap))/2;
+
+  for(let vi=0;vi<filtered.length;vi++){
+    const r=Math.floor(vi/cols),c2=vi%cols;
+    const sx=gx+c2*(slotS+gap),sy=gridY+r*(slotS+gap)-invScroll;
+    if(sy+slotS<gridY||sy>gridY+gridH)continue;
+    if(cx>=sx&&cx<=sx+slotS&&cy>=sy&&cy<=sy+slotS){
+      const realIdx=filtered[vi].realIdx;
+      if(invSelectedIdx===realIdx&&invSelectedSlot===null)invSelectedIdx=-1;
+      else{invSelectedIdx=realIdx;invSelectedSlot=null}
+      return true;
+    }
+  }
+
   // Expand inventory button
+  const bottomY=gridY+gridH+4;
   const upgCost=getNextInvUpgradeCost();
   if(upgCost!==null){
-    const ebx=px+pw-110,eby=py+ph-42,ebw=100,ebh=18;
+    const ebx=px+pw-110,eby=bottomY+1,ebw=100,ebh=18;
     if(cx>=ebx&&cx<=ebx+ebw&&cy>=eby&&cy<=eby+ebh){
       if(p.gold>=upgCost){
         p.gold-=upgCost;
@@ -755,36 +850,20 @@ function handleInventoryClick(cx,cy){
     }
   }
 
-  // Item grid clicks
-  const maxInv=getMaxInventory();
-  const cols=5,slotS=42,gap=4;
-  const gx=px+(pw-(cols*slotS+(cols-1)*gap))/2,gy=eqY+slotH+12;
-  const rows=Math.ceil(maxInv/cols);
-  for(let r=0;r<rows;r++)for(let c2=0;c2<cols;c2++){
-    const idx=r*cols+c2;
-    if(idx>=maxInv)continue;
-    const sx=gx+c2*(slotS+gap),sy=gy+r*(slotS+gap);
-    if(cx>=sx&&cx<=sx+slotS&&cy>=sy&&cy<=sy+slotS){
-      if(p.inventory[idx]){
-        if(invSelectedIdx===idx&&invSelectedSlot===null)invSelectedIdx=-1;
-        else{invSelectedIdx=idx;invSelectedSlot=null}
-      }
-      return true;
-    }
-  }
-
   // Action buttons
+  const actY=bottomY+22;
   if(invSelectedIdx>=0&&invSelectedSlot===null&&p.inventory[invSelectedIdx]){
     const item=p.inventory[invSelectedIdx];
-    const btnY=py+ph-30,btnH=22;
+    const btnH=22;
     const btns=[];
     if(item.type==='potion')btns.push('use');
+    else if(item.type==='gem')btns.push('use');
     else btns.push('equip');
     btns.push('sell');btns.push('drop');
     const btnW=Math.floor((pw-20)/btns.length)-4;
     for(let i=0;i<btns.length;i++){
       const bx=px+10+i*(btnW+4);
-      if(cx>=bx&&cx<=bx+btnW&&cy>=btnY&&cy<=btnY+btnH){
+      if(cx>=bx&&cx<=bx+btnW&&cy>=actY&&cy<=actY+btnH){
         _doInventoryAction(btns[i],invSelectedIdx);
         return true;
       }
@@ -792,9 +871,9 @@ function handleInventoryClick(cx,cy){
   }
   // Unequip button
   if(invSelectedSlot!==null&&p.equipment[invSelectedSlot]){
-    const btnY=py+ph-30,btnH=22,btnW=80;
+    const btnH=22,btnW=80;
     const bx=px+(pw-btnW)/2;
-    if(cx>=bx&&cx<=bx+btnW&&cy>=btnY&&cy<=btnY+btnH){
+    if(cx>=bx&&cx<=bx+btnW&&cy>=actY&&cy<=actY+btnH){
       _doUnequip(invSelectedSlot);invSelectedSlot=null;
       return true;
     }
@@ -852,12 +931,23 @@ function _doUnequip(slot){
 function drawCharStatsPanel(){
   const p=game.player;if(!p)return;
   const hasStatSys=typeof statPointSystem!=='undefined';
-  const pw=hasStatSys?320:260,ph=hasStatSys?740:420,px=canvas.width-pw-10,py=hasStatSys?20:80;
+  const pw=hasStatSys?320:260;
+  const contentH=hasStatSys?860:420;
+  const maxPh=canvas.height-40;
+  const ph=Math.min(contentH,maxPh);
+  const px=canvas.width-pw-10,py=hasStatSys?20:80;
+  const needsScroll=contentH>ph;
+  const headerH=34; // title area height that doesn't scroll
+  if(needsScroll){const maxScroll=contentH-ph+20;charStatsScroll=Math.max(0,Math.min(maxScroll,charStatsScroll))}else{charStatsScroll=0}
   ctx.save();
   ctx.fillStyle='rgba(5,5,20,0.94)';roundRect(ctx,px,py,pw,ph,10);ctx.fill();
   ctx.strokeStyle='#557799';ctx.lineWidth=1.5;roundRect(ctx,px,py,pw,ph,10);ctx.stroke();
   ctx.fillStyle='#aaccee';ctx.font='bold 14px sans-serif';ctx.textAlign='center';
   ctx.fillText('Character [C]',px+pw/2,py+22);
+  // Clip content area and apply scroll
+  ctx.save();
+  ctx.beginPath();ctx.rect(px,py+headerH,pw,ph-headerH);ctx.clip();
+  ctx.translate(0,-charStatsScroll);
 
   // --- Character preview (animated sprite) ---
   const sprKey=p.className.toLowerCase()+'_down_'+p.frame;
@@ -965,6 +1055,13 @@ function drawCharStatsPanel(){
   // Stat point allocation section
   if(typeof statPointSystem!=='undefined'){
     statPointSystem.drawStatAllocation(px,py,pw,sy+4);
+  }
+  ctx.restore(); // end clip+scroll
+  // Scrollbar indicator
+  if(contentH>ph){
+    const sbH=Math.max(20,ph*ph/contentH);
+    const sbY=py+headerH+(ph-headerH-sbH)*(charStatsScroll/(contentH-ph+20));
+    ctx.fillStyle='rgba(100,140,180,0.3)';roundRect(ctx,px+pw-6,sbY,4,sbH,2);ctx.fill();
   }
   // Flashing SP icon in HUD when unspent > 0
   ctx.restore();

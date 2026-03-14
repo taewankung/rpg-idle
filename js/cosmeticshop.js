@@ -4,34 +4,235 @@
 
 const SKIN_DEFS = {
   // --- Rare (5000g) ---
-  shadow:     { name:'Shadow Cloak',    price:5000,  rarity:'rare', tint:'#0a0020', opacity:0.55, desc:'Vanish into darkness',
-                aura:{color:'#1a0033',alt:'#330055',count:4,speed:1.5,size:2,style:'smoke'} },
-  crimson:    { name:'Blood Knight',    price:5000,  rarity:'rare', tint:'#cc0000', opacity:0.40, desc:'Armor forged in blood',
-                aura:{color:'#ff2200',alt:'#880000',count:3,speed:2,size:2,style:'drip'} },
-  frost:      { name:'Frostborne',      price:5000,  rarity:'rare', tint:'#0066cc', opacity:0.40, desc:'Frozen warrior of the north',
-                aura:{color:'#aaeeff',alt:'#44aaff',count:5,speed:1,size:2,style:'snowflake'} },
-  sylvan:     { name:'Sylvan Spirit',   price:5000,  rarity:'rare', tint:'#1a6b2a', opacity:0.38, desc:'One with the ancient forest',
-                aura:{color:'#44dd44',alt:'#88ff44',count:4,speed:0.8,size:2,style:'leaf'} },
+  ninja: { name:'Shadow Ninja', price:5000, rarity:'rare', desc:'Silent blade in the dark',
+    skin:'#e8d4b8', body:'#1a1a2e', armor:'#16213e', legs:'#0f3460',
+    head:(c,s,u)=>{
+      // Ninja mask/hood
+      c.fillStyle='#1a1a2e';c.fillRect(9,2,14,8);
+      if(!u){c.fillStyle='#0f3460';c.fillRect(9,6,14,5); // face mask
+      c.fillStyle='#fff';if(!s){c.fillRect(12,4,2,2);c.fillRect(18,4,2,2)}else{c.fillRect(18,4,2,2)}
+      c.fillStyle='#c00';c.fillRect(12,4,1,1);c.fillRect(18,4,1,1)} // red eyes
+      // Headband tail
+      c.fillStyle='#e74c3c';c.fillRect(9,3,14,2);
+      c.fillRect(23,3,6,1);c.fillRect(25,4,5,1);
+    },
+    right:(c)=>{c.fillStyle='#9ca3af';c.fillRect(25,8,2,10);c.fillRect(24,6,4,2)}, // kunai
+    left:(c)=>{c.fillStyle='#9ca3af';c.fillRect(4,10,2,2);c.fillRect(3,11,2,2);c.fillRect(2,12,2,2)}, // shuriken
+    aura:{color:'#1a1a2e',alt:'#e74c3c',count:3,speed:2,size:1.5,style:'smoke'} },
+
+  pirate: { name:'Sea Pirate', price:5000, rarity:'rare', desc:'Terror of the seven seas',
+    skin:'#d4a574', body:'#ecf0f1', armor:'#2c3e50', legs:'#8B4513',
+    head:(c,s,u)=>{
+      // Pirate hat
+      c.fillStyle='#2c3e50';c.fillRect(7,0,18,4);c.fillRect(5,4,22,3);
+      c.fillStyle='#f1c40f';c.fillRect(14,1,4,3); // skull emblem
+      if(!u){c.fillStyle='#111';if(!s){c.fillRect(12,7,2,2);c.fillRect(18,7,2,2)}else{c.fillRect(18,7,2,2)}
+      // Eye patch
+      c.fillStyle='#111';if(!s){c.fillRect(11,7,4,3);c.fillRect(10,5,1,3)}else{c.fillRect(17,7,4,3)}}
+    },
+    right:(c)=>{c.fillStyle='#bdc3c7';c.fillRect(26,6,2,16);c.fillStyle='#f1c40f';c.fillRect(25,5,4,3)}, // cutlass
+    aura:{color:'#2c3e50',alt:'#f1c40f',count:3,speed:1,size:2,style:'leaf'} },
+
+  frost: { name:'Frostborne', price:5000, rarity:'rare', desc:'Frozen warrior of the north',
+    skin:'#c8e6ff', body:'#4488cc', armor:'#2266aa', legs:'#1a4d7a',
+    head:(c,s,u)=>{
+      c.fillStyle='#aaeeff';c.fillRect(9,1,14,6); // ice crown
+      c.fillStyle='#66bbee';c.fillRect(11,0,3,4);c.fillRect(18,0,3,4);c.fillRect(14,-1,4,3); // crystals
+      c.fillStyle='#fff';c.fillRect(15,0,2,2);
+    },
+    right:(c)=>{c.fillStyle='#88ccff';c.fillRect(26,4,2,18);c.fillStyle='#aaeeff';c.fillRect(25,2,4,4)},
+    aura:{color:'#aaeeff',alt:'#44aaff',count:5,speed:1,size:2,style:'snowflake'} },
+
+  viking: { name:'Viking Raider', price:5000, rarity:'rare', desc:'From the frozen north',
+    skin:'#f4c99a', body:'#8B7355', armor:'#6B4226', legs:'#5C4033',
+    head:(c,s,u)=>{
+      // Horned helmet
+      c.fillStyle='#808080';c.fillRect(8,3,16,7);
+      c.fillStyle='#999';c.fillRect(8,6,16,3); // visor
+      c.fillStyle='#f5f0e1';c.fillRect(7,2,4,2);c.lineTo(5,-2);
+      c.beginPath();c.moveTo(8,4);c.lineTo(5,-2);c.lineTo(10,3);c.fillStyle='#f5f0e1';c.fill(); // left horn
+      c.beginPath();c.moveTo(24,4);c.lineTo(27,-2);c.lineTo(22,3);c.fill(); // right horn
+      if(!u&&!s){c.fillStyle='#3498db';c.fillRect(12,7,2,2);c.fillRect(18,7,2,2)}
+      // Beard
+      c.fillStyle='#c68c53';c.fillRect(12,11,8,3);c.fillRect(14,13,4,2);
+    },
+    right:(c)=>{c.fillStyle='#888';c.fillRect(26,4,2,14);c.fillStyle='#aaa';c.fillRect(24,2,6,4)}, // axe
+    left:(c)=>{c.fillStyle='#8B4513';c.beginPath();c.arc(5,18,8,0,Math.PI*2);c.fillStyle='#6B4226';c.fill();
+      c.strokeStyle='#888';c.lineWidth=1;c.stroke()}, // shield
+    aura:{color:'#c68c53',alt:'#808080',count:3,speed:1.5,size:2,style:'spark'} },
+
   // --- Epic (8000-12000g) ---
-  dragonborn: { name:'Dragonborn',      price:8000,  rarity:'epic', tint:'#cc4400', opacity:0.42, desc:'Dragon scales burn with fury',
-                aura:{color:'#ff6600',alt:'#ffaa00',count:6,speed:2.5,size:3,style:'flame'} },
-  stormcall:  { name:'Stormcaller',     price:8000,  rarity:'epic', tint:'#2244aa', opacity:0.38, desc:'Thunder courses through veins',
-                aura:{color:'#ffff44',alt:'#44aaff',count:4,speed:3,size:2,style:'spark'} },
-  sakura:     { name:'Sakura Bloom',    price:10000, rarity:'epic', tint:'#ff66aa', opacity:0.38, desc:'Cherry blossom warrior',
-                aura:{color:'#ffaacc',alt:'#ff88bb',count:6,speed:0.6,size:3,style:'petal'} },
-  abyssal:    { name:'Abyssal Lord',    price:10000, rarity:'epic', tint:'#220044', opacity:0.50, desc:'Demon king from the abyss',
-                aura:{color:'#8800cc',alt:'#ff00aa',count:5,speed:2,size:3,style:'flame'} },
-  celestial:  { name:'Celestial',       price:12000, rarity:'epic', tint:'#88ccff', opacity:0.35, desc:'Blessed by the heavens',
-                aura:{color:'#ffffcc',alt:'#ffdd88',count:5,speed:0.7,size:2,style:'glow'} },
+  dracula: { name:'Count Dracula', price:8000, rarity:'epic', desc:'Lord of the eternal night',
+    skin:'#e8e0d0', body:'#1a1a1a', armor:'#8B0000', legs:'#111',
+    head:(c,s,u)=>{
+      // Slicked-back hair
+      c.fillStyle='#111';c.fillRect(9,1,14,6);c.fillRect(8,3,2,4);c.fillRect(22,3,2,4);
+      if(!u){c.fillStyle='#c00';if(!s){c.fillRect(12,7,2,2);c.fillRect(18,7,2,2)}else{c.fillRect(18,7,2,2)}
+      // Fangs
+      c.fillStyle='#fff';c.fillRect(13,11,1,2);c.fillRect(18,11,1,2)}
+    },
+    right:null,
+    bodyExtra:(c,s)=>{
+      // Cape
+      c.fillStyle='#8B0000';c.fillRect(6,12,3,16);c.fillRect(23,12,3,16);
+      c.fillStyle='#cc0000';c.fillRect(7,13,2,14);c.fillRect(24,13,2,14);
+      // Inner cape lining
+      c.fillStyle='#220000';c.fillRect(8,14,1,12);c.fillRect(23,14,1,12);
+    },
+    aura:{color:'#8B0000',alt:'#ff0000',count:4,speed:1.5,size:2,style:'drip'} },
+
+  samurai: { name:'Ronin Samurai', price:8000, rarity:'epic', desc:'Way of the blade',
+    skin:'#f4c99a', body:'#2c3e50', armor:'#c0392b', legs:'#1a252f',
+    head:(c,s,u)=>{
+      // Kabuto helmet
+      c.fillStyle='#c0392b';c.fillRect(7,1,18,8);
+      c.fillStyle='#e74c3c';c.fillRect(7,1,18,3);
+      c.fillStyle='#f1c40f';c.fillRect(14,0,4,2); // crest
+      c.fillRect(13,-2,6,3);
+      // Face guard
+      c.fillStyle='#2c3e50';c.fillRect(9,8,14,3);
+      if(!u&&!s){c.fillStyle='#111';c.fillRect(12,5,2,2);c.fillRect(18,5,2,2)}
+    },
+    right:(c)=>{c.fillStyle='#bdc3c7';c.fillRect(26,2,2,22);c.fillStyle='#f1c40f';c.fillRect(25,0,4,3)}, // katana
+    left:(c)=>{c.fillStyle='#c0392b';c.fillRect(3,12,5,7);c.fillStyle='#e74c3c';c.fillRect(4,13,3,5)}, // saya
+    aura:{color:'#c0392b',alt:'#f1c40f',count:4,speed:2,size:2,style:'flame'} },
+
+  pharaoh: { name:'Pharaoh', price:10000, rarity:'epic', desc:'God-king of the sands',
+    skin:'#c8a87c', body:'#1a6baa', armor:'#f1c40f', legs:'#e8d9b5',
+    head:(c,s,u)=>{
+      // Nemes headdress
+      c.fillStyle='#f1c40f';c.fillRect(8,0,16,10);
+      c.fillStyle='#1a6baa';c.fillRect(10,1,12,2);c.fillRect(10,5,12,2); // stripes
+      c.fillStyle='#f1c40f';c.fillRect(6,6,4,8);c.fillRect(22,6,4,8); // side flaps
+      c.fillStyle='#1a6baa';c.fillRect(7,8,2,4);c.fillRect(23,8,2,4);
+      // Cobra ornament
+      c.fillStyle='#27ae60';c.fillRect(14,-2,4,3);c.fillRect(15,-3,2,2);
+      if(!u&&!s){c.fillStyle='#111';c.fillRect(12,7,2,2);c.fillRect(18,7,2,2)}
+    },
+    right:(c)=>{c.fillStyle='#f1c40f';c.fillRect(26,4,2,18);c.fillStyle='#27ae60';c.fillRect(25,2,4,4)}, // ankh staff
+    aura:{color:'#f1c40f',alt:'#1a6baa',count:5,speed:0.8,size:2,style:'glow'} },
+
+  demon: { name:'Demon Lord', price:10000, rarity:'epic', desc:'Ruler of the infernal realm',
+    skin:'#cc4444', body:'#2d1b2e', armor:'#4a1942', legs:'#1a0a1a',
+    head:(c,s,u)=>{
+      // Horns
+      c.fillStyle='#1a1a1a';c.fillRect(9,3,14,7);
+      c.fillStyle='#444';
+      c.beginPath();c.moveTo(9,4);c.lineTo(5,-4);c.lineTo(11,3);c.fill();
+      c.beginPath();c.moveTo(23,4);c.lineTo(27,-4);c.lineTo(21,3);c.fill();
+      if(!u){c.fillStyle='#ff4400';if(!s){c.fillRect(12,6,2,2);c.fillRect(18,6,2,2)}else{c.fillRect(18,6,2,2)}}
+      // Mouth
+      c.fillStyle='#ff2200';c.fillRect(13,10,6,1);
+    },
+    bodyExtra:(c,s)=>{
+      // Dark wings (small)
+      c.fillStyle='#2d1b2e';
+      c.beginPath();c.moveTo(8,14);c.lineTo(0,8);c.lineTo(2,16);c.closePath();c.fill();
+      c.beginPath();c.moveTo(24,14);c.lineTo(32,8);c.lineTo(30,16);c.closePath();c.fill();
+    },
+    aura:{color:'#ff4400',alt:'#4a1942',count:5,speed:2,size:3,style:'flame'} },
+
+  sakura: { name:'Sakura Bloom', price:12000, rarity:'epic', desc:'Cherry blossom spirit',
+    skin:'#ffe0e8', body:'#ff88aa', armor:'#ff5588', legs:'#cc4477',
+    head:(c,s,u)=>{
+      c.fillStyle='#ff88aa';c.fillRect(9,2,14,6);
+      // Flower ornament
+      c.fillStyle='#ff5588';c.fillRect(20,0,4,4);c.fillStyle='#ffaacc';c.fillRect(21,1,2,2);
+      c.fillStyle='#ff99bb';c.fillRect(7,1,4,3);
+      // Petals in hair
+      c.fillStyle='#ffccdd';c.fillRect(10,1,2,2);c.fillRect(16,0,2,2);
+    },
+    right:(c)=>{c.fillStyle='#ff5588';c.fillRect(26,8,2,8);c.fillStyle='#ffaacc';c.fillRect(25,6,4,3)}, // fan
+    aura:{color:'#ffaacc',alt:'#ff88bb',count:6,speed:0.6,size:3,style:'petal'} },
+
   // --- Legendary (15000-30000g) ---
-  phoenix:    { name:'Phoenix Reborn',  price:15000, rarity:'legendary', tint:'#dd6600', opacity:0.45, desc:'Rise from the ashes eternal',
-                aura:{color:'#ff4400',alt:'#ffcc00',count:8,speed:3,size:3,style:'flame'} },
-  astral:     { name:'Astral Walker',   price:20000, rarity:'legendary', tint:'#4422aa', opacity:0.40, desc:'Walk among the stars',
-                aura:{color:'#aaaaff',alt:'#ff88ff',count:7,speed:1.2,size:2,style:'star'} },
-  voidking:   { name:'Void Emperor',    price:25000, rarity:'legendary', tint:'#110022', opacity:0.55, desc:'Ruler of the endless void',
-                aura:{color:'#aa00ff',alt:'#000000',count:6,speed:2,size:4,style:'vortex'} },
-  seraphim:   { name:'Seraphim',        price:30000, rarity:'legendary', tint:'#fff8e0', opacity:0.30, desc:'Six-winged divine avatar',
-                aura:{color:'#FFD700',alt:'#ffffff',count:8,speed:0.5,size:3,style:'halo'} }
+  phoenix: { name:'Phoenix Knight', price:15000, rarity:'legendary', desc:'Reborn in eternal flame',
+    skin:'#ffe0a0', body:'#ff6600', armor:'#cc4400', legs:'#aa3300',
+    head:(c,s,u)=>{
+      // Flame helm
+      c.fillStyle='#cc4400';c.fillRect(8,2,16,8);
+      c.fillStyle='#ff6600';c.fillRect(10,0,3,4);c.fillRect(15,-1,3,5);c.fillRect(19,0,3,4); // flames
+      c.fillStyle='#ffaa00';c.fillRect(11,0,1,3);c.fillRect(16,-1,1,4);c.fillRect(20,0,1,3);
+      if(!u&&!s){c.fillStyle='#fff';c.fillRect(12,6,2,2);c.fillRect(18,6,2,2)}
+    },
+    bodyExtra:(c,s)=>{
+      // Fire wings
+      c.fillStyle='#ff6600';
+      c.beginPath();c.moveTo(8,14);c.lineTo(-2,6);c.lineTo(0,10);c.lineTo(-4,2);c.lineTo(4,12);c.closePath();c.fill();
+      c.beginPath();c.moveTo(24,14);c.lineTo(34,6);c.lineTo(32,10);c.lineTo(36,2);c.lineTo(28,12);c.closePath();c.fill();
+      c.fillStyle='#ffaa00';
+      c.beginPath();c.moveTo(8,16);c.lineTo(0,10);c.lineTo(4,14);c.closePath();c.fill();
+      c.beginPath();c.moveTo(24,16);c.lineTo(32,10);c.lineTo(28,14);c.closePath();c.fill();
+    },
+    aura:{color:'#ff4400',alt:'#ffcc00',count:8,speed:3,size:3,style:'flame'} },
+
+  angel: { name:'Divine Angel', price:20000, rarity:'legendary', desc:'Heaven\'s holy warrior',
+    skin:'#fff5ee', body:'#ecf0f1', armor:'#FFD700', legs:'#f5f5dc',
+    head:(c,s,u)=>{
+      // Halo
+      c.strokeStyle='#FFD700';c.lineWidth=2;
+      c.beginPath();c.ellipse(16,-1,8,3,0,0,Math.PI*2);c.stroke();
+      c.fillStyle='#fff';c.fillRect(9,3,14,6);
+      if(!u&&!s){c.fillStyle='#3498db';c.fillRect(12,6,2,2);c.fillRect(18,6,2,2)}
+    },
+    bodyExtra:(c,s)=>{
+      // Angel wings
+      c.fillStyle='#ecf0f1';
+      c.beginPath();c.moveTo(8,12);c.lineTo(-2,4);c.lineTo(-4,8);c.lineTo(-2,14);c.lineTo(4,16);c.closePath();c.fill();
+      c.beginPath();c.moveTo(24,12);c.lineTo(34,4);c.lineTo(36,8);c.lineTo(34,14);c.lineTo(28,16);c.closePath();c.fill();
+      c.fillStyle='#fff';
+      c.beginPath();c.moveTo(8,14);c.lineTo(0,8);c.lineTo(2,14);c.closePath();c.fill();
+      c.beginPath();c.moveTo(24,14);c.lineTo(32,8);c.lineTo(30,14);c.closePath();c.fill();
+    },
+    right:(c)=>{c.fillStyle='#FFD700';c.fillRect(26,4,2,18);c.fillStyle='#fff';c.fillRect(24,2,6,4)},
+    aura:{color:'#FFD700',alt:'#ffffff',count:6,speed:0.5,size:3,style:'halo'} },
+
+  voidking: { name:'Void Emperor', price:25000, rarity:'legendary', desc:'Ruler of the endless void',
+    skin:'#8866aa', body:'#110022', armor:'#220044', legs:'#0a0014',
+    head:(c,s,u)=>{
+      c.fillStyle='#220044';c.fillRect(8,1,16,9);
+      // Crown with void gems
+      c.fillStyle='#440066';c.fillRect(8,0,16,4);
+      c.fillStyle='#aa00ff';c.fillRect(11,0,2,3);c.fillRect(15,-1,2,4);c.fillRect(19,0,2,3);
+      if(!u){c.fillStyle='#cc44ff';if(!s){c.fillRect(12,6,2,2);c.fillRect(18,6,2,2)}else{c.fillRect(18,6,2,2)}}
+    },
+    bodyExtra:(c,s)=>{
+      // Void cape
+      c.fillStyle='#110022';c.fillRect(5,12,4,18);c.fillRect(23,12,4,18);
+      c.fillStyle='#aa00ff';c.fillRect(6,20,1,1);c.fillRect(8,16,1,1);c.fillRect(24,18,1,1);c.fillRect(26,22,1,1);
+    },
+    right:(c)=>{c.fillStyle='#440066';c.fillRect(26,2,2,20);c.fillStyle='#aa00ff';c.fillRect(25,0,4,4);
+      c.fillStyle='#cc44ff';c.fillRect(26,1,2,2)},
+    aura:{color:'#aa00ff',alt:'#000000',count:6,speed:2,size:4,style:'vortex'} },
+
+  seraphim: { name:'Seraphim', price:30000, rarity:'legendary', desc:'Six-winged divine avatar',
+    skin:'#fff8e0', body:'#fffce0', armor:'#FFD700', legs:'#f5e6c8',
+    head:(c,s,u)=>{
+      // Golden crown with divine glow
+      c.fillStyle='#FFD700';c.fillRect(8,0,16,4);
+      c.fillRect(10,-2,3,3);c.fillRect(15,-3,3,4);c.fillRect(20,-2,3,3);
+      c.fillStyle='#fff';c.fillRect(11,-1,1,1);c.fillRect(16,-2,1,1);c.fillRect(21,-1,1,1);
+      c.fillStyle='#fff5cc';c.fillRect(9,3,14,6);
+      if(!u&&!s){c.fillStyle='#3498db';c.fillRect(12,6,2,2);c.fillRect(18,6,2,2)}
+    },
+    bodyExtra:(c,s)=>{
+      // Six wings (3 pairs)
+      c.fillStyle='#FFD700';
+      // Top wings
+      c.beginPath();c.moveTo(8,10);c.lineTo(-4,0);c.lineTo(-2,6);c.lineTo(2,10);c.closePath();c.fill();
+      c.beginPath();c.moveTo(24,10);c.lineTo(36,0);c.lineTo(34,6);c.lineTo(30,10);c.closePath();c.fill();
+      // Mid wings
+      c.fillStyle='#ffe066';
+      c.beginPath();c.moveTo(8,14);c.lineTo(-6,8);c.lineTo(-4,14);c.lineTo(4,16);c.closePath();c.fill();
+      c.beginPath();c.moveTo(24,14);c.lineTo(38,8);c.lineTo(36,14);c.lineTo(28,16);c.closePath();c.fill();
+      // Bottom wings
+      c.fillStyle='#fff5cc';
+      c.beginPath();c.moveTo(8,18);c.lineTo(-2,18);c.lineTo(0,24);c.lineTo(6,20);c.closePath();c.fill();
+      c.beginPath();c.moveTo(24,18);c.lineTo(34,18);c.lineTo(32,24);c.lineTo(26,20);c.closePath();c.fill();
+    },
+    right:(c)=>{c.fillStyle='#FFD700';c.fillRect(26,4,2,18);c.fillStyle='#fff';c.fillRect(24,2,6,4);
+      c.fillStyle='#FFD700';c.fillRect(25,3,4,2)},
+    aura:{color:'#FFD700',alt:'#ffffff',count:8,speed:0.5,size:3,style:'halo'} }
 };
 
 const EFFECT_THEMES = {
@@ -100,6 +301,20 @@ const cosmeticShop = {
       c.fillStyle = '#ff69b4'; c.fillRect(6, 2, 1, 4);
       c.fillStyle = '#88ccff'; c.fillRect(8, 2, 1, 4);
     });
+    // Pre-generate preview sprites for all skins (down_0 only for shop display)
+    for (const [id, skin] of Object.entries(SKIN_DEFS)) {
+      genSprite('skinpreview_' + id, 32, 32, (c) => {
+        drawHumanoid(c, 'down', 0, skin.skin || '#f4c99a', {
+          bodyColor: skin.body || '#888',
+          armorColor: skin.armor || '#888',
+          legsColor: skin.legs || '#555',
+          headExtra: skin.head || null,
+          rightHand: skin.right || null,
+          leftHand: skin.left || null,
+          bodyExtra: skin.bodyExtra || null
+        });
+      });
+    }
   },
 
   initTownNPC() {
@@ -115,7 +330,6 @@ const cosmeticShop = {
   _generateSkinSprites(skinId) {
     const skin = SKIN_DEFS[skinId];
     if (!skin) return;
-    // Get all character prefixes that exist in sprite cache
     const basePrefixes = ['knight','mage','ranger','priest'];
     const advPrefixes = ['paladin','darknight','archmage','chronomancer','sniper','beastlord','archbishop','necromancer'];
     const dirs = ['down','up','left','right'];
@@ -124,20 +338,21 @@ const cosmeticShop = {
       for (const dir of dirs) {
         for (let f = 0; f < 3; f++) {
           const baseKey = prefix + '_' + dir + '_' + f;
-          const base = spriteCache[baseKey];
-          if (!base) continue;
+          if (!spriteCache[baseKey]) continue;
           const key = 'skin_' + skinId + '_' + baseKey;
           if (spriteCache[key]) continue;
 
-          const cv = document.createElement('canvas');
-          cv.width = 32; cv.height = 32;
-          const c = cv.getContext('2d');
-          c.drawImage(base, 0, 0);
-          c.globalCompositeOperation = 'source-atop';
-          c.fillStyle = skin.tint;
-          c.globalAlpha = skin.opacity;
-          c.fillRect(0, 0, 32, 32);
-          spriteCache[key] = cv;
+          genSprite(key, 32, 32, (c) => {
+            drawHumanoid(c, dir, f, skin.skin || '#f4c99a', {
+              bodyColor: skin.body || '#888',
+              armorColor: skin.armor || '#888',
+              legsColor: skin.legs || '#555',
+              headExtra: skin.head || null,
+              rightHand: skin.right || null,
+              leftHand: skin.left || null,
+              bodyExtra: skin.bodyExtra || null
+            });
+          });
         }
       }
     }
@@ -525,11 +740,8 @@ const cosmeticShop = {
         ctx.restore();
       }
 
-      // Character sprite
-      const prefix = (typeof classChangeSystem !== 'undefined' && classChangeSystem.getSpritePrefix)
-        ? classChangeSystem.getSpritePrefix(game.player) : (game.player.className || 'knight').toLowerCase();
-      const previewKey = 'skin_' + id + '_' + prefix + '_down_0';
-      const baseSpr = spriteCache[previewKey] || spriteCache[prefix + '_down_0'];
+      // Character sprite (use pre-generated preview)
+      const baseSpr = spriteCache['skinpreview_' + id];
       if (baseSpr) {
         ctx.globalAlpha = 1;
         ctx.imageSmoothingEnabled = false;

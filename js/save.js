@@ -319,8 +319,12 @@ function loadGame() {
       addLog('Converted old free stat/skill points into '+migration.bonusGold+' gold.','#FFD700');
     }
 
-    // AFK rewards check
-    if(typeof afkSystem!=='undefined'&&data.timestamp&&!savedExpeditionConsumesAfk){afkSystem.checkAfk(data.timestamp)}
+    // AFK rewards check — skip if this is a browser tab reload/discard (not a genuine re-open).
+    // sessionStorage survives tab discarding but is cleared when the tab is truly closed,
+    // so it reliably distinguishes "browser froze/reloaded the tab" from "user came back".
+    const _freshSession = !sessionStorage.getItem('rpg_session');
+    sessionStorage.setItem('rpg_session', '1');
+    if(typeof afkSystem!=='undefined'&&data.timestamp&&!savedExpeditionConsumesAfk&&_freshSession){afkSystem.checkAfk(data.timestamp)}
     if (shouldResave) saveGame();
 
     return true;

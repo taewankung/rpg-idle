@@ -436,12 +436,29 @@ const botAI = {
   findFarmSpot(p, mons) {
     let best = null;
     let bestScore = -9999;
+    const maxPathR = dungeon.active ? 25 : 20;
     for (const m of mons) {
       if (!this.isValidTarget(m) || !this.canConsiderTarget(m)) continue;
       const distTiles = Math.hypot(m.x - p.x, m.y - p.y) / TILE;
-      if (distTiles > this.getMaxChaseDistance(p) + 4) continue;
-      const path = _findPath(p.x, p.y, m.x, m.y, dungeon.active ? 25 : 20);
-      if (!path && !(dungeon.active && distTiles < 3)) continue;
+      // No hard distance cap — consider any monster on the map
+      let targetSpot;
+      if (distTiles <= maxPathR + 2) {
+        // Close enough to path directly
+        const path = _findPath(p.x, p.y, m.x, m.y, maxPathR);
+        if (!path && !(dungeon.active && distTiles < 3)) continue;
+        targetSpot = _findRandomWalkable(m.x, m.y, 1, 3) || { x: m.x, y: m.y };
+      } else {
+        // Monster is far — pick a waypoint 15 tiles toward it
+        const dx = m.x - p.x, dy = m.y - p.y;
+        const d = Math.hypot(dx, dy);
+        const wpx = p.x + (dx / d) * 15 * TILE;
+        const wpy = p.y + (dy / d) * 15 * TILE;
+        const wp = _findRandomWalkable(wpx, wpy, 0, 3);
+        if (!wp) continue;
+        const path = _findPath(p.x, p.y, wp.x, wp.y, maxPathR);
+        if (!path) continue;
+        targetSpot = wp;
+      }
       const cluster = this.getNearbyMonsters(mons, m.x, m.y, TILE * 4).length;
       const pressure = this.getThreatScoreAt(p, mons, m.x, m.y);
       const reward = (m.expReward || 0) + (m.goldReward || 0) * 0.25;
@@ -451,8 +468,7 @@ const botAI = {
         if (threatDiff <= 0) score += 10;
       }
       if (score > bestScore) {
-        const spot = _findRandomWalkable(m.x, m.y, 1, 3) || { x: m.x, y: m.y };
-        best = spot;
+        best = targetSpot;
         bestScore = score;
       }
     }
@@ -689,10 +705,13 @@ const botAI = {
         }
 
         if (!this.shouldRepositionFarm(p, mons)) {
-          const dest = _findRandomWalkable(p.x, p.y, 2, 5);
-          if (dest) {
-            if (!this.beginRoam(p, dest, 'no_valid_targets', 'Exploring', 'Exploring')) {
-              this.setState('idle', 'no_valid_targets', this.getReasonLabel('no_valid_targets'), true);
+          // Only explore randomly after idling for a bit — prevents jittery micro-walks
+          if (this.noTargetTimer > 2.0) {
+            const dest = _findRandomWalkable(p.x, p.y, 4, 10);
+            if (dest) {
+              if (!this.beginRoam(p, dest, 'no_valid_targets', 'Exploring', 'Exploring')) {
+                this.setState('idle', 'no_valid_targets', this.getReasonLabel('no_valid_targets'), true);
+              }
             }
           }
         }

@@ -731,11 +731,18 @@ const worldMap = {
       const prevPortals = this.zones[prevZone].portals;
       const usedPortal = prevPortals.find(p => p.targetZone === zoneId);
       if (usedPortal) {
-        // Player arrives at the portal that leads back
+        // Player arrives at the portal that leads back, offset inward so they
+        // don't immediately re-trigger the portal after transitionCooldown expires
         const arrivalPortal = targetZone.portals.find(p => p.targetZone === prevZone);
         if (arrivalPortal) {
-          game.player.x = arrivalPortal.col * TILE + TILE / 2;
-          game.player.y = arrivalPortal.row * TILE + TILE / 2;
+          let col = arrivalPortal.col;
+          let row = arrivalPortal.row;
+          if (arrivalPortal.side === 'west') col += 3;
+          else if (arrivalPortal.side === 'east') col -= 3;
+          else if (arrivalPortal.side === 'north') row += 3;
+          else if (arrivalPortal.side === 'south') row -= 3;
+          game.player.x = col * TILE + TILE / 2;
+          game.player.y = row * TILE + TILE / 2;
         } else {
           // Fallback: place at center
           game.player.x = Math.floor(MAP_W / 2) * TILE + TILE / 2;

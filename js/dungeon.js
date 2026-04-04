@@ -838,12 +838,16 @@ function createDungeonMon(type, sx, sy, floor) {
   hp = Math.round(hp * floorMult);
   atk = Math.round(atk * floorMult);
   def = Math.round(def * floorMult);
+  if(type==='demon_lord'&&typeof progressionSystem!=='undefined'){
+    hp = Math.round(hp * progressionSystem.getBossHpMultiplier('dungeonBoss'));
+  }
+  const goldMul=(type==='demon_lord'&&typeof progressionSystem!=='undefined')?progressionSystem.getBossGoldMultiplier('dungeonBoss'):1;
 
   return {
     entityType: 'monster', type, level: lv,
     hp, maxHp: hp, atk, def, spd: d.spd,
     expReward: ri(d.expR[0], d.expR[1]),
-    goldReward: ri(d.goldR[0], d.goldR[1]),
+    goldReward: Math.round(ri(d.goldR[0], d.goldR[1]) * goldMul),
     x: sx, y: sy, dir: 'down', frame: 0, animTimer: 0,
     state: 'patrol',
     patrolCenter: { x: sx, y: sy },
@@ -1444,7 +1448,14 @@ function dungeonBotLogic(p) {
 // ============================================================
 dungeon.clampCamera = function() {
   if (!this.active) return;
-  // Override camera bounds for dungeon size
-  camera.x = Math.max(0, Math.min(camera.x, this.DG_W * TILE - canvas.width));
-  camera.y = Math.max(0, Math.min(camera.y, this.DG_H * TILE - canvas.height));
+  // Center smaller dungeon floors inside large viewports instead of pinning them to the top-left.
+  const mapWidth = this.DG_W * TILE;
+  const mapHeight = this.DG_H * TILE;
+  const minX = mapWidth <= canvas.width ? (mapWidth - canvas.width) / 2 : 0;
+  const maxX = mapWidth <= canvas.width ? minX : mapWidth - canvas.width;
+  const minY = mapHeight <= canvas.height ? (mapHeight - canvas.height) / 2 : 0;
+  const maxY = mapHeight <= canvas.height ? minY : mapHeight - canvas.height;
+
+  camera.x = Math.max(minX, Math.min(camera.x, maxX));
+  camera.y = Math.max(minY, Math.min(camera.y, maxY));
 };

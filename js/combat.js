@@ -35,7 +35,7 @@ function useSkill(p,idx){
   // Job passive: Ranger 15% no-cooldown
   if(typeof hasJobPassive==='function'&&hasJobPassive(p,'quickDraw')>0&&Math.random()<hasJobPassive(p,'quickDraw')){effectiveCD=0}
   sk.cdTimer=effectiveCD;
-  if(sk.heal){const healMul=1+(typeof hasJobPassive==='function'?hasJobPassive(p,'healMult'):0);const amt=Math.round(p.maxHp*sk.heal*dmgMult*healMul);p.hp=Math.min(p.maxHp,p.hp+amt);addDmg(p.x,p.y-TILE,'+'+amt,'#44FF44');addEffect(p.x,p.y,'heal',0.8);addLog(p.name+' healed '+amt+' HP','#44FF44');sfx.spell();return}
+  if(sk.heal){const healMul=1+(typeof hasJobPassive==='function'?hasJobPassive(p,'healMult'):0);const amt=Math.round(p.maxHp*sk.heal*dmgMult*healMul);p.hp=Math.min(p.maxHp,p.hp+amt);addDmg(p.x,p.y-TILE,'+'+amt,'#44FF44');addEffect(p.x,p.y,'heal',0.8);addLog(p.name+' healed '+amt+' HP','#44FF44',{actor:p});sfx.spell();return}
   if(sk.buff){
     const buffDurBonus=slv*0.5;
     const b={...sk.buff,timer:sk.buff.dur+buffDurBonus};
@@ -44,7 +44,7 @@ function useSkill(p,idx){
     else if(b.type==='berserk'){b.atkVal=Math.round(p.atk*b.atkPct);b.defVal=Math.round(p.def*Math.abs(b.defPct));p.atk+=b.atkVal;p.def-=b.defVal}
     else if(b.type==='evasion'){b.spdVal=Math.round(p.spd*b.spdPct);p.spd+=b.spdVal}
     else if(b.type==='purify'){p.mp=Math.min(p.maxMp,p.mp+Math.round(p.maxMp*b.mpPct))}
-    p.buffs.push(b);addEffect(p.x,p.y,'buff',0.6);addLog(p.name+' used '+sk.name,'#88CCFF');sfx.spell();return;
+    p.buffs.push(b);addEffect(p.x,p.y,'buff',0.6);addLog(p.name+' used '+sk.name,'#88CCFF',{actor:p});sfx.spell();return;
   }
   if(sk.dmgPct>0){
     const base=Math.round(p.atk*sk.dmgPct*dmgMult);let hit=0;
@@ -72,7 +72,7 @@ function useSkill(p,idx){
     if(sk.healPct&&hit>0){const ha=Math.round(p.maxHp*sk.healPct*dmgMult);p.hp=Math.min(p.maxHp,p.hp+ha);addDmg(p.x,p.y-TILE*2,'+'+ha,'#88FF88')}
     if(hit>0){const etype=sk.aoe?'aoe':sk.heal?'heal':'slash';addEffect(p.x,p.y,etype,0.5)}
     if(p===game.player){if(p.className==='Ranger')sfx.arrow();else sfx.spell()}
-    addLog(p.name+' used '+sk.name,'#FFAA44');
+    addLog(p.name+' used '+sk.name,'#FFAA44',{actor:p});
   }
 }
 
@@ -83,7 +83,7 @@ function killMon(m,killer){
     gainExp(killer,m.expReward);if(typeof gainJobExp==='function')gainJobExp(killer,m.level*15);killer.gold+=m.goldReward;killer.killCount++;
     const isPlayer=killer===game.player;
     if(isPlayer)game.killCount++;
-    addLog('Killed '+m.type+'! +'+m.expReward+'XP +'+m.goldReward+'G','#FFD700');
+    addLog('Killed '+m.type+'! +'+m.expReward+'XP +'+m.goldReward+'G','#FFD700',{actor:killer});
     // Kill streak popup every 10 player kills only
     if(isPlayer&&game.killCount%10===0){game.streakPopup={text:game.killCount+' Kill Streak!',timer:2.5}}
     // Quest hook: monster kill
@@ -145,9 +145,9 @@ function updatePlayer(dt){
       // Respawn at dungeon exit portal (not town)
       if(dungeon.exitPos){p.x=dungeon.exitPos.x;p.y=dungeon.exitPos.y+TILE}
       else{const sr=dungeon.rooms&&dungeon.rooms[0];if(sr){p.x=sr.cx*TILE+TILE/2;p.y=sr.cy*TILE+TILE/2}};
-      p._path=null;p._pathIdx=0;addLog('Respawned in dungeon.','#AAAAAA');
+      p._path=null;p._pathIdx=0;addLog('Respawned in dungeon.','#AAAAAA',{actor:p});
     }else{
-      p.x=Math.floor(MAP_W/2)*TILE+TILE/2;p.y=Math.floor(MAP_H/2)*TILE+TILE/2;addLog('Respawned at town.','#AAAAAA');
+      p.x=Math.floor(MAP_W/2)*TILE+TILE/2;p.y=Math.floor(MAP_H/2)*TILE+TILE/2;addLog('Respawned at town.','#AAAAAA',{actor:p});
     }}return}
   if(p.attackTimer>0)p.attackTimer-=dt;
   // Auto attack nearest monster only

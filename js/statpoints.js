@@ -54,6 +54,13 @@ const statPointSystem = {
 
   addPoint(stat){
     if(this.unspent<=0||!STAT_DEFS[stat])return false;
+    if(typeof progressionSystem!=='undefined'){
+      const cap=progressionSystem.getStatPointPerStatCap(game.player?game.player.level:1);
+      if(this.getTotalPoints(stat)>=cap){
+        addNotification(stat+' training cap reached. Raise Access Level for more.','#e67e22');
+        return false;
+      }
+    }
     this.unspent--;
     this.pending[stat]++;
     return true;
@@ -78,17 +85,67 @@ const statPointSystem = {
     addNotification('Stat points applied!','#44ff88');
   },
 
+  getPurchasedPoints(){
+    return STAT_KEYS.reduce((sum,k)=>sum+(this.allocated[k]||0)+(this.pending[k]||0),0)+this.unspent;
+  },
+
+  canBuyPoint(){
+    const p=game.player;if(!p)return false;
+    if(typeof progressionSystem==='undefined')return false;
+    return this.getPurchasedPoints()<progressionSystem.getStatPointTotal(game.player?game.player.level:1);
+  },
+
+  getBuyCost(amount){
+    if(typeof progressionSystem==='undefined')return 0;
+    const total=this.getPurchasedPoints();
+    let sum=0;
+    for(let i=0;i<(amount||1);i++)sum+=progressionSystem.getStatPointCost(total+i);
+    return sum;
+  },
+
+  buyPoints(amount,silent){
+    const p=game.player;if(!p||typeof progressionSystem==='undefined')return false;
+    const buy=Math.max(1,amount||1);
+    let bought=0,cost=0;
+    let total=this.getPurchasedPoints();
+    const cap=progressionSystem.getStatPointTotal(p.level||1);
+    while(bought<buy&&total<cap){
+      const nextCost=progressionSystem.getStatPointCost(total);
+      if(p.gold<cost+nextCost)break;
+      cost+=nextCost;
+      total++;
+      bought++;
+    }
+    if(bought<=0){
+      if(!silent){
+        if(total>=cap)addNotification('Training cap reached. Level up to unlock more stat slots.','#e67e22');
+        else addNotification('Need more gold for stat training.','#e74c3c');
+      }
+      return false;
+    }
+    p.gold-=cost;
+    this.unspent+=bought;
+    if(!silent){
+      addNotification('Bought '+bought+' stat point'+(bought>1?'s':'')+' for '+cost+'G','#f1c40f');
+      addLog('Spent '+cost+' gold on stat training.','#f1c40f');
+    }
+    return true;
+  },
+
   autoDistribute(){
     if(this.unspent<=0)return;
     const p=game.player;if(!p)return;
     const dist=BOT_STAT_DIST[p.className]||BOT_STAT_DIST.Knight;
     const total=STAT_KEYS.reduce((s,k)=>s+(dist[k]||0),0);
     if(total<=0)return;
+    const cap=typeof progressionSystem!=='undefined'?progressionSystem.getStatPointPerStatCap(p.level||1):9999;
     while(this.unspent>0){
+      let spentAny=false;
       for(const k of STAT_KEYS){
         if(this.unspent<=0)break;
-        if((dist[k]||0)>0){this.pending[k]++;this.unspent--}
+        if((dist[k]||0)>0&&((this.allocated[k]||0)+(this.pending[k]||0))<cap){this.pending[k]++;this.unspent--;spentAny=true}
       }
+      if(!spentAny)break;
     }
   },
 
@@ -133,14 +190,14 @@ const statPointSystem = {
     if(!p)return;
     const cd=CLASS_DATA[p.className];if(!cd)return;
     const lv=p.level||1;
-    const g=cd.growth||{hp:0,mp:0,atk:0,def:0,spd:0};
+    const base=typeof progressionSystem!=='undefined'&&progressionSystem.getBaseStats?progressionSystem.getBaseStats(p.className,lv):null;
     // 1. Base stats from class
-    p.maxHp=cd.hp+(g.hp||0)*(lv-1);
-    p.maxMp=cd.mp+(g.mp||0)*(lv-1);
-    p.atk=cd.atk+(g.atk||0)*(lv-1);
-    p.def=cd.def+(g.def||0)*(lv-1);
-    p.spd=cd.spd+(g.spd||0)*(lv-1);
-    p.crit=cd.crit||0.05;
+    p.maxHp=base?base.maxHp:cd.hp;
+    p.maxMp=base?base.maxMp:cd.mp;
+    p.atk=base?base.atk:cd.atk;
+    p.def=base?base.def:cd.def;
+    p.spd=base?base.spd:cd.spd;
+    p.crit=base?base.crit:(cd.crit||0.05);
     // 2. Equipment bonuses
     for(const slot of['weapon','armor','accessory']){
       const eq=p.equipment&&p.equipment[slot];
@@ -183,6 +240,19 @@ const statPointSystem = {
         if(gb.crit)p.crit+=gb.crit;
       }
     }
+    // 6. Job passive multipliers
+    if(typeof hasJobPassive==='function'){
+      const hpMult=hasJobPassive(p,'hpMult');
+      const mpMult=hasJobPassive(p,'mpMult');
+      const atkMult=hasJobPassive(p,'atkMult');
+      const defMult=hasJobPassive(p,'defMult');
+      const spdMult=hasJobPassive(p,'spdMult');
+      if(hpMult>0)p.maxHp*=1+hpMult;
+      if(mpMult>0)p.maxMp*=1+mpMult;
+      if(atkMult>0)p.atk*=1+atkMult;
+      if(defMult>0)p.def*=1+defMult;
+      if(spdMult>0)p.spd*=1+spdMult;
+    }
     // 6. Derived stats
     p.evasion=spb.evasion||0;
     p.dropRate=spb.dropRate||0;
@@ -198,25 +268,35 @@ const statPointSystem = {
   },
 
   botAutoAllocate(){
-    if(!this.autoStats||this.unspent<=0)return;
+    if(!this.autoStats)return;
     const p=game.player;if(!p)return;
+    if(this.unspent<=0&&typeof progressionSystem!=='undefined'){
+      const reserve=progressionSystem.getAutoSpendReserve(p);
+      if(p.gold>reserve)this.buyPoints(Math.min(2,Math.max(1,Math.floor((p.gold-reserve)/Math.max(1,this.getBuyCost(1))))),true);
+    }
+    if(this.unspent<=0)return;
     const dist=BOT_STAT_DIST[p.className]||BOT_STAT_DIST.Knight;
     const total=STAT_KEYS.reduce((s,k)=>s+(dist[k]||0),0);
     if(total<=0)return;
+    const cap=typeof progressionSystem!=='undefined'?progressionSystem.getStatPointPerStatCap(p.level||1):9999;
     while(this.unspent>0){
+      let spentAny=false;
       for(const k of STAT_KEYS){
         if(this.unspent<=0)break;
         if((dist[k]||0)>0){
+          if((this.allocated[k]||0)>=cap)continue;
           // Small randomization: 20% chance to pick a random stat instead
           if(Math.random()<0.2){
             const rk=STAT_KEYS[ri(0,5)];
-            this.allocated[rk]++;
+            if((this.allocated[rk]||0)<cap){this.allocated[rk]++;spentAny=true}
+            else if((this.allocated[k]||0)<cap){this.allocated[k]++;spentAny=true}
           }else{
-            this.allocated[k]++;
+            this.allocated[k]++;spentAny=true;
           }
-          this.unspent--;
+          if(spentAny)this.unspent--;
         }
       }
+      if(!spentAny)break;
     }
     this.applyStats(p);
   },
@@ -270,7 +350,7 @@ const statPointSystem = {
   },
 
   getResetCost(){
-    return 500*(this.resetCount+1);
+    return 400*(this.resetCount+1);
   },
 
   getHoverPreview(stat){
@@ -319,6 +399,17 @@ const statPointSystem = {
     c.font='bold 10px monospace';c.textAlign='left';
     c.fillText('Available: '+avail,px+14,y+8);
     c.globalAlpha=1;y+=16;
+    if(typeof progressionSystem!=='undefined'&&game.player){
+      const totalOwned=this.getPurchasedPoints();
+      const totalCap=progressionSystem.getStatPointTotal(game.player.level||1);
+      const perStatCap=progressionSystem.getStatPointPerStatCap(game.player.level||1);
+      const nextCost=totalOwned<totalCap?this.getBuyCost(1):0;
+      c.fillStyle='#889';c.font='8px monospace';c.textAlign='left';
+      c.fillText('Training: '+totalOwned+'/'+totalCap+'  Per-stat cap: '+perStatCap,px+14,y+8);y+=12;
+      c.fillText(totalOwned<totalCap?'Next point: '+nextCost+'G':'Level up to unlock more stat training.',px+14,y+8);y+=12;
+      c.fillStyle='#557799';c.font='8px monospace';
+      c.fillText('Gold buys power. Level only expands training limits.',px+14,y+8);y+=12;
+    }
 
     const p=game.player;
     const guide=CLASS_STAT_GUIDE[p?p.className:'Knight']||CLASS_STAT_GUIDE.Knight;
@@ -393,18 +484,28 @@ const statPointSystem = {
     y+=4;
     const hasPending=STAT_KEYS.some(k=>this.pending[k]>0);
     let bx=px+14;
-    // Confirm
-    if(hasPending){
-      c.fillStyle='#115522';roundRect(c,bx,y,70,22,4);c.fill();
-      c.strokeStyle='#44ff88';c.lineWidth=1;roundRect(c,bx,y,70,22,4);c.stroke();
-      c.fillStyle='#44ff88';c.font='bold 10px sans-serif';c.textAlign='center';c.fillText('Confirm',bx+35,y+15);
+    const canBuy1=typeof progressionSystem!=='undefined'&&p&&p.gold>=this.getBuyCost(1)&&this.canBuyPoint();
+    const canBuy5=typeof progressionSystem!=='undefined'&&p&&p.gold>=this.getBuyCost(5)&&this.canBuyPoint();
+    if(canBuy1){
+      c.fillStyle='#4a3210';roundRect(c,bx,y,52,22,4);c.fill();
+      c.strokeStyle='#f1c40f';c.lineWidth=1;roundRect(c,bx,y,52,22,4);c.stroke();
+      c.fillStyle='#f1c40f';c.font='bold 9px sans-serif';c.textAlign='center';c.fillText('Buy 1',bx+26,y+15);
     }else{
-      c.fillStyle='#1a1a1a';roundRect(c,bx,y,70,22,4);c.fill();
-      c.fillStyle='#444';c.font='bold 10px sans-serif';c.textAlign='center';c.fillText('Confirm',bx+35,y+15);
+      c.fillStyle='#1a1a1a';roundRect(c,bx,y,52,22,4);c.fill();
+      c.fillStyle='#444';c.font='bold 9px sans-serif';c.textAlign='center';c.fillText('Buy 1',bx+26,y+15);
     }
-    this.buttonRects.push({stat:null,type:'confirm',x:bx,y:y,w:70,h:22});
-    bx+=76;
-    // Auto
+    this.buttonRects.push({stat:null,type:'buy1',x:bx,y:y,w:52,h:22});
+    bx+=56;
+    if(canBuy5){
+      c.fillStyle='#3b220d';roundRect(c,bx,y,52,22,4);c.fill();
+      c.strokeStyle='#ffb347';c.lineWidth=1;roundRect(c,bx,y,52,22,4);c.stroke();
+      c.fillStyle='#ffb347';c.font='bold 9px sans-serif';c.textAlign='center';c.fillText('Buy 5',bx+26,y+15);
+    }else{
+      c.fillStyle='#1a1a1a';roundRect(c,bx,y,52,22,4);c.fill();
+      c.fillStyle='#444';c.font='bold 9px sans-serif';c.textAlign='center';c.fillText('Buy 5',bx+26,y+15);
+    }
+    this.buttonRects.push({stat:null,type:'buy5',x:bx,y:y,w:52,h:22});
+    bx+=56;
     if(avail>0){
       c.fillStyle='#112244';roundRect(c,bx,y,50,22,4);c.fill();
       c.strokeStyle='#4488ff';c.lineWidth=1;roundRect(c,bx,y,50,22,4);c.stroke();
@@ -415,7 +516,17 @@ const statPointSystem = {
     }
     this.buttonRects.push({stat:null,type:'auto',x:bx,y:y,w:50,h:22});
     bx+=56;
-    // Reset
+    if(hasPending){
+      c.fillStyle='#115522';roundRect(c,bx,y,70,22,4);c.fill();
+      c.strokeStyle='#44ff88';c.lineWidth=1;roundRect(c,bx,y,70,22,4);c.stroke();
+      c.fillStyle='#44ff88';c.font='bold 10px sans-serif';c.textAlign='center';c.fillText('Confirm',bx+35,y+15);
+    }else{
+      c.fillStyle='#1a1a1a';roundRect(c,bx,y,70,22,4);c.fill();
+      c.fillStyle='#444';c.font='bold 10px sans-serif';c.textAlign='center';c.fillText('Confirm',bx+35,y+15);
+    }
+    this.buttonRects.push({stat:null,type:'confirm',x:bx,y:y,w:70,h:22});
+    y+=28;
+    bx=px+pw/2-40;
     const cost=this.getResetCost();
     const canReset=p&&p.gold>=cost;
     if(canReset){
@@ -436,8 +547,8 @@ const statPointSystem = {
     c.fillText('STAT BONUSES',px+14,y+8);y+=14;
 
     const cd=CLASS_DATA[p?p.className:'Knight'];
-    const g=cd?cd.growth:{hp:0,mp:0,atk:0,def:0,spd:0};
     const lv=(p?p.level:1)||1;
+    const baseStats=typeof progressionSystem!=='undefined'&&progressionSystem.getBaseStats&&cd?progressionSystem.getBaseStats(p?p.className:'Knight',lv):null;
     const spb=this.getAllBonuses();
     const eqBonus={atk:0,def:0,maxHp:0,maxMp:0,spd:0,crit:0};
     if(p&&p.equipment){
@@ -450,11 +561,11 @@ const statPointSystem = {
       }
     }
     const summaryRows=[
-      {l:'ATK',base:cd?(cd.atk+(g.atk||0)*(lv-1)):0,sp:Math.floor(spb.atk||0),eq:Math.floor(eqBonus.atk)},
-      {l:'DEF',base:cd?(cd.def+(g.def||0)*(lv-1)):0,sp:Math.floor(spb.def||0),eq:Math.floor(eqBonus.def)},
-      {l:'HP', base:cd?(cd.hp+(g.hp||0)*(lv-1)):0,sp:Math.floor(spb.maxHp||0),eq:Math.floor(eqBonus.maxHp)},
-      {l:'SPD',base:cd?(cd.spd+(g.spd||0)*(lv-1)):0,sp:+(spb.spd||0).toFixed(1),eq:+(eqBonus.spd||0).toFixed(1)},
-      {l:'CRIT',base:cd?cd.crit:0.05,sp:+(spb.crit||0).toFixed(3),eq:+(eqBonus.crit||0).toFixed(3)},
+      {l:'ATK',base:baseStats?baseStats.atk:(cd?cd.atk:0),sp:Math.floor(spb.atk||0),eq:Math.floor(eqBonus.atk)},
+      {l:'DEF',base:baseStats?baseStats.def:(cd?cd.def:0),sp:Math.floor(spb.def||0),eq:Math.floor(eqBonus.def)},
+      {l:'HP', base:baseStats?baseStats.maxHp:(cd?cd.hp:0),sp:Math.floor(spb.maxHp||0),eq:Math.floor(eqBonus.maxHp)},
+      {l:'SPD',base:baseStats?baseStats.spd:(cd?cd.spd:0),sp:+(spb.spd||0).toFixed(1),eq:+(eqBonus.spd||0).toFixed(1)},
+      {l:'CRIT',base:baseStats?baseStats.crit:(cd?cd.crit:0.05),sp:+(spb.crit||0).toFixed(3),eq:+(eqBonus.crit||0).toFixed(3)},
     ];
     for(const row of summaryRows){
       c.font='8px monospace';c.textAlign='left';
@@ -505,6 +616,10 @@ const statPointSystem = {
           }
         }else if(r.type==='confirm'){
           this.confirm();return true;
+        }else if(r.type==='buy1'){
+          this.buyPoints(1);return true;
+        }else if(r.type==='buy5'){
+          this.buyPoints(5);return true;
         }else if(r.type==='auto'){
           if(this.unspent>0){this.autoDistribute();return true}
         }else if(r.type==='reset'){

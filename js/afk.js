@@ -175,7 +175,7 @@ const afkSystem = {
     let equipped = 0;
     let excessGold = 0;
     for (const item of r.items) {
-      if (p.inventory.length < 20) {
+      if (p.inventory.length < getMaxInventory()) {
         p.inventory.push(item);
         autoEquip(p, item);
         if (!p.inventory.includes(item)) equipped++;

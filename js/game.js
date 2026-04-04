@@ -6,6 +6,7 @@ let showSettings=false,confirmNewGame=false;
 function startGame(cls){
   sfx.init();
   sfx.startFadeIn();
+  if(typeof initOfflineExpedition==='function')initOfflineExpedition();
   initSprites();
   generateTownSprites();
   generateDungeonSprites();
@@ -23,6 +24,11 @@ function startGame(cls){
   map.generate();
   if(typeof worldMap!=='undefined'){worldMap.generateZone(0);worldMap.currentZone=0;worldMap.extendWalkability()}
   game.player=createPlayer(cls,'Hero');
+  if(typeof botAI!=='undefined'){
+    botAI.applySettings();
+    botAI.target=null;botAI.roamTarget=null;botAI.retreatTarget=null;botAI.lootTarget=null;
+    botAI.state='idle';botAI.stopReason='ready';botAI.statusText='Scanning';botAI.focusText='Scanning';
+  }
   game.monsters=spawnMonsters();
   game.npcPlayers=createNPCs(ri(8,12));
   game.itemDrops=[];game.killCount=0;game.sessionExp=0;game.sessionStart=Date.now();
@@ -38,8 +44,9 @@ function startGame(cls){
   if(typeof enchantSystem!=='undefined')enchantSystem.initTownNPC();
   if(typeof guildSystem!=='undefined')guildSystem.initTownNPC();
   if(typeof gachaSystem!=='undefined')gachaSystem.initTownNPC();
+  if(typeof cosmeticShop!=='undefined'){cosmeticShop.generateSprites();cosmeticShop.initTownNPC()}
   camera.update(game.player);
-  addLog('Welcome, Hero the '+cls+'!','#FFD700');
+  addLog('Welcome, Hero the '+cls+'!','#FFD700',{actor:game.player});
   saveGame();
 }
 
@@ -77,9 +84,9 @@ function update(dt){
     for(let i=game.itemDrops.length-1;i>=0;i--){
       const d=game.itemDrops[i];
       if(Math.hypot(d.x-game.player.x,d.y-game.player.y)<TILE){
-        if(game.player.inventory.length<20){
+        if(game.player.inventory.length<getMaxInventory()){
           game.player.inventory.push(d.item);autoEquip(game.player,d.item);
-          addLog('Picked up '+d.item.name,'#FFDD44');sfx.itemPickup();
+          addLog('Picked up '+d.item.name,'#FFDD44',{actor:game.player});sfx.itemPickup();
           if(typeof questSystem!=='undefined')questSystem.onItemPickup(d.item);
         }
         game.itemDrops.splice(i,1);
@@ -99,7 +106,7 @@ function update(dt){
   if(typeof updateAchievementPopup==='function')updateAchievementPopup(dt);
   if(typeof updateLeaderboard==='function')updateLeaderboard(dt);
   if(typeof craftingSystem!=='undefined'&&craftingSystem.updateCrafting)craftingSystem.updateCrafting(dt);
-  if(typeof worldMap!=='undefined'&&worldMap.updateParticles)worldMap.updateParticles(dt);
+  if(typeof worldMap!=='undefined'&&worldMap.update)worldMap.update(dt);
   if(typeof pvpArena!=='undefined'&&pvpArena.active)pvpArena.update(dt);
   if(typeof pvpArena!=='undefined'&&pvpArena.autoArena&&botAI.enabled){pvpArena.autoTimer-=dt;if(pvpArena.autoTimer<=0&&!pvpArena.active&&!dungeon.active){pvpArena.startMatch()}}
   if(typeof classChangeSystem!=='undefined'&&classChangeSystem.updateQuest)classChangeSystem.updateQuest(dt);
@@ -107,6 +114,7 @@ function update(dt){
   if(typeof enchantSystem!=='undefined'&&enchantSystem.updateAnim)enchantSystem.updateAnim(dt);
   if(typeof guildSystem!=='undefined'){if(guildSystem.updateQuests)guildSystem.updateQuests(dt);if(guildSystem.updateMembers)guildSystem.updateMembers(dt)}
   if(typeof gachaSystem!=='undefined'){if(gachaSystem.updateAnim)gachaSystem.updateAnim(dt);if(gachaSystem.updateSpecialBanner)gachaSystem.updateSpecialBanner(dt)}
+  if(typeof offlineExpeditionSystem!=='undefined'&&offlineExpeditionSystem.update)offlineExpeditionSystem.update();
   if(typeof updateJobPassives==='function')updateJobPassives(dt);
   if(typeof worldMap!=='undefined'&&!dungeon.active&&!(typeof pvpArena!=='undefined'&&pvpArena.active)){
     if(worldMap.announcement&&worldMap.announcement.timer>0)worldMap.announcement.timer-=dt;
@@ -133,6 +141,15 @@ function gameLoop(ts){
 }
 
 // --- INPUT ---
+canvas.addEventListener('wheel',e=>{
+  const delta=Math.sign(e.deltaY);
+  // Cosmetic shop scroll
+  if(typeof cosmeticShop!=='undefined'&&cosmeticShop.panelOpen){if(cosmeticShop.handleScroll(delta)){e.preventDefault();return}}
+  // Character stats panel scroll
+  if(typeof showCharStats!=='undefined'&&showCharStats){charStatsScroll=(charStatsScroll||0)+delta*30;e.preventDefault();return}
+  // Inventory scroll
+  if(typeof showInventory!=='undefined'&&showInventory){invScroll=(invScroll||0)+delta*30;e.preventDefault();return}
+},{passive:false});
 canvas.addEventListener('mousemove',e=>{
   const r=canvas.getBoundingClientRect();mouseX=(e.clientX-r.left)*(canvas.width/r.width);mouseY=(e.clientY-r.top)*(canvas.height/r.height);
   if(game.state==='classSelect'){
@@ -159,7 +176,7 @@ canvas.addEventListener('mousemove',e=>{
   }
   // Stat point hover detection
   if(showCharStats&&typeof statPointSystem!=='undefined'){
-    statPointSystem.handleStatHover(mouseX,mouseY);
+    statPointSystem.handleStatHover(mouseX,mouseY+(charStatsScroll||0));
   }
 });
 
@@ -183,11 +200,12 @@ canvas.addEventListener('click',e=>{
   if(showSettings){handleSettingsClick(cx2,cy2);return}
   if(showInventory){handleInventoryClick(cx2,cy2);return}
   if(showCharStats&&typeof statPointSystem!=='undefined'){
-    if(statPointSystem.handleStatClick(cx2,cy2))return;
+    if(statPointSystem.handleStatClick(cx2,cy2+charStatsScroll))return;
   }
   if(typeof achievementSystem!=='undefined'&&achievementSystem.panelOpen){handleAchievementClick(cx2,cy2);return}
   if(typeof leaderboard!=='undefined'&&leaderboard.panelOpen){handleLeaderboardClick(cx2,cy2);return}
   if(talentSystem.panelOpen){handleTalentClick(cx2,cy2);return}
+  if(typeof offlineExpeditionSystem!=='undefined'&&offlineExpeditionSystem.panelOpen){if(typeof handleOfflineExpeditionClick==='function')handleOfflineExpeditionClick(cx2,cy2);return}
   if(typeof craftingSystem!=='undefined'&&craftingSystem.panelOpen){handleCraftingClick(cx2,cy2);return}
   if(typeof pvpArena!=='undefined'&&pvpArena.panelOpen){handleArenaClick(cx2,cy2);return}
   if(typeof pvpArena!=='undefined'&&pvpArena.state==='result'){if(typeof handleArenaResultClick==='function')handleArenaResultClick(cx2,cy2);return}
@@ -195,7 +213,9 @@ canvas.addEventListener('click',e=>{
   if(typeof enchantSystem!=='undefined'&&enchantSystem.panelOpen){if(typeof handleEnchantClick==='function')handleEnchantClick(cx2,cy2);return}
   if(typeof guildSystem!=='undefined'&&guildSystem.panelOpen){if(typeof handleGuildClick==='function')handleGuildClick(cx2,cy2);return}
   if(typeof gachaSystem!=='undefined'&&gachaSystem.panelOpen){if(typeof handleGachaClick==='function')handleGachaClick(cx2,cy2);return}
+  if(typeof cosmeticShop!=='undefined'&&cosmeticShop.panelOpen){cosmeticShop._handlePanelClick(cx2,cy2);return}
   if(typeof showSkillPanel!=='undefined'&&showSkillPanel){if(typeof handleSkillPanelClick==='function')handleSkillPanelClick(cx2,cy2);return}
+  if(typeof handleCombatLogClick==='function'&&handleCombatLogClick(cx2,cy2))return;
   if(town.shopOpen){checkTownNPCClick(cx2,cy2);return}
   if(questSystem.boardOpen){checkQuestBoardClick(cx2,cy2);return}
   // Dungeon exit button click
@@ -215,19 +235,37 @@ canvas.addEventListener('click',e=>{
     if(typeof enchantSystem!=='undefined'&&enchantSystem.checkNPCClick&&enchantSystem.checkNPCClick(cx2,cy2))return;
     if(typeof guildSystem!=='undefined'&&guildSystem.checkNPCClick&&guildSystem.checkNPCClick(cx2,cy2))return;
     if(typeof gachaSystem!=='undefined'&&gachaSystem.checkNPCClick&&gachaSystem.checkNPCClick(cx2,cy2))return;
+    if(typeof cosmeticShop!=='undefined'&&cosmeticShop.checkNPCClick&&cosmeticShop.checkNPCClick(cx2,cy2))return;
   }
   // Bot toggle
-  const pw=200,ph=165,bpx=canvas.width-pw-10,bpy=canvas.height-ph-14;
-  if(cx2>=bpx+pw-70&&cx2<=bpx+pw-10&&cy2>=bpy+6&&cy2<=bpy+26){botAI.enabled=!botAI.enabled;return}
+  const botRect=typeof getBotPanelRect==='function'?getBotPanelRect():{px:canvas.width-230,py:canvas.height-234,pw:220,ph:220};
+  const bpx=botRect.px,bpy=botRect.py,pw=botRect.pw,ph=botRect.ph;
+  if(cx2>=bpx+pw-72&&cx2<=bpx+pw-10&&cy2>=bpy+6&&cy2<=bpy+26){botAI.setEnabled(!botAI.enabled,game.player);if(game.player)saveGame();return}
+  if(cx2>=bpx+62&&cx2<=bpx+210&&cy2>=bpy+112&&cy2<=bpy+130){botAI.cycleSetting('targetPriority');if(game.player)saveGame();return}
+  if(cx2>=bpx+62&&cx2<=bpx+210&&cy2>=bpy+90&&cy2<=bpy+108){botAI.cycleSetting('hpThreshold');if(game.player)saveGame();return}
+  if(cx2>=bpx+62&&cx2<=bpx+210&&cy2>=bpy+134&&cy2<=bpy+152){botAI.cycleSetting('maxChaseDistance');if(game.player)saveGame();return}
+  if(cx2>=bpx+10&&cx2<=bpx+58&&cy2>=bpy+160&&cy2<=bpy+178){botAI.cycleSetting('preferWeaker');if(game.player)saveGame();return}
+  if(cx2>=bpx+64&&cx2<=bpx+112&&cy2>=bpy+160&&cy2<=bpy+178){botAI.cycleSetting('lootNearbyFirst');if(game.player)saveGame();return}
+  if(cx2>=bpx+118&&cx2<=bpx+166&&cy2>=bpy+160&&cy2<=bpy+178){botAI.cycleSetting('avoidDangerousTargets');if(game.player)saveGame();return}
+  if(cx2>=bpx+172&&cx2<=bpx+210&&cy2>=bpy+160&&cy2<=bpy+178){botAI.cycleSetting('stopWhenInventoryAlmostFull');if(game.player)saveGame();return}
   // Mute button
-  const mx=bpx+pw-42,my=bpy+118;
+  const mx=bpx+pw-42,my=bpy+179;
   if(cx2>=mx&&cx2<=mx+36&&cy2>=my&&cy2<=my+16){sfx.toggleMute();game.settings.muted=sfx.muted;saveSettings();return}
   // Volume slider click
-  const volX=bpx+40,volY=bpy+121,volW=pw-90;
+  const volX=bpx+40,volY=bpy+182,volW=pw-90;
   if(cx2>=volX&&cx2<=volX+volW&&cy2>=volY&&cy2<=volY+8){const v=Math.max(0,Math.min(1,(cx2-volX)/volW));sfx.setVolume(v);game.settings.volume=v;saveSettings();return}
   // Click monster
   const mons=dungeon.active?dungeon.monsters:game.monsters;
-  for(const m of mons){if(m.isDead)continue;const{x:sx2,y:sy2}=camera.worldToScreen(m.x,m.y);if(Math.hypot(cx2-sx2,cy2-sy2)<24){botAI.target=m;botAI.state='approaching';return}}
+  for(const m of mons){
+    if(m.isDead||m.entityType!=='monster')continue;
+    const{x:sx2,y:sy2}=camera.worldToScreen(m.x,m.y);
+    if(Math.hypot(cx2-sx2,cy2-sy2)<24){
+      botAI.target=m;botAI.stopReason='ready';botAI.statusText='Approaching';botAI.focusText=(m.type||'monster')+' Lv.'+(m.level||'?');botAI.targetLockTimer=0;
+      if(botAI.requestPath(game.player,m.x,m.y)){botAI.state='approaching';botAI.resetMotionTracking(game.player)}
+      else{botAI.markTargetBlocked(m,8);botAI.target=null;botAI.state='idle';botAI.stopReason='target_unreachable';botAI.statusText=botAI.getReasonLabel('target_unreachable')}
+      return
+    }
+  }
 });
 
 // --- KEY TRACKING for smooth movement ---
@@ -239,7 +277,7 @@ window.addEventListener('keydown',e=>{
   // F1 or ? for help
   if(e.code==='F1'||(e.code==='Slash'&&e.shiftKey)){e.preventDefault();showHelp=!showHelp;return}
   switch(e.code){
-    case'Space':botAI.enabled=!botAI.enabled;break;
+    case'Space':botAI.setEnabled(!botAI.enabled,game.player);break;
     case'KeyI':if(!showSettings&&!talentSystem.panelOpen){showInventory=!showInventory;showCharStats=false;showHelp=false;town.shopOpen=false;invSelectedIdx=-1;invSelectedSlot=null}break;
     case'KeyC':if(!showSettings&&!talentSystem.panelOpen){showCharStats=!showCharStats;showInventory=false;showHelp=false;town.shopOpen=false}break;
     case'KeyT':if(!showSettings){talentSystem.panelOpen=!talentSystem.panelOpen;showInventory=false;showCharStats=false;town.shopOpen=false}break;
@@ -249,12 +287,14 @@ window.addEventListener('keydown',e=>{
       else if(typeof achievementSystem!=='undefined'&&achievementSystem.panelOpen){achievementSystem.panelOpen=false}
       else if(typeof leaderboard!=='undefined'&&leaderboard.panelOpen){leaderboard.panelOpen=false}
       else if(talentSystem.panelOpen){talentSystem.panelOpen=false}
+      else if(typeof offlineExpeditionSystem!=='undefined'&&offlineExpeditionSystem.panelOpen){offlineExpeditionSystem.panelOpen=false}
       else if(typeof craftingSystem!=='undefined'&&craftingSystem.panelOpen){craftingSystem.panelOpen=false}
       else if(typeof pvpArena!=='undefined'&&pvpArena.panelOpen){pvpArena.panelOpen=false}
       else if(typeof classChangeSystem!=='undefined'&&classChangeSystem.panelOpen){classChangeSystem.panelOpen=false}
       else if(typeof enchantSystem!=='undefined'&&enchantSystem.panelOpen){enchantSystem.panelOpen=false}
       else if(typeof guildSystem!=='undefined'&&guildSystem.panelOpen){guildSystem.panelOpen=false}
       else if(typeof gachaSystem!=='undefined'&&gachaSystem.panelOpen){gachaSystem.panelOpen=false}
+      else if(typeof cosmeticShop!=='undefined'&&cosmeticShop.panelOpen){cosmeticShop.panelOpen=false}
       else if(typeof showSkillPanel!=='undefined'&&showSkillPanel){showSkillPanel=false}
       else if(questSystem.boardOpen){questSystem.boardOpen=false}
       else if(town.shopOpen){town.shopOpen=false}
@@ -295,6 +335,7 @@ window.addEventListener('keydown',e=>{
     case'KeyJ':if(typeof classChangeSystem!=='undefined'){classChangeSystem.panelOpen=!classChangeSystem.panelOpen}break;
     case'KeyP':if(typeof pvpArena!=='undefined'){pvpArena.panelOpen=!pvpArena.panelOpen}break;
     case'KeyK':if(typeof craftingSystem!=='undefined'){craftingSystem.panelOpen=!craftingSystem.panelOpen}break;
+    case'KeyX':if(typeof offlineExpeditionSystem!=='undefined'){offlineExpeditionSystem.panelOpen=!offlineExpeditionSystem.panelOpen;showTabMenu=false}break;
     case'KeyN':if(typeof enchantSystem!=='undefined'){enchantSystem.panelOpen=!enchantSystem.panelOpen}break;
     case'KeyG':if(typeof guildSystem!=='undefined'){guildSystem.panelOpen=!guildSystem.panelOpen}break;
     case'KeyU':if(typeof gachaSystem!=='undefined'){gachaSystem.panelOpen=!gachaSystem.panelOpen}break;
@@ -330,6 +371,46 @@ function updateManualMovement(dt){
   else p.dir=vy<0?'up':'down';
   p.state='walking';
 }
+
+window.advanceTime=(ms)=>{
+  const steps=Math.max(1,Math.round(ms/(1000/60)));
+  for(let i=0;i<steps;i++)update(1/60);
+  render();
+};
+
+window.render_game_to_text=()=>{
+  const p=game.player;
+  const mons=(typeof dungeon!=='undefined'&&dungeon.active)?dungeon.monsters:game.monsters;
+  const activeMons=(mons||[]).filter(m=>m&&!m.isDead&&m.entityType==='monster').slice(0,8).map(m=>({
+    type:m.type,level:m.level,hp:m.hp,maxHp:m.maxHp,
+    x:Math.round(m.x),y:Math.round(m.y),dist:p?Math.round(Math.hypot(m.x-p.x,m.y-p.y)):null
+  }));
+  return JSON.stringify({
+    note:'origin top-left, +x right, +y down',
+    state:game.state,
+    zone:typeof worldMap!=='undefined'&&worldMap.getZoneName?worldMap.getZoneName():(dungeon.active?'Dungeon':'Overworld'),
+    player:p?{
+      x:Math.round(p.x),y:Math.round(p.y),level:p.level,gold:p.gold,hp:p.hp,maxHp:p.maxHp,mp:p.mp,maxMp:p.maxMp,
+      atk:p.atk,def:p.def,inventory:p.inventory.length+'/'+getMaxInventory(),
+      statTraining:typeof statPointSystem!=='undefined'?{unspent:statPointSystem.unspent,bought:statPointSystem.getPurchasedPoints?statPointSystem.getPurchasedPoints():0}:null,
+      skillRanks:p.skillLevels||[0,0,0,0]
+    }:null,
+    bot:typeof botAI!=='undefined'?{
+      enabled:botAI.enabled,state:botAI.state,reason:botAI.stopReason,focus:botAI.getFocusLabel(),
+      settings:{
+        hpThreshold:botAI.settings.hpThreshold,maxChaseDistance:botAI.settings.maxChaseDistance,
+        preferWeaker:botAI.settings.preferWeaker,lootNearbyFirst:botAI.settings.lootNearbyFirst,
+        avoidDangerousTargets:botAI.settings.avoidDangerousTargets,stopWhenInventoryAlmostFull:botAI.settings.stopWhenInventoryAlmostFull
+      }
+    }:null,
+    combatLog:{
+      filter:typeof getCombatLogFilter==='function'?getCombatLogFilter():'self',
+      visible:typeof getVisibleCombatLogEntries==='function'?getVisibleCombatLogEntries(4).map(entry=>entry.text):[]
+    },
+    drops:(game.itemDrops||[]).slice(0,6).map(d=>({name:d.item&&d.item.name,rarity:d.item&&d.item.rarity,x:Math.round(d.x),y:Math.round(d.y)})),
+    monsters:activeMons
+  });
+};
 
 // --- BOOTSTRAP ---
 initSprites();

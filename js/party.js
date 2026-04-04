@@ -113,7 +113,8 @@ const partySystem = {
     }
     addLog(
       'Party share: +' + goldShare + 'G +' + expShare + 'XP each (' + count + ' members)',
-      '#FFD700'
+      '#FFD700',
+      { scope: 'party' }
     );
   },
 
@@ -244,7 +245,7 @@ function updatePartyMembers(dt) {
           healSkill.cdTimer = healSkill.cd;
           addDmg(lowestMember.x, lowestMember.y - TILE, '+' + healAmt, '#44FF44');
           addEffect(lowestMember.x, lowestMember.y, 'heal', 0.8);
-          addLog(member.name + ' healed ' + lowestMember.name + ' for ' + healAmt, '#44FF44');
+          addLog(member.name + ' healed ' + lowestMember.name + ' for ' + healAmt, '#44FF44', { actor: member });
           sfx.spell && sfx.spell();
         }
       }
@@ -285,7 +286,7 @@ function updatePartyMembers(dt) {
             target.respawnTimer = rf(8, 15);
             target.hp = 0;
             sfx.monDeath && sfx.monDeath();
-            addLog('Killed ' + (target.type || target.name) + '! (party share)', '#FFD700');
+            addLog('Killed ' + (target.type || target.name) + '! (party share)', '#FFD700', { actor: member });
           }
         }
         // Auto-skills on cooldown

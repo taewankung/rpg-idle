@@ -13,7 +13,7 @@ function saveGame() {
   if (!p) return;
 
   const data = {
-    version: 1,
+    version: 2,
     timestamp: Date.now(),
     playTime: game.time,
     player: {
@@ -30,7 +30,8 @@ function saveGame() {
       jobLevel: p.jobLevel || 1,
       jobExp: p.jobExp || 0,
       skillPoints: p.skillPoints || 0,
-      skillLevels: p.skillLevels || [0,0,0,0]
+      skillLevels: p.skillLevels || [0,0,0,0],
+      invUpgrades: p._invUpgrades || 0
     },
     inventory: p.inventory.map(i => i ? {...i} : null),
     equipment: {
@@ -44,7 +45,13 @@ function saveGame() {
       enabled: botAI.enabled,
       hpThreshold: botAI.settings.hpThreshold,
       targetPriority: botAI.settings.targetPriority,
-      autoSkill: botAI.settings.autoSkill
+      autoSkill: botAI.settings.autoSkill,
+      maxChaseDistance: botAI.settings.maxChaseDistance,
+      preferWeaker: botAI.settings.preferWeaker,
+      lootNearbyFirst: botAI.settings.lootNearbyFirst,
+      stopWhenInventoryAlmostFull: botAI.settings.stopWhenInventoryAlmostFull,
+      avoidDangerousTargets: botAI.settings.avoidDangerousTargets,
+      inventorySoftLimit: botAI.settings.inventorySoftLimit
     },
     // New systems
     talents: typeof talentSystem!=='undefined' ? talentSystem.getSaveData() : null,
@@ -63,13 +70,18 @@ function saveGame() {
     party: typeof partySystem!=='undefined' ? partySystem.getSaveData() : null,
     worldBoss: typeof worldBoss!=='undefined' ? { spawnTimer: worldBoss.spawnTimer } : null,
     crafting: typeof craftingSystem!=='undefined' ? craftingSystem.save() : null,
+    offlineExpedition: typeof offlineExpeditionSystem!=='undefined' ? offlineExpeditionSystem.save() : null,
     worldMapData: typeof worldMap!=='undefined' ? worldMap.save() : null,
     pvp: typeof pvpArena!=='undefined' ? pvpArena.save() : null,
     classChange: typeof classChangeSystem!=='undefined' ? classChangeSystem.save() : null,
     enchant: typeof enchantSystem!=='undefined' ? enchantSystem.save() : null,
     guild: typeof guildSystem!=='undefined' ? guildSystem.save() : null,
     gacha: typeof gachaSystem!=='undefined' ? gachaSystem.save() : null,
-    statPoints: typeof statPointSystem!=='undefined' ? statPointSystem.save() : null
+    cosmetic: typeof cosmeticShop!=='undefined' ? cosmeticShop.save() : null,
+    statPoints: typeof statPointSystem!=='undefined' ? statPointSystem.save() : null,
+    progression: typeof progressionSystem!=='undefined' ? {
+      version: progressionSystem.version
+    } : null
   };
 
   try {
@@ -94,7 +106,9 @@ function saveSettings() {
       showDmgNumbers: s.showDmgNumbers,
       showNPCs: s.showNPCs,
       showChat: s.showChat,
+      combatLogFilter: s.combatLogFilter,
       autoBuyPotions: s.autoBuyPotions,
+      autoSellItems: s.autoSellItems,
       autoStatAllocate: s.autoStatAllocate,
       autoTalentAllocate: s.autoTalentAllocate,
       autoSkillAllocate: s.autoSkillAllocate
@@ -116,7 +130,9 @@ function loadSettings() {
     game.settings.showDmgNumbers = s.showDmgNumbers ?? true;
     game.settings.showNPCs       = s.showNPCs       ?? true;
     game.settings.showChat       = s.showChat       ?? true;
+    game.settings.combatLogFilter= s.combatLogFilter?? 'self';
     game.settings.autoBuyPotions = s.autoBuyPotions ?? true;
+    game.settings.autoSellItems  = s.autoSellItems  ?? true;
     game.settings.autoStatAllocate = s.autoStatAllocate ?? true;
     game.settings.autoTalentAllocate = s.autoTalentAllocate ?? true;
     game.settings.autoSkillAllocate = s.autoSkillAllocate ?? true;
@@ -135,6 +151,12 @@ function loadGame() {
     if (!raw) return false;
     const data = JSON.parse(raw);
     if (!data.version || !data.player) { console.warn('LOAD: invalid save data'); return false; }
+    const migration = typeof progressionSystem!=='undefined'&&progressionSystem.migrateLegacySave?progressionSystem.migrateLegacySave(data):{changed:false,bonusGold:0};
+    const savedExpeditionConsumesAfk = !!(
+      data.offlineExpedition &&
+      (data.offlineExpedition.activeRun || data.offlineExpedition.pendingSummary)
+    );
+    let shouldResave = !!migration.changed;
 
     // Initialize world
     initSprites();
@@ -169,6 +191,7 @@ function loadGame() {
     p.jobExp = data.player.jobExp || 0;
     p.skillPoints = data.player.skillPoints || 0;
     p.skillLevels = data.player.skillLevels || [0,0,0,0];
+    p._invUpgrades = data.player.invUpgrades || 0;
     if(typeof applyAllJobPassives==='function')applyAllJobPassives(p);
     // Catch-up: if job level seems too low for player level, grant missing job exp
     if(p.jobLevel<Math.min(30,Math.floor(p.level*0.8))&&typeof jobLevelCatchUp==='function')jobLevelCatchUp(p);
@@ -186,10 +209,37 @@ function loadGame() {
 
     // Restore bot settings
     if (data.bot) {
-      botAI.enabled                 = data.bot.enabled ?? true;
-      botAI.settings.hpThreshold    = data.bot.hpThreshold ?? 30;
-      botAI.settings.targetPriority = data.bot.targetPriority ?? 'nearest';
-      botAI.settings.autoSkill      = data.bot.autoSkill ?? true;
+      botAI.applySettings({
+        hpThreshold: data.bot.hpThreshold ?? BOT_DEFAULT_SETTINGS.hpThreshold,
+        targetPriority: data.bot.targetPriority ?? BOT_DEFAULT_SETTINGS.targetPriority,
+        autoSkill: data.bot.autoSkill ?? true,
+        maxChaseDistance: data.bot.maxChaseDistance ?? BOT_DEFAULT_SETTINGS.maxChaseDistance,
+        preferWeaker: data.bot.preferWeaker ?? BOT_DEFAULT_SETTINGS.preferWeaker,
+        lootNearbyFirst: data.bot.lootNearbyFirst ?? BOT_DEFAULT_SETTINGS.lootNearbyFirst,
+        stopWhenInventoryAlmostFull: data.bot.stopWhenInventoryAlmostFull ?? BOT_DEFAULT_SETTINGS.stopWhenInventoryAlmostFull,
+        avoidDangerousTargets: data.bot.avoidDangerousTargets ?? BOT_DEFAULT_SETTINGS.avoidDangerousTargets,
+        inventorySoftLimit: data.bot.inventorySoftLimit ?? BOT_DEFAULT_SETTINGS.inventorySoftLimit
+      });
+      botAI.enabled = data.bot.enabled ?? true;
+      botAI.state = 'idle';
+      botAI.target = null;
+      botAI.roamTarget = null;
+      botAI.retreatTarget = null;
+      botAI.lootTarget = null;
+      botAI.stopReason = 'ready';
+      botAI.statusText = botAI.enabled ? 'Scanning' : 'Paused';
+      botAI.focusText = botAI.enabled ? 'Scanning' : 'Manual';
+    } else {
+      botAI.applySettings();
+      botAI.enabled = true;
+      botAI.state = 'idle';
+      botAI.target = null;
+      botAI.roamTarget = null;
+      botAI.retreatTarget = null;
+      botAI.lootTarget = null;
+      botAI.stopReason = 'ready';
+      botAI.statusText = 'Scanning';
+      botAI.focusText = 'Scanning';
     }
 
     // Restore counters
@@ -232,6 +282,10 @@ function loadGame() {
     if (data.worldBoss && typeof worldBoss !== 'undefined') {
       worldBoss.spawnTimer = data.worldBoss.spawnTimer || 300;
     }
+    if (typeof offlineExpeditionSystem !== 'undefined') {
+      offlineExpeditionSystem.load(data.offlineExpedition || null);
+      if (offlineExpeditionSystem.pendingSummary) offlineExpeditionSystem.panelOpen = true;
+    }
 
     // Restore new content systems
     if(typeof craftingSystem!=='undefined'){craftingSystem.generateSprites();craftingSystem.initTownNPC();if(data.crafting)craftingSystem.load(data.crafting)}
@@ -242,18 +296,36 @@ function loadGame() {
     if(typeof enchantSystem!=='undefined'){enchantSystem.generateSprites();enchantSystem.initTownNPC();if(data.enchant)enchantSystem.load(data.enchant)}
     if(typeof guildSystem!=='undefined'){guildSystem.generateSprites();guildSystem.initTownNPC();if(data.guild)guildSystem.load(data.guild)}
     if(typeof gachaSystem!=='undefined'){gachaSystem.generateSprites();gachaSystem.initTownNPC();if(data.gacha)gachaSystem.load(data.gacha)}
+    if(typeof cosmeticShop!=='undefined'){cosmeticShop.generateSprites();cosmeticShop.initTownNPC();if(data.cosmetic)cosmeticShop.load(data.cosmetic)}
+
+    if(typeof statPointSystem!=='undefined'&&statPointSystem.applyStats)statPointSystem.applyStats(game.player);
+    if(typeof petSystem!=='undefined'&&petSystem.active&&petSystem.recalcStats)petSystem.recalcStats();
 
     // Init audio with fade
     sfx.init();
     sfx.startFadeIn();
     camera.update(game.player);
 
+    if (typeof offlineExpeditionSystem !== 'undefined') {
+      const resolved = offlineExpeditionSystem.resolveOfflineExpedition(Date.now(), true);
+      if (resolved) shouldResave = true;
+    }
+
     console.log('LOADED: Lv.' + p.level, p.className, 'HP:' + p.hp + '/' + p.maxHp, 'Gold:' + p.gold);
     addNotification('Welcome back, ' + p.name + '! Lv.' + p.level + ' ' + p.className, '#4fc3f7');
     addLog('Welcome back, ' + p.name + '!', '#FFD700');
+    if(migration.changed&&migration.bonusGold>0){
+      addNotification('Legacy power migrated: +'+migration.bonusGold+'G training credit','#FFD700');
+      addLog('Converted old free stat/skill points into '+migration.bonusGold+' gold.','#FFD700');
+    }
 
-    // AFK rewards check
-    if(typeof afkSystem!=='undefined'&&data.timestamp){afkSystem.checkAfk(data.timestamp)}
+    // AFK rewards check — skip if this is a browser tab reload/discard (not a genuine re-open).
+    // sessionStorage survives tab discarding but is cleared when the tab is truly closed,
+    // so it reliably distinguishes "browser froze/reloaded the tab" from "user came back".
+    const _freshSession = !sessionStorage.getItem('rpg_session');
+    sessionStorage.setItem('rpg_session', '1');
+    if(typeof afkSystem!=='undefined'&&data.timestamp&&!savedExpeditionConsumesAfk&&_freshSession){afkSystem.checkAfk(data.timestamp)}
+    if (shouldResave) saveGame();
 
     return true;
   } catch (e) {

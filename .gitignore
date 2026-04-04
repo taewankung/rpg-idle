@@ -141,3 +141,5 @@ vite.config.ts.timestamp-*
 
 # Claude local settings
 .claude/settings.local.json
+
+output

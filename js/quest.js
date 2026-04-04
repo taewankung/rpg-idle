@@ -22,7 +22,7 @@ const questSystem = {
   available: [],    // quests on the board (max 3)
   active: [],       // accepted quests (max 3)
   completed: [],    // completed quest IDs (for tracking)
-  boardNPC: { x: (qcx - 1) * TILE + TILE / 2, y: (qcy + 3) * TILE + TILE / 2, name: 'Quest Board' },
+  boardNPC: { x: (qcx - 2) * TILE + TILE / 2, y: (qcy + 3) * TILE + TILE / 2, name: 'Quest Board' },
   boardOpen: false,
   lastRefresh: 0,       // timestamp of last quest refresh
   refreshInterval: 300000, // 5 minutes in ms

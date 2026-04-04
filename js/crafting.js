@@ -14,8 +14,8 @@ const craftingSystem = {
     iron_ore:    {name:'Iron Ore',     rarity:'common',   icon:'icon_ore',     value:15},
     wood:        {name:'Wood',         rarity:'common',   icon:'icon_wood',    value:10},
     leather:     {name:'Leather',      rarity:'common',   icon:'icon_leather', value:12},
-    iron_bar:    {name:'Iron Bar',     rarity:'uncommon', icon:'icon_ore',     value:40},
-    steel_bar:   {name:'Steel Bar',    rarity:'rare',     icon:'icon_ore',     value:100},
+    iron_bar:    {name:'Iron Bar',     rarity:'uncommon', icon:'icon_iron_bar', value:40},
+    steel_bar:   {name:'Steel Bar',    rarity:'rare',     icon:'icon_steel_bar',value:100},
     fire_gem:    {name:'Fire Gem',     rarity:'rare',     icon:'icon_gem_fire',      value:80},
     ice_gem:     {name:'Ice Gem',      rarity:'rare',     icon:'icon_gem_ice',       value:80},
     lightning_gem:{name:'Lightning Gem',rarity:'rare',    icon:'icon_gem_lightning',  value:80},
@@ -210,7 +210,7 @@ const craftingSystem = {
       addNotification('Missing materials!', '#FF4444');
       return;
     }
-    if (p.inventory.length >= 20) {
+    if (p.inventory.length >= getMaxInventory()) {
       addNotification('Inventory full!', '#FF4444');
       return;
     }
@@ -243,7 +243,7 @@ const craftingSystem = {
         addNotification('Crafting failed!', '#FF4444');
         return;
       }
-      if (p.inventory.length < 20) {
+      if (p.inventory.length < getMaxInventory()) {
         p.inventory.push(item);
         autoEquip(p, item);
         sfx.spell();
@@ -300,7 +300,7 @@ const craftingSystem = {
   initTownNPC() {
     const tcx = Math.floor(MAP_W / 2), tcy = Math.floor(MAP_H / 2);
     this.anvilNPC = {
-      x: (tcx - 1) * TILE + TILE / 2,
+      x: (tcx - 2) * TILE + TILE / 2,
       y: (tcy + 2) * TILE + TILE / 2,
       name: 'Anvil'
     };
@@ -473,7 +473,7 @@ const craftingSystem = {
     for (let i = 0; i < this.recipes.length; i++) {
       const recipe = this.recipes[i];
       if (!this.hasInputs(recipe, player.inventory)) continue;
-      if (player.inventory.length >= 20) continue;
+      if (player.inventory.length >= getMaxInventory()) continue;
       // Score the output
       const info = this._outputInfo(recipe);
       let score = 0;
@@ -487,7 +487,7 @@ const craftingSystem = {
       const recipe = this.recipes[bestIdx];
       const consumed = this.consumeInputs(recipe, player.inventory);
       const item = this.produceOutput(recipe, consumed, player.className);
-      if (item && player.inventory.length < 20) {
+      if (item && player.inventory.length < getMaxInventory()) {
         player.inventory.push(item);
         autoEquip(player, item);
         addNotification('Bot crafted: ' + item.name, RARITY_COLORS[item.rarity] || '#fff');

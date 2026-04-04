@@ -506,14 +506,16 @@ function generateWorldBossSprites() {
 // ============================================================
 function _createBossEntity(typeKey, wx, wy) {
   const def = WB_TYPES[typeKey];
+  const hpMul = typeof progressionSystem !== 'undefined' ? progressionSystem.getBossHpMultiplier('worldBoss') : 1;
+  const bossHp = Math.round(def.hp * hpMul);
   return {
     entityType: 'worldboss',
     bossType: typeKey,
     name: def.name,
     element: def.element,
     level: 20,
-    hp: def.hp,
-    maxHp: def.hp,
+    hp: bossHp,
+    maxHp: bossHp,
     atk: def.atk,
     def: def.def,
     spd: def.spd,
@@ -661,6 +663,9 @@ function _bossAbility_summon(boss) {
 // MAIN UPDATE
 // ============================================================
 function updateWorldBoss(dt) {
+  // Never update world boss while inside dungeon
+  if (typeof dungeon !== 'undefined' && dungeon.active) return;
+
   // --- Countdown phase ---
   if (!worldBoss.active) {
     worldBoss.spawnTimer -= dt;
@@ -918,6 +923,7 @@ function onWorldBossHit(attackerName, amount) {
 
 // Draw the world boss entity in the game world
 function drawWorldBoss() {
+  if (typeof dungeon !== 'undefined' && dungeon.active) return;
   const boss = worldBoss.active;
   if (!boss || boss.isDead) return;
 

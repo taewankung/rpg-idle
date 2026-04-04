@@ -244,7 +244,7 @@ function drawShopPanel() {
 
     // BUY button
     const bx = ix + colW - 42, by = iy + rowH - 22;
-    const canBuy = p.gold >= item.value && p.inventory.length < 20;
+    const canBuy = p.gold >= item.value && p.inventory.length < getMaxInventory();
     ctx.fillStyle = canBuy ? 'rgba(20,120,40,0.9)' : 'rgba(60,60,60,0.9)';
     roundRect(ctx, bx, by, 36, 18, 4);
     ctx.fill();
@@ -350,7 +350,7 @@ function handleShopClick(clickX, clickY) {
     const bx = ix + colW - 42, by = iy + rowH - 22;
 
     if (clickX >= bx && clickX <= bx + 36 && clickY >= by && clickY <= by + 18) {
-      if (p.gold >= item.value && p.inventory.length < 20) {
+      if (p.gold >= item.value && p.inventory.length < getMaxInventory()) {
         p.gold -= item.value;
         // Add a copy of the item to inventory
         const bought = JSON.parse(JSON.stringify(item));
@@ -361,7 +361,7 @@ function handleShopClick(clickX, clickY) {
       } else if (p.gold < item.value) {
         addNotification('Not enough gold!', '#FF4444');
       } else {
-        addNotification('Inventory full!', '#FF4444');
+        addNotification('Inventory full! (' + getMaxInventory() + '/' + getMaxInventory() + ')', '#FF4444');
       }
       return true;
     }
@@ -425,6 +425,51 @@ function checkTownNPCClick(clickX, clickY) {
   return false;
 }
 
+// ---- BOT AUTO-SELL LOGIC ----
+// Sells one junk item per call. Returns true if an item was sold.
+function botAutoSell(p) {
+  if (!p || !p.inventory.length) return false;
+  const maxInv = getMaxInventory();
+  const softLimit = typeof botAI !== 'undefined' ? botAI.settings.inventorySoftLimit : maxInv - 2;
+  // Only sell when inventory is near full
+  if (p.inventory.length < Math.min(softLimit, maxInv - 2)) return false;
+
+  // Build list of sellable items (not equipped, not potions)
+  const equipped = [p.equipment.weapon, p.equipment.armor, p.equipment.accessory];
+  const candidates = [];
+  for (let i = 0; i < p.inventory.length; i++) {
+    const item = p.inventory[i];
+    if (!item) continue;
+    if (item.type === 'potion') continue;
+    if (equipped.includes(item)) continue;
+    // Check if item is worse than what's equipped in that slot
+    const slot = item.type === 'weapon' ? 'weapon' : item.type === 'armor' ? 'armor' : 'accessory';
+    const cur = p.equipment[slot];
+    const score = typeof statScore === 'function' ? statScore(item.stats || {}) : 0;
+    const curScore = cur && typeof statScore === 'function' ? statScore(cur.stats || {}) : 0;
+    const isUpgrade = score > curScore;
+    candidates.push({ idx: i, item, score, isUpgrade, value: item.value || 1 });
+  }
+  if (!candidates.length) return false;
+
+  // Sort: sell worst items first (non-upgrades first, then by score ascending)
+  candidates.sort((a, b) => {
+    if (a.isUpgrade !== b.isUpgrade) return a.isUpgrade ? 1 : -1;
+    return a.score - b.score;
+  });
+
+  // Sell the worst item
+  const worst = candidates[0];
+  if (worst.isUpgrade) return false; // Don't sell upgrades
+  const sellPrice = Math.floor((worst.item.value || 1) * 0.4);
+  p.gold += sellPrice;
+  p.inventory.splice(worst.idx, 1);
+  addLog('Bot sold ' + worst.item.name + ' for ' + sellPrice + 'g', '#FFDD44');
+  addNotification('Bot sold ' + worst.item.name, '#FFDD44');
+  if (typeof sfx !== 'undefined' && sfx.itemPickup) sfx.itemPickup();
+  return true;
+}
+
 // ---- BOT TOWN LOGIC ----
 // Called when bot is retreating and reaches town area.
 // Returns {x,y} target coords to walk to, or null when done.
@@ -443,10 +488,16 @@ function townBotLogic(p) {
     return { x: town.healerNPC.x, y: town.healerNPC.y };
   }
 
-  // Step 2: After healed, check if we should buy potions
+  // Step 2: Auto-sell junk items if enabled
+  if (game.settings.autoSellItems && p.inventory.length > 0) {
+    const sold = botAutoSell(p);
+    if (sold) return { x: town.shopNPC.x, y: town.shopNPC.y };
+  }
+
+  // Step 3: After healed, check if we should buy potions
   const hpPotCount = p.inventory.filter(i => i && i.type === 'potion' && i.stats.hp).length;
   const mpPotCount = p.inventory.filter(i => i && i.type === 'potion' && i.stats.mp).length;
-  if (game.settings.autoBuyPotions && p.gold >= 50 && p.inventory.length < 20) {
+  if (game.settings.autoBuyPotions && p.gold >= 50 && p.inventory.length < getMaxInventory()) {
     // Auto-buy HP potions (keep 5 in stock)
     if (hpPotCount < 5) {
       const hpPot = town.shopItems[0]; // HP Potion

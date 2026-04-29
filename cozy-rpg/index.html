@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>The Lantern-Lit Atlas — A Cozy Idle Chronicle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Jacquard+12&family=Silkscreen:wght@400;700&family=VT323&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div class="paper-grain" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
+<div class="lamp-glow lamp-glow--tl" aria-hidden="true"></div>
+<div class="lamp-glow lamp-glow--br" aria-hidden="true"></div>
+
+<header class="codex-banner">
+  <div class="banner-flourish" aria-hidden="true">
+    <svg viewBox="0 0 200 28" preserveAspectRatio="none"><path d="M0 14 Q 50 0 100 14 T 200 14" /></svg>
+  </div>
+  <div class="banner-row">
+    <div class="banner-side">
+      <span class="banner-mark">⚜</span>
+      <span class="banner-label">Vol. I</span>
+    </div>
+    <div class="banner-title">
+      <h1>The Lantern‑Lit Atlas</h1>
+      <p class="banner-sub">— a chronicle of the wanderings of <span id="hero-name-tag">Ember the Wayward</span> —</p>
+    </div>
+    <div class="banner-side banner-side--right">
+      <button class="banner-btn" id="btn-save" title="Inscribe (Save)"><span>✒</span> Inscribe</button>
+      <button class="banner-btn ghost" id="btn-settings" title="Settings">✦</button>
+    </div>
+  </div>
+  <div class="banner-flourish flip" aria-hidden="true">
+    <svg viewBox="0 0 200 28" preserveAspectRatio="none"><path d="M0 14 Q 50 0 100 14 T 200 14" /></svg>
+  </div>
+</header>
+
+<main class="codex-spread">
+  <!-- =============================== LEFT PAGE =============================== -->
+  <section class="page page--left">
+    <div class="page-header">
+      <span class="folio">— folio i —</span>
+      <h2 class="page-heading">The Wanderer</h2>
+    </div>
+
+    <article class="hero-card">
+      <div class="hero-portrait-frame">
+        <canvas id="hero-portrait" width="64" height="64" aria-label="Hero portrait"></canvas>
+        <div class="hero-portrait-glow" aria-hidden="true"></div>
+      </div>
+      <div class="hero-meta">
+        <div class="hero-name-row">
+          <h3 id="hero-name">Ember</h3>
+          <span class="hero-class" id="hero-class">Warrior</span>
+        </div>
+        <div class="hero-titles">
+          <span class="hero-level">Lv. <em id="hero-level">1</em></span>
+          <span class="hero-divider">·</span>
+          <span id="hero-title">— Apprentice of the Lantern —</span>
+        </div>
+
+        <div class="bars">
+          <div class="bar bar--hp">
+            <span class="bar-label">HP</span>
+            <div class="bar-track"><div class="bar-fill" id="bar-hp"></div><div class="bar-glint"></div></div>
+            <span class="bar-value" id="val-hp">40 / 40</span>
+          </div>
+          <div class="bar bar--mp">
+            <span class="bar-label">MP</span>
+            <div class="bar-track"><div class="bar-fill" id="bar-mp"></div><div class="bar-glint"></div></div>
+            <span class="bar-value" id="val-mp">12 / 12</span>
+          </div>
+          <div class="bar bar--xp">
+            <span class="bar-label">XP</span>
+            <div class="bar-track"><div class="bar-fill" id="bar-xp"></div><div class="bar-glint"></div></div>
+            <span class="bar-value" id="val-xp">0 / 50</span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="diorama">
+      <div class="diorama-frame">
+        <div class="diorama-corner tl"></div>
+        <div class="diorama-corner tr"></div>
+        <div class="diorama-corner bl"></div>
+        <div class="diorama-corner br"></div>
+        <canvas id="scene" width="640" height="200"></canvas>
+        <div class="diorama-rain" id="diorama-rain" aria-hidden="true"></div>
+        <div class="diorama-clock"><span id="scene-time">midday</span></div>
+      </div>
+      <div class="diorama-caption">
+        <span class="caption-zone" id="scene-zone">Green Meadow</span>
+        <span class="caption-sep">·</span>
+        <span class="caption-action" id="scene-action">walking through the morning grass…</span>
+      </div>
+
+      <div class="strategy-bar" role="tablist" aria-label="Combat stance">
+        <button class="stance is-active" data-stance="balanced">
+          <span class="stance-mark">⚖</span><span>Balanced</span>
+        </button>
+        <button class="stance" data-stance="aggressive">
+          <span class="stance-mark">🗡</span><span>Aggressive</span>
+        </button>
+        <button class="stance" data-stance="defensive">
+          <span class="stance-mark">🛡</span><span>Defensive</span>
+        </button>
+        <button class="stance" data-stance="frugal">
+          <span class="stance-mark">✦</span><span>Save MP</span>
+        </button>
+        <div class="strategy-extras">
+          <label class="check"><input type="checkbox" id="opt-autopotion" checked /><span>auto‑potion at 30%</span></label>
+          <label class="check"><input type="checkbox" id="opt-retreat" /><span>retreat when bloodied</span></label>
+        </div>
+      </div>
+    </article>
+
+    <article class="stat-block">
+      <div class="stat-block-head">
+        <span class="rune">✶</span>
+        <h3>Stats &amp; Faculties</h3>
+        <span class="rune flip">✶</span>
+      </div>
+      <div class="stat-grid">
+        <div class="stat"><span class="stat-name">Attack</span><span class="stat-value" id="s-atk">8</span></div>
+        <div class="stat"><span class="stat-name">Defense</span><span class="stat-value" id="s-def">5</span></div>
+        <div class="stat"><span class="stat-name">Magic</span><span class="stat-value" id="s-mag">3</span></div>
+        <div class="stat"><span class="stat-name">Speed</span><span class="stat-value" id="s-spd">7</span></div>
+        <div class="stat"><span class="stat-name">Luck</span><span class="stat-value" id="s-luk">4</span></div>
+        <div class="stat"><span class="stat-name">Crit</span><span class="stat-value" id="s-crit">5%</span></div>
+        <div class="stat"><span class="stat-name">Evasion</span><span class="stat-value" id="s-eva">3%</span></div>
+        <div class="stat"><span class="stat-name">Carry</span><span class="stat-value" id="s-carry">12 / 24</span></div>
+      </div>
+
+      <div class="condition-block">
+        <h4 class="condition-title">Condition of the Wanderer</h4>
+        <div class="condition-list">
+          <div class="condition" data-cond="energy"><span>Energy</span><div class="pip-row" id="cond-energy"></div></div>
+          <div class="condition" data-cond="hunger"><span>Hunger</span><div class="pip-row" id="cond-hunger"></div></div>
+          <div class="condition" data-cond="mood"><span>Mood</span><div class="pip-row" id="cond-mood"></div></div>
+          <div class="condition" data-cond="fatigue"><span>Fatigue</span><div class="pip-row" id="cond-fatigue"></div></div>
+        </div>
+      </div>
+    </article>
+
+    <p class="page-footer">… turn the leaf for the chronicle of journey →</p>
+  </section>
+
+  <!-- =============================== RIGHT PAGE =============================== -->
+  <section class="page page--right">
+    <div class="page-header">
+      <span class="folio">— folio ii —</span>
+      <h2 class="page-heading">The Chronicle</h2>
+    </div>
+
+    <nav class="codex-tabs" role="tablist" aria-label="Codex chapters">
+      <button class="tab is-active" data-tab="atlas">Atlas</button>
+      <button class="tab" data-tab="quests">Quests</button>
+      <button class="tab" data-tab="ledger">Chronicle</button>
+      <button class="tab" data-tab="pack">Pack</button>
+      <button class="tab" data-tab="skills">Arts</button>
+      <button class="tab" data-tab="town">Town</button>
+    </nav>
+
+    <!-- ATLAS TAB -->
+    <section class="tab-panel is-active" data-panel="atlas">
+      <header class="panel-header">
+        <h3>Atlas of Wandering</h3>
+        <p class="panel-sub">Choose where the lantern shall lead.</p>
+      </header>
+      <div class="zone-list" id="zone-list"><!-- populated --></div>
+    </section>
+
+    <!-- QUESTS TAB -->
+    <section class="tab-panel" data-panel="quests">
+      <header class="panel-header">
+        <h3>The Ledger of Errands</h3>
+        <p class="panel-sub">Promises kept and promises owed.</p>
+      </header>
+      <ul class="quest-list" id="quest-list"></ul>
+    </section>
+
+    <!-- CHRONICLE TAB -->
+    <section class="tab-panel" data-panel="ledger">
+      <header class="panel-header">
+        <h3>Chronicle of Blows &amp; Boons</h3>
+        <p class="panel-sub">Every strike, every whisper of fortune.</p>
+      </header>
+      <ol class="chronicle" id="chronicle"></ol>
+    </section>
+
+    <!-- PACK TAB -->
+    <section class="tab-panel" data-panel="pack">
+      <header class="panel-header">
+        <h3>The Wanderer's Pack</h3>
+        <p class="panel-sub">Equipped, hoarded, and half‑forgotten.</p>
+      </header>
+
+      <div class="equip-row">
+        <div class="equip-slot" data-slot="weapon"><div class="equip-frame"></div><span>Weapon</span><em id="eq-weapon">Worn Sword</em></div>
+        <div class="equip-slot" data-slot="armor"><div class="equip-frame"></div><span>Armor</span><em id="eq-armor">Patched Tunic</em></div>
+        <div class="equip-slot" data-slot="trinket"><div class="equip-frame"></div><span>Trinket</span><em id="eq-trinket">— none —</em></div>
+      </div>
+
+      <div class="pack-grid" id="pack-grid"></div>
+    </section>
+
+    <!-- SKILLS TAB -->
+    <section class="tab-panel" data-panel="skills">
+      <header class="panel-header">
+        <h3>The Constellation of Arts</h3>
+        <p class="panel-sub">Skill points unspent: <em id="skill-points">0</em></p>
+      </header>
+      <div class="skill-board" id="skill-board"></div>
+    </section>
+
+    <!-- TOWN TAB -->
+    <section class="tab-panel" data-panel="town">
+      <header class="panel-header">
+        <h3>Hearthwick Hollow</h3>
+        <p class="panel-sub">A frontier town beneath three stars.</p>
+      </header>
+      <div class="town-list" id="town-list"></div>
+    </section>
+
+    <p class="page-footer">— here the ink of folio ii runs dry —</p>
+  </section>
+</main>
+
+<!-- ============================ FOOTER STATUS RIBBON ============================ -->
+<footer class="status-ribbon">
+  <div class="status-cell"><span>Gold</span><strong id="stat-gold">120</strong></div>
+  <div class="status-cell"><span>Pack</span><strong id="stat-pack">3 / 24</strong></div>
+  <div class="status-cell"><span>Reputation</span><strong id="stat-rep">Wayward</strong></div>
+  <div class="status-cell"><span>Day</span><strong id="stat-day">1</strong></div>
+  <div class="status-cell status-cell--auto"><span>Auto‑inscribed</span><strong id="stat-saved">just now</strong></div>
+</footer>
+
+<!-- ============================ MODALS ============================ -->
+<div class="modal" id="modal-offline" hidden>
+  <div class="modal-card scroll-card" role="dialog" aria-modal="true" aria-labelledby="offline-title">
+    <button class="modal-close" data-close="modal-offline" aria-label="Close">×</button>
+    <div class="scroll-top"></div>
+    <header class="scroll-head">
+      <h2 id="offline-title">While You Were Away…</h2>
+      <p class="scroll-stamp" id="offline-when">— gone for 3h 24m —</p>
+    </header>
+    <div class="scroll-body" id="offline-body">
+      <p class="dropcap">The lantern burned low while you slept. Yet the wanderer pressed on — and returned with stories of dust, of song, of the small and the splendid.</p>
+      <ul class="offline-list" id="offline-list"></ul>
+    </div>
+    <footer class="scroll-foot">
+      <button class="big-btn" data-close="modal-offline">Welcome them home →</button>
+    </footer>
+    <div class="scroll-bottom"></div>
+  </div>
+</div>
+
+<div class="modal" id="modal-levelup" hidden>
+  <div class="modal-card levelup-card" role="dialog" aria-modal="true">
+    <div class="levelup-rays" aria-hidden="true"></div>
+    <h2>A New Page Turns</h2>
+    <p class="levelup-sub">Ember has reached <em>Level <span id="levelup-lv">2</span></em></p>
+    <div class="levelup-gains" id="levelup-gains"></div>
+    <button class="big-btn" data-close="modal-levelup">Onward</button>
+  </div>
+</div>
+
+<div class="modal" id="modal-settings" hidden>
+  <div class="modal-card settings-card" role="dialog" aria-modal="true">
+    <button class="modal-close" data-close="modal-settings" aria-label="Close">×</button>
+    <h2>Lantern Adjustments</h2>
+    <div class="setting-row"><span>Wanderer's name</span><input type="text" id="set-name" maxlength="14" /></div>
+    <div class="setting-row"><span>Music</span><label class="toggle"><input type="checkbox" id="set-music" checked /><i></i></label></div>
+    <div class="setting-row"><span>Sound effects</span><label class="toggle"><input type="checkbox" id="set-sfx" checked /><i></i></label></div>
+    <div class="setting-row"><span>Reduce motion</span><label class="toggle"><input type="checkbox" id="set-rmotion" /><i></i></label></div>
+    <div class="setting-row danger"><span>Erase all chronicles</span><button class="ghost-btn" id="set-wipe">Burn the book</button></div>
+  </div>
+</div>
+
+<!-- ============================ LOOT TOAST POOL ============================ -->
+<div class="toast-pool" id="toast-pool" aria-live="polite" aria-atomic="false"></div>
+
+<script src="js/data.js"></script>
+<script src="js/sprites.js"></script>
+<script src="js/scene.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

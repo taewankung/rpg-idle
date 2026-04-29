@@ -57,60 +57,60 @@ window.CFG = {
     table:     { tx: 3.2, ty: 3.6 },
   },
 
-  // pixel palette (must match CSS)
+  // pixel palette — punched-up colors with strong dark outlines
   PAL: {
     cream:   '#f5e6d3',
-    creamSoft:'#fff1de',
-    ivory:   '#fff8ec',
+    creamSoft:'#fff5e0',
+    ivory:   '#fffaf0',
     paper:   '#f0dec3',
-    peach:   '#ffd9b7',
-    rose:    '#e8b4b8',
-    roseDeep:'#c98088',
-    sage:    '#9fb89a',
-    sageDeep:'#6e8a6c',
-    amber:   '#e8b86f',
-    amberDeep:'#c0894a',
+    peach:   '#ffc89a',
+    rose:    '#f4a8b0',
+    roseDeep:'#d56a78',
+    sage:    '#a8c294',
+    sageDeep:'#5e7a58',
+    amber:   '#f0bc5e',
+    amberDeep:'#b8783a',
     lavender:'#c4b5c7',
-    night:   '#2d2638',
-    nightBlue:'#3d4f66',
-    warmGray:'#8b7a6b',
-    shadow:  '#5d4e45',
-    ink:     '#3a2e2a',
-    inkSoft: '#6b554a',
+    night:   '#1a1622',
+    nightBlue:'#2a3a52',
+    warmGray:'#7a6a5a',
+    shadow:  '#3a2820',          // mid outline / shading
+    ink:     '#1f1410',          // primary outline (near-black brown)
+    inkSoft: '#4a3526',
 
-    // skin/hair (character) — soft rose hair to match cozy reference art
-    skin:    '#f3d5b5',
-    skinShadow:'#d8a98a',
-    hair:    '#c98088',
-    hairLight:'#e8b4b8',
+    // skin/hair (character) — vivid rose hair, peachy skin
+    skin:    '#fcd5b0',
+    skinShadow:'#d89878',
+    hair:    '#ec8aa0',
+    hairLight:'#f8c0d0',
     hairAccent:'#fff1de',
-    cloth:   '#fff1de',
-    clothShadow:'#e8b4b8',
-    pants:   '#7e6b5a',
-    pantsShadow:'#5d4f42',
-    shoe:    '#3a2e2a',
-    cheek:   '#e8a3a3',
+    cloth:   '#fff5e0',          // bright cream sweater
+    clothShadow:'#e8a8b0',       // pink shadow
+    pants:   '#3a4866',          // navy denim
+    pantsShadow:'#1f2a44',
+    shoe:    '#1f1410',
+    cheek:   '#ec8a90',
 
-    // wood/wall tones
-    wallBg:   '#e3c9a6',
-    wallBg2:  '#d4b78f',
-    wallTrim: '#b9986a',
-    floor:    '#bfa07a',
-    floor2:   '#a98562',
-    floorBoard:'#7a5d44',
+    // wood / wall tones (warmer, brighter)
+    wallBg:   '#f4d699',          // sunny cream-yellow back wall
+    wallBg2:  '#e2c184',          // shadow-side wall (darker)
+    wallTrim: '#fff5e0',          // bright wood-paneling
+    floor:    '#d49b5a',          // warm orange wood
+    floor2:   '#b27238',          // shadow plank row
+    floorBoard:'#3a1f10',         // deep dark plank seams
 
     // accents
-    blanket:  '#e8b4b8',
-    blanket2: '#c98088',
-    pillow:   '#fff1de',
-    deskWood: '#9c7752',
-    deskWood2:'#74552f',
-    bookA:    '#7a8caa',
-    bookB:    '#c98088',
-    bookC:    '#9fb89a',
-    bookD:    '#e8b86f',
-    rugA:     '#c98088',
-    rugB:     '#e8b4b8',
+    blanket:  '#f0a0a8',
+    blanket2: '#c66070',
+    pillow:   '#fff5e0',
+    deskWood: '#a87144',
+    deskWood2:'#5a3a1a',
+    bookA:    '#5a78a0',
+    bookB:    '#d56a78',
+    bookC:    '#7da078',
+    bookD:    '#e8a850',
+    rugA:     '#d56a78',
+    rugB:     '#f4a8b0',
     plantPot: '#c0894a',
     plantLeaf:'#6e8a6c',
     plantLeaf2:'#8aae7a',

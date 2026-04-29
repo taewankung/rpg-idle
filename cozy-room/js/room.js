@@ -62,6 +62,9 @@
 
     // 8. string lights (always on top of back wall + character heads OK)
     window.SPR.drawStringLights(ctx, hour);
+
+    // 9. room silhouette frame on top
+    window.SPR.drawRoomOutline(ctx);
   }
 
   function renderAfterCharacter(ctx) {

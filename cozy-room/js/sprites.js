@@ -207,6 +207,40 @@
     }
   }
 
+  // ─── ROOM SILHOUETTE OUTLINE ───────────────────────────────
+  function drawRoomOutline(ctx) {
+    ctx.strokeStyle = P.ink;
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'miter';
+    ctx.lineCap = 'square';
+
+    // top edges (where walls meet ceiling line)
+    line(ctx, iso(0, ROOM_D, WALL_H), iso(0, 0, WALL_H));
+    line(ctx, iso(0, 0, WALL_H), iso(ROOM_W, 0, WALL_H));
+    // vertical corner where two walls meet
+    line(ctx, iso(0, 0, WALL_H), iso(0, 0, 0));
+    // back wall right edge (vertical)
+    line(ctx, iso(ROOM_W, 0, WALL_H), iso(ROOM_W, 0, 0));
+    // left wall front edge (vertical)
+    line(ctx, iso(0, ROOM_D, WALL_H), iso(0, ROOM_D, 0));
+    // floor front edges (the camera-side L-shape)
+    line(ctx, iso(0, ROOM_D, 0), iso(ROOM_W, ROOM_D, 0));
+    line(ctx, iso(ROOM_W, 0, 0), iso(ROOM_W, ROOM_D, 0));
+    // floor back-corner (faint, where wall meets floor)
+    ctx.lineWidth = 1;
+    line(ctx, iso(0, 0, 0), iso(ROOM_W, 0, 0));
+    line(ctx, iso(0, 0, 0), iso(0, ROOM_D, 0));
+
+    ctx.lineWidth = 1;
+  }
+
+  function line(ctx, a, b) {
+    ctx.beginPath();
+    ctx.moveTo(a.x + 0.5, a.y + 0.5);
+    ctx.lineTo(b.x + 0.5, b.y + 0.5);
+    ctx.stroke();
+  }
+
   // ─── WINDOW (cuts back wall) ───────────────────────────────
   function drawWindow(ctx, hour, weather) {
     const x1 = 4.4, x2 = 5.5, z1 = 1.6, z2 = 3.3;
@@ -633,7 +667,7 @@
   function drawBookshelf(ctx) {
     const tx = 0.15, ty = 0.0, w = 0.95, d = 0.45, h = 2.3;
     isoBox(ctx, tx, ty, w, d, h, {
-      top: P.deskWood, front: P.deskWood, right: P.deskWood2, outline: P.shadow,
+      top: P.deskWood, front: P.deskWood, right: P.deskWood2, outline: P.ink,
     });
     // shelves drawn on front face
     const cols = [P.bookA, P.bookB, P.bookC, P.bookD, P.bookB, P.bookC, P.bookA, P.bookD];
@@ -705,7 +739,7 @@
   function drawDesk(ctx) {
     const tx = 2.4, ty = 0.0, w = 1.7, d = 0.85, h = 0.7;
     isoBox(ctx, tx, ty, w, d, h, {
-      top: P.deskWood, front: P.deskWood2, right: P.deskWood2, outline: P.shadow,
+      top: P.deskWood, front: P.deskWood2, right: P.deskWood2, outline: P.ink,
     });
     // drawer detail on front
     const drawerY1 = h * 0.2, drawerY2 = h * 0.6;
@@ -718,7 +752,7 @@
     // monitor (chunkier)
     const mx = tx + 0.55, my = ty + 0.18, mw = 0.75, md = 0.1, mh = 0.6;
     isoBox(ctx, mx, my, mw, md, mh, {
-      top: P.shadow, front: '#161220', right: '#0a0612', outline: P.shadow,
+      top: P.shadow, front: '#161220', right: '#0a0612', outline: P.ink,
     });
     // screen
     const sa = iso(mx + 0.05, my + md, h + 0.08);
@@ -803,11 +837,11 @@
     fillRect(ctx, base.x - 5, base.y, 10, 2, P.shadow);
     fillRect(ctx, base.x - 1, base.y - 6, 2, 7, P.shadow);
     isoBox(ctx, tx, ty, w, d, 0.4, {
-      top: P.cloth, front: P.clothShadow, right: P.clothShadow, outline: P.shadow,
+      top: P.cloth, front: P.clothShadow, right: P.clothShadow, outline: P.ink,
     });
     // back rest taller with cushion shape
     isoBox(ctx, tx, ty, w, 0.1, 1.1, {
-      top: P.cloth, front: P.cloth, right: P.clothShadow, outline: P.shadow,
+      top: P.cloth, front: P.cloth, right: P.clothShadow, outline: P.ink,
     });
     // seat cushion line
     const sc1 = iso(tx + 0.05, ty + d - 0.05, 0.41);
@@ -823,11 +857,11 @@
     const tx = 0.2, ty = 2.0, w = 1.4, d = 1.9, h = 0.45;
     // frame
     isoBox(ctx, tx, ty, w, d, h, {
-      top: P.cream, front: P.deskWood, right: P.deskWood2, outline: P.shadow,
+      top: P.cream, front: P.deskWood, right: P.deskWood2, outline: P.ink,
     });
     // headboard
     isoBox(ctx, tx, ty - 0.1, w, 0.1, 1.0, {
-      top: P.deskWood, front: P.deskWood2, right: P.deskWood2, outline: P.shadow,
+      top: P.deskWood, front: P.deskWood2, right: P.deskWood2, outline: P.ink,
     });
     // headboard panel detail
     const hb_a = iso(tx + 0.15, ty - 0.1, 0.2);
@@ -838,7 +872,7 @@
     // mattress
     const mx = tx + 0.05, my = ty + 0.05, mw = w - 0.1, md = d - 0.1, mh = 0.16;
     isoBox(ctx, mx, my, mw, md, mh, {
-      top: P.cream, front: P.creamSoft, right: P.creamSoft, outline: P.shadow,
+      top: P.cream, front: P.creamSoft, right: P.creamSoft, outline: P.ink,
     });
     const bz = h + mh;
     // blanket lower 65%
@@ -919,7 +953,7 @@
   function drawNightstand(ctx) {
     const tx = 1.5, ty = 2.4, w = 0.45, d = 0.5, h = 0.55;
     isoBox(ctx, tx, ty, w, d, h, {
-      top: P.deskWood, front: P.deskWood2, right: P.deskWood2, outline: P.shadow,
+      top: P.deskWood, front: P.deskWood2, right: P.deskWood2, outline: P.ink,
     });
     // drawer line
     const da = iso(tx + 0.05, ty + d, h * 0.5);
@@ -948,18 +982,18 @@
   function drawSofa(ctx) {
     const tx = 1.9, ty = 4.0, w = 2.2, d = 0.95, h = 0.35;
     isoBox(ctx, tx, ty, w, d, h, {
-      top: P.cloth, front: P.clothShadow, right: P.clothShadow, outline: P.shadow,
+      top: P.cloth, front: P.clothShadow, right: P.clothShadow, outline: P.ink,
     });
     // back rest
     isoBox(ctx, tx, ty, w, 0.22, h + 0.55, {
-      top: P.cloth, front: P.cloth, right: P.clothShadow, outline: P.shadow,
+      top: P.cloth, front: P.cloth, right: P.clothShadow, outline: P.ink,
     });
     // arm rests
     isoBox(ctx, tx, ty, 0.2, d, h + 0.22, {
-      top: P.cloth, front: P.clothShadow, right: P.clothShadow, outline: P.shadow,
+      top: P.cloth, front: P.clothShadow, right: P.clothShadow, outline: P.ink,
     });
     isoBox(ctx, tx + w - 0.2, ty, 0.2, d, h + 0.22, {
-      top: P.cloth, front: P.clothShadow, right: P.clothShadow, outline: P.shadow,
+      top: P.cloth, front: P.clothShadow, right: P.clothShadow, outline: P.ink,
     });
     // seam dividers
     ctx.strokeStyle = P.shadow;
@@ -973,11 +1007,11 @@
     ctx.stroke();
     // throw pillow 1 (rose)
     isoBox(ctx, tx + 0.3, ty + 0.3, 0.32, 0.32, 0.18, {
-      top: P.rose, front: P.roseDeep, right: P.roseDeep, outline: P.shadow,
+      top: P.rose, front: P.roseDeep, right: P.roseDeep, outline: P.ink,
     });
     // throw pillow 2 (sage)
     isoBox(ctx, tx + w - 0.62, ty + 0.32, 0.3, 0.3, 0.16, {
-      top: P.sage, front: P.sageDeep, right: P.sageDeep, outline: P.shadow,
+      top: P.sage, front: P.sageDeep, right: P.sageDeep, outline: P.ink,
     });
     // blanket draped over right arm
     poly(ctx, [
@@ -1032,7 +1066,7 @@
   function drawCoffeeTable(ctx) {
     const tx = 2.6, ty = 3.4, w = 1.0, d = 0.55, h = 0.28;
     isoBox(ctx, tx, ty, w, d, h, {
-      top: P.deskWood, front: P.deskWood2, right: P.deskWood2, outline: P.shadow,
+      top: P.deskWood, front: P.deskWood2, right: P.deskWood2, outline: P.ink,
     });
     // book lying open
     poly(ctx, [
@@ -1077,7 +1111,7 @@
     const tx = 6.0, ty = 4.1, w = 0.5, d = 0.45;
     // pot with rim
     isoBox(ctx, tx, ty, w, d, 0.5, {
-      top: P.shadow, front: P.plantPot, right: P.amberDeep, outline: P.shadow,
+      top: P.shadow, front: P.plantPot, right: P.amberDeep, outline: P.ink,
     });
     // pot rim accent
     poly(ctx, [
@@ -1163,7 +1197,7 @@
     const tx = 5.6, ty = 0.0, w = 1.3, d = 0.7, h = 0.7;
     // base cabinet
     isoBox(ctx, tx, ty, w, d, h, {
-      top: P.cream, front: P.cream, right: P.creamSoft, outline: P.shadow,
+      top: P.cream, front: P.cream, right: P.creamSoft, outline: P.ink,
     });
     // cabinet doors detail
     const doorY = h * 0.3;
@@ -1196,7 +1230,7 @@
     fillRect(ctx, stoveA.x + 5, stoveA.y - 1, 5, 2, P.shadow);
     // kettle on stove
     isoBox(ctx, tx + 0.2, ty + 0.28, 0.22, 0.22, 0.28, {
-      top: '#5a6c8a', front: '#5a6c8a', right: '#3d4f66', outline: P.shadow,
+      top: '#5a6c8a', front: '#5a6c8a', right: '#3d4f66', outline: P.ink,
     });
     const spout = iso(tx + 0.42, ty + 0.36, h + 0.18);
     fillRect(ctx, spout.x, spout.y - 2, 2, 1, '#3d4f66');
@@ -1791,7 +1825,7 @@
   window.SPR = {
     iso,
     TILE_W: TW, TILE_H: TH, ROOM_W, ROOM_D, WALL_H,
-    drawWall, drawFloor, drawWindow, drawWallDecor, drawStringLights,
+    drawWall, drawFloor, drawRoomOutline, drawWindow, drawWallDecor, drawStringLights,
     drawBookshelf, drawDesk, drawChair, drawBed, drawSofa,
     drawCoffeeTable, drawPlant, drawKitchen, drawRug, drawDoor,
     drawNightstand, drawFloorLamp,

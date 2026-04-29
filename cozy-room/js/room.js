@@ -10,6 +10,8 @@
       { z: 0.85, draw: window.SPR.drawDesk },
       { z: 0.85, draw: window.SPR.drawKitchen },
       { z: 1.78, draw: window.SPR.drawChair },
+      { z: 2.92, draw: window.SPR.drawNightstand },
+      { z: 3.30, draw: window.SPR.drawFloorLamp },
       { z: 3.95, draw: window.SPR.drawCoffeeTable },
       { z: 3.95, draw: window.SPR.drawBed },
       { z: 4.95, draw: window.SPR.drawSofa },

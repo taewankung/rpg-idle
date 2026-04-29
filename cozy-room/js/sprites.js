@@ -1,6 +1,6 @@
 // ─── sprites.js ────────────────────────────────────────────
 // Isometric pixel-art rendering. Internal canvas: 320×180.
-// Tile dimetric (2:1) projection.
+// Tile dimetric (2:1) projection. Detailed cozy diorama.
 
 (function () {
   const P = window.CFG.PAL;
@@ -61,14 +61,6 @@
     if (c.top)   poly(ctx, [tlb, trb, trf, tlf], c.top,   c.outline);
   }
 
-  function isoTile(ctx, tx, ty, color, stroke) {
-    const a = iso(tx,     ty);
-    const b = iso(tx + 1, ty);
-    const c = iso(tx + 1, ty + 1);
-    const d = iso(tx,     ty + 1);
-    poly(ctx, [a, b, c, d], color, stroke);
-  }
-
   // ─── ROOM SHELL ────────────────────────────────────────────
   function drawWall(ctx, hour, weather) {
     drawBackWall(ctx, hour, weather);
@@ -77,59 +69,113 @@
 
   function drawBackWall(ctx) {
     // panel
-    const a = iso(0,      0, 0);
-    const b = iso(ROOM_W, 0, 0);
-    const c = iso(ROOM_W, 0, WALL_H);
-    const d = iso(0,      0, WALL_H);
-    poly(ctx, [a, b, c, d], P.wallBg);
-    // subtle vertical pinstripe
-    ctx.fillStyle = 'rgba(120, 90, 60, 0.12)';
-    for (let tx = 0.25; tx < ROOM_W; tx += 0.5) {
-      const top = iso(tx, 0, WALL_H);
-      ctx.fillRect(top.x, top.y, 1, WALL_H * TH);
+    poly(ctx, [
+      iso(0, 0, 0), iso(ROOM_W, 0, 0),
+      iso(ROOM_W, 0, WALL_H), iso(0, 0, WALL_H),
+    ], P.wallBg);
+    // wallpaper polka pattern (small dots staggered)
+    ctx.fillStyle = 'rgba(120, 90, 60, 0.18)';
+    for (let z = 0.4; z < WALL_H - 0.2; z += 0.28) {
+      const offset = (Math.floor(z * 10) % 2) * 0.18;
+      for (let tx = 0.18 + offset; tx < ROOM_W; tx += 0.36) {
+        const p = iso(tx, 0, z);
+        ctx.fillRect(p.x, p.y, 1, 1);
+        ctx.fillRect(p.x + 1, p.y - 1, 1, 1);
+      }
     }
-    // baseboard (bottom strip)
+    // wood paneling at bottom 0.4 of wall
+    poly(ctx, [
+      iso(0, 0, 0), iso(ROOM_W, 0, 0),
+      iso(ROOM_W, 0, 0.55), iso(0, 0, 0.55),
+    ], P.wallTrim);
+    // vertical board lines on paneling
+    ctx.strokeStyle = 'rgba(60, 40, 28, 0.35)';
+    for (let tx = 0.5; tx < ROOM_W; tx += 0.5) {
+      const a = iso(tx, 0, 0);
+      const b = iso(tx, 0, 0.55);
+      ctx.beginPath();
+      ctx.moveTo(a.x + 0.5, a.y);
+      ctx.lineTo(b.x + 0.5, b.y);
+      ctx.stroke();
+    }
+    // baseboard (skinny strip)
     poly(ctx, [
       iso(0, 0, 0), iso(ROOM_W, 0, 0),
       iso(ROOM_W, 0, 0.18), iso(0, 0, 0.18),
-    ], P.wallTrim);
+    ], P.deskWood2);
+    // top of paneling rail
+    poly(ctx, [
+      iso(0, 0, 0.55), iso(ROOM_W, 0, 0.55),
+      iso(ROOM_W, 0, 0.62), iso(0, 0, 0.62),
+    ], P.deskWood);
     // crown moulding (top strip)
     poly(ctx, [
-      iso(0, 0, WALL_H - 0.12), iso(ROOM_W, 0, WALL_H - 0.12),
+      iso(0, 0, WALL_H - 0.14), iso(ROOM_W, 0, WALL_H - 0.14),
       iso(ROOM_W, 0, WALL_H), iso(0, 0, WALL_H),
-    ], P.wallTrim);
+    ], P.deskWood2);
   }
 
   function drawLeftWall(ctx) {
-    const a = iso(0, 0,      0);
-    const b = iso(0, ROOM_D, 0);
-    const c = iso(0, ROOM_D, WALL_H);
-    const d = iso(0, 0,      WALL_H);
-    poly(ctx, [a, b, c, d], P.wallBg2);
-    // pinstripe
-    ctx.fillStyle = 'rgba(120, 90, 60, 0.12)';
-    for (let ty = 0.25; ty < ROOM_D; ty += 0.5) {
-      const top = iso(0, ty, WALL_H);
-      ctx.fillRect(top.x - 1, top.y, 1, WALL_H * TH);
+    // panel
+    poly(ctx, [
+      iso(0, 0, 0), iso(0, ROOM_D, 0),
+      iso(0, ROOM_D, WALL_H), iso(0, 0, WALL_H),
+    ], P.wallBg2);
+    // polka pattern
+    ctx.fillStyle = 'rgba(120, 90, 60, 0.18)';
+    for (let z = 0.4; z < WALL_H - 0.2; z += 0.28) {
+      const offset = (Math.floor(z * 10) % 2) * 0.18;
+      for (let ty = 0.18 + offset; ty < ROOM_D; ty += 0.36) {
+        const p = iso(0, ty, z);
+        ctx.fillRect(p.x - 1, p.y, 1, 1);
+        ctx.fillRect(p.x - 2, p.y - 1, 1, 1);
+      }
+    }
+    // wood paneling bottom
+    poly(ctx, [
+      iso(0, 0, 0), iso(0, ROOM_D, 0),
+      iso(0, ROOM_D, 0.55), iso(0, 0, 0.55),
+    ], P.wallTrim);
+    ctx.strokeStyle = 'rgba(60, 40, 28, 0.35)';
+    for (let ty = 0.5; ty < ROOM_D; ty += 0.5) {
+      const a = iso(0, ty, 0);
+      const b = iso(0, ty, 0.55);
+      ctx.beginPath();
+      ctx.moveTo(a.x + 0.5, a.y);
+      ctx.lineTo(b.x + 0.5, b.y);
+      ctx.stroke();
     }
     poly(ctx, [
       iso(0, 0, 0), iso(0, ROOM_D, 0),
       iso(0, ROOM_D, 0.18), iso(0, 0, 0.18),
-    ], P.wallTrim);
+    ], P.deskWood2);
     poly(ctx, [
-      iso(0, 0, WALL_H - 0.12), iso(0, ROOM_D, WALL_H - 0.12),
+      iso(0, 0, 0.55), iso(0, ROOM_D, 0.55),
+      iso(0, ROOM_D, 0.62), iso(0, 0, 0.62),
+    ], P.deskWood);
+    poly(ctx, [
+      iso(0, 0, WALL_H - 0.14), iso(0, ROOM_D, WALL_H - 0.14),
       iso(0, ROOM_D, WALL_H), iso(0, 0, WALL_H),
-    ], P.wallTrim);
+    ], P.deskWood2);
   }
 
   function drawFloor(ctx) {
-    const tl = iso(0,      0);
-    const tr = iso(ROOM_W, 0);
-    const br = iso(ROOM_W, ROOM_D);
-    const bl = iso(0,      ROOM_D);
-    poly(ctx, [tl, tr, br, bl], P.floor);
-    // plank seams along tx axis (one line per row)
-    ctx.strokeStyle = 'rgba(60, 40, 28, 0.35)';
+    // base
+    poly(ctx, [
+      iso(0, 0), iso(ROOM_W, 0),
+      iso(ROOM_W, ROOM_D), iso(0, ROOM_D),
+    ], P.floor);
+    // alternating plank rows - faint warm/cool variation
+    for (let ty = 0; ty < ROOM_D; ty++) {
+      if (ty % 2 === 1) {
+        poly(ctx, [
+          iso(0, ty), iso(ROOM_W, ty),
+          iso(ROOM_W, ty + 1), iso(0, ty + 1),
+        ], P.floor2);
+      }
+    }
+    // plank seams (along tx axis)
+    ctx.strokeStyle = 'rgba(60, 40, 28, 0.45)';
     ctx.lineWidth = 1;
     for (let ty = 1; ty < ROOM_D; ty++) {
       const a = iso(0, ty);
@@ -139,10 +185,10 @@
       ctx.lineTo(b.x, b.y + 0.5);
       ctx.stroke();
     }
-    // staggered plank cuts every 2 tiles
-    ctx.strokeStyle = 'rgba(60, 40, 28, 0.2)';
+    // staggered plank cuts
+    ctx.strokeStyle = 'rgba(60, 40, 28, 0.25)';
     for (let ty = 0; ty < ROOM_D; ty++) {
-      for (let tx = (ty % 2 === 0) ? 2 : 1; tx < ROOM_W; tx += 2) {
+      for (let tx = (ty % 2 === 0) ? 1.5 : 0.7; tx < ROOM_W; tx += 1.6) {
         const a = iso(tx, ty);
         const b = iso(tx, ty + 1);
         ctx.beginPath();
@@ -151,17 +197,24 @@
         ctx.stroke();
       }
     }
+    // wood knots (small dots)
+    ctx.fillStyle = 'rgba(60, 40, 28, 0.3)';
+    const knots = [[1.3, 0.6], [3.7, 1.4], [5.5, 2.6], [2.2, 3.1], [4.8, 4.2], [0.6, 4.1]];
+    for (const [tx, ty] of knots) {
+      const p = iso(tx, ty);
+      ctx.fillRect(p.x, p.y, 1, 1);
+      ctx.fillRect(p.x + 1, p.y, 1, 1);
+    }
   }
 
   // ─── WINDOW (cuts back wall) ───────────────────────────────
   function drawWindow(ctx, hour, weather) {
-    const x1 = 4.3, x2 = 5.5, z1 = 1.6, z2 = 3.3;
+    const x1 = 4.4, x2 = 5.5, z1 = 1.6, z2 = 3.3;
     const a = iso(x1, 0, z1);
     const b = iso(x2, 0, z1);
     const c = iso(x2, 0, z2);
     const d = iso(x1, 0, z2);
 
-    // sky inside (clipped)
     ctx.save();
     ctx.beginPath();
     ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
@@ -171,7 +224,14 @@
     drawSkyInside(ctx, a, b, c, d, hour, weather);
     ctx.restore();
 
-    // frame
+    // outer frame (thick wood)
+    ctx.lineJoin = 'miter';
+    poly(ctx, [
+      iso(x1 - 0.06, 0, z1 - 0.05),
+      iso(x2 + 0.06, 0, z1 - 0.05),
+      iso(x2 + 0.06, 0, z2 + 0.05),
+      iso(x1 - 0.06, 0, z2 + 0.05),
+    ], null, P.deskWood2);
     ctx.strokeStyle = P.deskWood2;
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -179,7 +239,7 @@
     ctx.lineTo(c.x, c.y); ctx.lineTo(d.x, d.y);
     ctx.closePath();
     ctx.stroke();
-    // cross frame
+    // muntins (cross frame)
     ctx.lineWidth = 1;
     const mx = (x1 + x2) / 2;
     const mz = (z1 + z2) / 2;
@@ -191,14 +251,49 @@
     ctx.moveTo(m1.x, m1.y); ctx.lineTo(m2.x, m2.y);
     ctx.moveTo(m3.x, m3.y); ctx.lineTo(m4.x, m4.y);
     ctx.stroke();
-
-    // sill below the window
+    // sill
     poly(ctx, [
-      iso(x1 - 0.05, 0, z1 - 0.1),
-      iso(x2 + 0.05, 0, z1 - 0.1),
-      iso(x2 + 0.05, 0, z1),
-      iso(x1 - 0.05, 0, z1),
+      iso(x1 - 0.1, 0, z1 - 0.12),
+      iso(x2 + 0.1, 0, z1 - 0.12),
+      iso(x2 + 0.1, 0, z1),
+      iso(x1 - 0.1, 0, z1),
     ], P.deskWood);
+    poly(ctx, [
+      iso(x1 - 0.1, 0, z1 - 0.18),
+      iso(x2 + 0.1, 0, z1 - 0.18),
+      iso(x2 + 0.1, 0, z1 - 0.12),
+      iso(x1 - 0.1, 0, z1 - 0.12),
+    ], P.deskWood2);
+    // tiny potted plant on sill
+    const pot = iso(x1 + 0.2, 0, z1);
+    fillRect(ctx, pot.x, pot.y - 4, 3, 3, P.plantPot);
+    fillRect(ctx, pot.x, pot.y - 6, 1, 2, P.plantLeaf);
+    fillRect(ctx, pot.x + 1, pot.y - 7, 1, 3, P.plantLeaf2);
+    fillRect(ctx, pot.x + 2, pot.y - 6, 1, 2, P.sageDeep);
+    // curtains hanging from rod
+    const rodA = iso(x1 - 0.15, 0, z2 + 0.1);
+    const rodB = iso(x2 + 0.15, 0, z2 + 0.1);
+    fillRect(ctx, rodA.x, rodA.y - 1, rodB.x - rodA.x, 1, P.amberDeep);
+    // tied curtain on left
+    poly(ctx, [
+      iso(x1 - 0.18, 0, z2 + 0.05),
+      iso(x1 - 0.04, 0, z2 + 0.05),
+      iso(x1 - 0.06, 0, z1 + 0.2),
+      iso(x1 - 0.18, 0, z1 + 0.2),
+    ], P.rose);
+    poly(ctx, [
+      iso(x2 + 0.04, 0, z2 + 0.05),
+      iso(x2 + 0.18, 0, z2 + 0.05),
+      iso(x2 + 0.18, 0, z1 + 0.2),
+      iso(x2 + 0.06, 0, z1 + 0.2),
+    ], P.rose);
+    // curtain pleats
+    ctx.strokeStyle = P.roseDeep;
+    const pl_a = iso(x1 - 0.1, 0, z2);
+    const pl_b = iso(x1 - 0.1, 0, z1 + 0.3);
+    ctx.beginPath();
+    ctx.moveTo(pl_a.x, pl_a.y); ctx.lineTo(pl_b.x, pl_b.y);
+    ctx.stroke();
   }
 
   function drawSkyInside(ctx, a, b, c, d, hour, weather) {
@@ -226,7 +321,7 @@
       ctx.fillRect(mx + 1, my - 2, 4, 4);
       ctx.fillStyle = P.star;
       const t = window.gameTime?.totalGameSeconds || 0;
-      for (let i = 0; i < 7; i++) {
+      for (let i = 0; i < 9; i++) {
         const sx = minX + ((i * 11) % w);
         const sy = minY + 2 + ((i * 5) % Math.floor(h * 0.5));
         if ((i + Math.floor(t / 1.5)) % 4 !== 0) ctx.fillRect(sx, sy, 1, 1);
@@ -246,21 +341,28 @@
       ctx.fillRect(sx + 1, sy + 1, 3, 3);
     }
 
-    // distant pine ridge
-    ctx.fillStyle = isNight ? '#1a1a2a' : '#4a5a4a';
-    const treeY = minY + Math.floor(h * 0.62);
-    for (let tx = 0; tx < w; tx += 3) {
-      const triH = 3 + ((tx * 7) % 6);
+    // far mountain ridge
+    ctx.fillStyle = isNight ? '#1a1a2a' : '#5a6a6a';
+    const mtnY = minY + Math.floor(h * 0.55);
+    for (let mx = 0; mx < w; mx++) {
+      const triH = 5 + Math.floor(Math.sin(mx * 0.4) * 2 + Math.cos(mx * 0.7) * 2);
+      ctx.fillRect(minX + mx, mtnY - triH, 1, triH);
+    }
+    // closer pine ridge
+    ctx.fillStyle = isNight ? '#0e0e1c' : '#3a4a3a';
+    const treeY = minY + Math.floor(h * 0.68);
+    for (let tx = 0; tx < w; tx += 2) {
+      const triH = 3 + ((tx * 5) % 6);
       ctx.fillRect(minX + tx, treeY - triH, 1, triH);
       ctx.fillRect(minX + tx + 1, treeY - triH + 1, 1, triH - 1);
     }
     ctx.fillStyle = isNight ? '#2a2030' : '#6a5440';
     ctx.fillRect(minX, treeY, w, h - (treeY - minY));
 
-    // drifting clouds
+    // clouds
     if (weather !== 'clear' || (hour > 9 && hour < 17)) {
       const t = window.gameTime?.totalGameSeconds || 0;
-      ctx.fillStyle = isNight ? 'rgba(58, 53, 64, 0.8)' : P.cloud;
+      ctx.fillStyle = isNight ? 'rgba(58, 53, 64, 0.85)' : P.cloud;
       const c1x = minX + ((t * 0.3 + 5) % (w + 14)) - 7;
       const c1y = minY + 4;
       ctx.fillRect(c1x, c1y, 7, 2);
@@ -268,13 +370,14 @@
       const c2x = minX + ((t * 0.2 + 25) % (w + 12)) - 6;
       const c2y = minY + 12;
       ctx.fillRect(c2x, c2y, 5, 2);
+      ctx.fillRect(c2x + 1, c2y - 1, 3, 1);
     }
 
-    // weather streaks inside window
+    // rain or snow streaks
     if (weather === 'rain') {
       ctx.fillStyle = 'rgba(180, 200, 220, 0.55)';
       const t = window.gameTime?.totalGameSeconds || 0;
-      for (let i = 0; i < 12; i++) {
+      for (let i = 0; i < 14; i++) {
         const rx = minX + ((i * 5 + t * 30) % w);
         const ry = minY + ((i * 7 + t * 70) % h);
         ctx.fillRect(rx, ry, 1, 2);
@@ -282,7 +385,7 @@
     } else if (weather === 'snow') {
       ctx.fillStyle = P.cream;
       const t = window.gameTime?.totalGameSeconds || 0;
-      for (let i = 0; i < 9; i++) {
+      for (let i = 0; i < 11; i++) {
         const rx = minX + ((i * 4 + t * 6 + Math.sin(t + i) * 2) % w);
         const ry = minY + ((i * 6 + t * 14) % h);
         ctx.fillRect(rx, ry, 1, 1);
@@ -292,12 +395,17 @@
 
   // ─── WALL DECOR ────────────────────────────────────────────
   function drawWallDecor(ctx) {
-    drawFrameOnBackWall(ctx, 1.8, 2.5, 0.7, 0.55);
-    drawFrameOnBackWall(ctx, 2.7, 2.4, 0.4, 0.5);
     drawCircleClock(ctx);
+    drawFrameOnBackWall(ctx, 1.65, 2.4, 0.65, 0.55, 'sunset');
+    drawFrameOnBackWall(ctx, 2.4, 2.5, 0.4, 0.45, 'circle');
+    drawFrameOnBackWall(ctx, 3.05, 2.45, 0.55, 0.5, 'plant');
+    drawHangingPlant(ctx, 6.3, 3.2);
+    drawWallShelf(ctx, 1.9, 1.4);
+    drawCelloOnWall(ctx);
+    drawLeftWallFrames(ctx);
   }
 
-  function drawFrameOnBackWall(ctx, tx, z, w, h) {
+  function drawFrameOnBackWall(ctx, tx, z, w, h, kind) {
     const a = iso(tx, 0, z);
     const b = iso(tx + w, 0, z);
     const c = iso(tx + w, 0, z + h);
@@ -309,34 +417,65 @@
     const ic = iso(tx + w - pad, 0, z + h - pad);
     const id = iso(tx + pad, 0, z + h - pad);
     poly(ctx, [ia, ib, ic, id], P.cream);
-    // mini abstract painting inside the frame
     const fx = ia.x + 1, fy = ic.y + 1;
     const fw = ib.x - ia.x - 2;
     const fh = id.y - ia.y - 2;
-    ctx.fillStyle = P.skyDay;
-    ctx.fillRect(fx, fy, fw, Math.floor(fh * 0.55));
-    ctx.fillStyle = P.amber;
-    ctx.fillRect(fx + Math.floor(fw * 0.6), fy + 1, 3, 3);
-    ctx.fillStyle = P.sage;
-    ctx.fillRect(fx, fy + Math.floor(fh * 0.55), fw, fh - Math.floor(fh * 0.55));
-    ctx.fillStyle = P.sageDeep;
-    ctx.fillRect(fx + 2, fy + Math.floor(fh * 0.55) + 1, 2, 2);
+
+    if (kind === 'sunset') {
+      ctx.fillStyle = P.skySunset;
+      ctx.fillRect(fx, fy, fw, Math.floor(fh * 0.5));
+      ctx.fillStyle = P.amber;
+      ctx.fillRect(fx + Math.floor(fw * 0.65), fy + 1, 3, 3);
+      ctx.fillStyle = P.peach;
+      ctx.fillRect(fx + Math.floor(fw * 0.65) + 1, fy + 2, 1, 1);
+      ctx.fillStyle = P.sage;
+      ctx.fillRect(fx, fy + Math.floor(fh * 0.5), fw, fh - Math.floor(fh * 0.5));
+      ctx.fillStyle = P.sageDeep;
+      ctx.fillRect(fx + 1, fy + Math.floor(fh * 0.55) + 1, 2, 2);
+      ctx.fillRect(fx + fw - 3, fy + Math.floor(fh * 0.6), 2, 2);
+    } else if (kind === 'circle') {
+      // abstract circles
+      ctx.fillStyle = P.creamSoft;
+      ctx.fillRect(fx, fy, fw, fh);
+      ctx.fillStyle = P.rose;
+      ctx.fillRect(fx + 1, fy + 1, 3, 3);
+      ctx.fillStyle = P.sage;
+      ctx.fillRect(fx + fw - 4, fy + fh - 4, 3, 3);
+      ctx.fillStyle = P.amber;
+      ctx.fillRect(fx + Math.floor(fw / 2), fy + Math.floor(fh / 2) - 1, 2, 2);
+    } else if (kind === 'plant') {
+      // botanical
+      ctx.fillStyle = P.creamSoft;
+      ctx.fillRect(fx, fy, fw, fh);
+      ctx.fillStyle = P.sageDeep;
+      ctx.fillRect(fx + Math.floor(fw / 2), fy + 1, 1, fh - 2);
+      ctx.fillStyle = P.plantLeaf;
+      for (let ly = 1; ly < fh - 1; ly += 2) {
+        ctx.fillRect(fx + Math.floor(fw / 2) - 2, fy + ly, 2, 1);
+        ctx.fillRect(fx + Math.floor(fw / 2) + 1, fy + ly + 1, 2, 1);
+      }
+    }
   }
 
   function drawCircleClock(ctx) {
-    // small wall clock above bookshelf
     const center = iso(0.7, 0, 3.0);
     const r = 4;
     ctx.fillStyle = P.cream;
     ctx.beginPath(); ctx.arc(center.x, center.y, r, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = P.deskWood2;
+    ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc(center.x, center.y, r, 0, Math.PI * 2); ctx.stroke();
-    // hands tied to in-game hour
+    // tick marks at 12/3/6/9
+    ctx.fillStyle = P.ink;
+    ctx.fillRect(center.x, center.y - r + 1, 1, 1);
+    ctx.fillRect(center.x + r - 1, center.y, 1, 1);
+    ctx.fillRect(center.x, center.y + r - 1, 1, 1);
+    ctx.fillRect(center.x - r + 1, center.y, 1, 1);
+    // hands
     const h = window.TIME?.getHour?.() || 7;
     const hourAng = ((h % 12) / 12) * Math.PI * 2 - Math.PI / 2;
     const minAng  = ((h % 1) * 60 / 60) * Math.PI * 2 - Math.PI / 2;
     ctx.strokeStyle = P.ink;
-    ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(center.x, center.y);
     ctx.lineTo(center.x + Math.cos(hourAng) * 2, center.y + Math.sin(hourAng) * 2);
@@ -347,6 +486,119 @@
     ctx.fillRect(center.x, center.y, 1, 1);
   }
 
+  function drawHangingPlant(ctx, tx, z) {
+    const top = iso(tx, 0, z);
+    // hanging cord
+    ctx.strokeStyle = P.warmGray;
+    ctx.beginPath();
+    ctx.moveTo(top.x - 2, top.y);
+    ctx.lineTo(top.x - 2, iso(tx, 0, z - 0.6).y);
+    ctx.moveTo(top.x + 3, top.y);
+    ctx.lineTo(top.x + 3, iso(tx, 0, z - 0.6).y);
+    ctx.stroke();
+    // pot
+    const pot = iso(tx, 0, z - 0.7);
+    fillRect(ctx, pot.x - 3, pot.y, 7, 4, P.plantPot);
+    fillRect(ctx, pot.x - 3, pot.y, 7, 1, P.amber);
+    // trailing vines
+    const baseY = pot.y + 4;
+    ctx.fillStyle = P.plantLeaf;
+    for (let i = 0; i < 5; i++) {
+      const xo = -3 + i * 1.5;
+      const len = 4 + (i % 3) * 2;
+      for (let v = 0; v < len; v++) {
+        ctx.fillRect(pot.x + xo + Math.sin(v * 0.5) * 1, baseY + v, 1, 1);
+      }
+      // leaf nubs
+      ctx.fillStyle = P.plantLeaf2;
+      ctx.fillRect(pot.x + xo - 1, baseY + Math.floor(len / 2), 2, 1);
+      ctx.fillStyle = P.plantLeaf;
+    }
+    // leaves on top of pot
+    fillRect(ctx, pot.x - 4, pot.y - 2, 2, 3, P.sageDeep);
+    fillRect(ctx, pot.x - 1, pot.y - 4, 3, 4, P.plantLeaf2);
+    fillRect(ctx, pot.x + 2, pot.y - 2, 2, 3, P.plantLeaf);
+  }
+
+  function drawWallShelf(ctx, tx, z) {
+    // floating shelf on back wall with little objects
+    const w = 0.85;
+    const a = iso(tx, 0, z);
+    const b = iso(tx + w, 0, z);
+    const c = iso(tx + w, 0, z + 0.07);
+    const d = iso(tx, 0, z + 0.07);
+    poly(ctx, [a, b, c, d], P.deskWood, P.shadow);
+    // tiny items
+    const top = c.y;
+    const baseX = a.x;
+    // book
+    fillRect(ctx, baseX + 2, top - 4, 3, 4, P.bookA);
+    fillRect(ctx, baseX + 2, top - 4, 1, 4, P.bookB);
+    // candle
+    fillRect(ctx, baseX + 7, top - 5, 2, 5, P.cream);
+    fillRect(ctx, baseX + 7, top - 5, 2, 1, P.amber);
+    // mini plant
+    fillRect(ctx, baseX + 12, top - 3, 3, 3, P.plantPot);
+    fillRect(ctx, baseX + 13, top - 5, 1, 2, P.plantLeaf);
+    fillRect(ctx, baseX + 14, top - 6, 1, 3, P.sageDeep);
+    // ribbon ball
+    fillRect(ctx, baseX + 18, top - 3, 3, 3, P.rose);
+    fillRect(ctx, baseX + 18, top - 3, 3, 1, P.roseDeep);
+  }
+
+  function drawCelloOnWall(ctx) {
+    // a cello / standing instrument leaning against back wall
+    const tx = 1.2;
+    const baseY = iso(tx, 0, 0.55).y;
+    const topY  = iso(tx, 0, 2.4).y;
+    const cx = iso(tx, 0, 0.55).x;
+    // body (large oval shape)
+    ctx.fillStyle = P.deskWood2;
+    ctx.fillRect(cx - 4, topY + 8, 9, 22);
+    ctx.fillStyle = P.deskWood;
+    ctx.fillRect(cx - 3, topY + 8, 7, 22);
+    ctx.fillStyle = P.amberDeep;
+    ctx.fillRect(cx - 4, topY + 28, 9, 4);
+    // neck
+    ctx.fillStyle = P.deskWood2;
+    ctx.fillRect(cx - 1, topY, 3, 9);
+    // head
+    ctx.fillStyle = P.shadow;
+    ctx.fillRect(cx - 2, topY - 2, 4, 3);
+    // strings
+    ctx.fillStyle = P.amber;
+    ctx.fillRect(cx - 1, topY, 1, 26);
+    ctx.fillRect(cx + 1, topY, 1, 26);
+    // f-holes
+    ctx.fillStyle = P.shadow;
+    ctx.fillRect(cx - 3, topY + 14, 1, 3);
+    ctx.fillRect(cx + 3, topY + 14, 1, 3);
+  }
+
+  function drawLeftWallFrames(ctx) {
+    // small frame on left wall above bed
+    const ty = 1.3, z = 2.2, w = 0.5, h = 0.5;
+    const a = iso(0, ty, z);
+    const b = iso(0, ty + w, z);
+    const c = iso(0, ty + w, z + h);
+    const d = iso(0, ty, z + h);
+    poly(ctx, [a, b, c, d], P.deskWood2);
+    const pad = 0.06;
+    const ia = iso(0, ty + pad, z + pad);
+    const ib = iso(0, ty + w - pad, z + pad);
+    const ic = iso(0, ty + w - pad, z + h - pad);
+    const id = iso(0, ty + pad, z + h - pad);
+    poly(ctx, [ia, ib, ic, id], P.cream);
+    // little heart
+    const cx = (ia.x + ib.x) / 2;
+    const cy = (ia.y + id.y) / 2;
+    ctx.fillStyle = P.roseDeep;
+    ctx.fillRect(cx - 2, cy - 1, 1, 1);
+    ctx.fillRect(cx, cy - 1, 1, 1);
+    ctx.fillRect(cx - 2, cy, 3, 1);
+    ctx.fillRect(cx - 1, cy + 1, 1, 1);
+  }
+
   function drawStringLights(ctx, hour) {
     const z = 3.6;
     const segs = 14;
@@ -354,7 +606,7 @@
     for (let i = 0; i <= segs; i++) {
       const t = i / segs;
       const tx = t * ROOM_W;
-      const sag = Math.sin(t * Math.PI) * 0.16;
+      const sag = Math.sin(t * Math.PI) * 0.18;
       pts.push(iso(tx, 0, z - sag));
     }
     ctx.strokeStyle = P.warmGray;
@@ -371,7 +623,7 @@
       ctx.fillStyle = c;
       ctx.fillRect(p.x - 1, p.y, 2, 2);
       if (lit) {
-        ctx.fillStyle = `rgba(255, 220, 160, 0.32)`;
+        ctx.fillStyle = `rgba(255, 220, 160, 0.35)`;
         ctx.fillRect(p.x - 2, p.y - 1, 4, 4);
       }
     }
@@ -379,14 +631,15 @@
 
   // ─── FURNITURE ─────────────────────────────────────────────
   function drawBookshelf(ctx) {
-    const tx = 0.15, ty = 0.0, w = 0.8, d = 0.45, h = 2.3;
+    const tx = 0.15, ty = 0.0, w = 0.95, d = 0.45, h = 2.3;
     isoBox(ctx, tx, ty, w, d, h, {
       top: P.deskWood, front: P.deskWood, right: P.deskWood2, outline: P.shadow,
     });
-    // shelves drawn on the FRONT face
-    const cols = [P.bookA, P.bookB, P.bookC, P.bookD, P.bookB, P.bookC];
+    // shelves drawn on front face
+    const cols = [P.bookA, P.bookB, P.bookC, P.bookD, P.bookB, P.bookC, P.bookA, P.bookD];
     for (let s = 0; s < 4; s++) {
-      const z = 0.25 + s * 0.5;
+      const z = 0.22 + s * 0.5;
+      // shelf board line
       const sa = iso(tx, ty + d, z);
       const sb = iso(tx + w, ty + d, z);
       ctx.strokeStyle = P.shadow;
@@ -394,24 +647,59 @@
       ctx.moveTo(sa.x + 0.5, sa.y);
       ctx.lineTo(sb.x + 0.5, sb.y);
       ctx.stroke();
-      for (let i = 0; i < 4; i++) {
-        const bxFrac = 0.05 + i * 0.2;
-        const bzBase = z + 0.05;
-        const bh = 0.32 + (i % 3) * 0.04;
-        const c = cols[(s * 4 + i) % cols.length];
-        const ba = iso(tx + bxFrac, ty + d, bzBase);
-        const bb = iso(tx + bxFrac + 0.16, ty + d, bzBase);
-        const bc = iso(tx + bxFrac + 0.16, ty + d, bzBase + bh);
-        const bd = iso(tx + bxFrac, ty + d, bzBase + bh);
+      // 6 books per shelf — varied widths/heights
+      const widths = [0.13, 0.16, 0.12, 0.17, 0.14, 0.15];
+      let cur = 0.04;
+      for (let i = 0; i < 6 && cur + 0.13 < w; i++) {
+        const bw = widths[i % widths.length];
+        const bh = 0.32 + (i % 3) * 0.05;
+        const c = cols[(s * 6 + i) % cols.length];
+        const ba = iso(tx + cur, ty + d, z + 0.05);
+        const bb = iso(tx + cur + bw, ty + d, z + 0.05);
+        const bc = iso(tx + cur + bw, ty + d, z + 0.05 + bh);
+        const bd = iso(tx + cur, ty + d, z + 0.05 + bh);
         poly(ctx, [ba, bb, bc, bd], c);
-        // page edge highlight
-        const ha = iso(tx + bxFrac + 0.01, ty + d, bzBase);
-        const hb = iso(tx + bxFrac + 0.04, ty + d, bzBase);
-        const hc = iso(tx + bxFrac + 0.04, ty + d, bzBase + bh);
-        const hd = iso(tx + bxFrac + 0.01, ty + d, bzBase + bh);
-        poly(ctx, [ha, hb, hc, hd], lighten(c, 0.25));
+        // page edge
+        const ha = iso(tx + cur + 0.005, ty + d, z + 0.05);
+        const hb = iso(tx + cur + 0.04, ty + d, z + 0.05);
+        const hc = iso(tx + cur + 0.04, ty + d, z + 0.05 + bh);
+        const hd = iso(tx + cur + 0.005, ty + d, z + 0.05 + bh);
+        poly(ctx, [ha, hb, hc, hd], lighten(c, 0.28));
+        // title stripe
+        const tlbk = iso(tx + cur + 0.01, ty + d, z + 0.05 + bh * 0.3);
+        const tlbk2 = iso(tx + cur + bw - 0.01, ty + d, z + 0.05 + bh * 0.3);
+        ctx.strokeStyle = lighten(c, 0.5);
+        ctx.beginPath();
+        ctx.moveTo(tlbk.x, tlbk.y);
+        ctx.lineTo(tlbk2.x, tlbk2.y);
+        ctx.stroke();
+        cur += bw + 0.005;
+      }
+      // accent item at end of shelf (alternates: plant, photo, stack)
+      if (s === 0) {
+        // tiny photo frame
+        const p = iso(tx + cur + 0.02, ty + d, z + 0.08);
+        fillRect(ctx, p.x, p.y - 5, 5, 5, P.deskWood);
+        fillRect(ctx, p.x + 1, p.y - 4, 3, 3, P.cream);
+      } else if (s === 2) {
+        // mini plant
+        const p = iso(tx + cur + 0.02, ty + d, z + 0.05);
+        fillRect(ctx, p.x, p.y - 3, 3, 3, P.plantPot);
+        fillRect(ctx, p.x, p.y - 5, 1, 2, P.plantLeaf);
+        fillRect(ctx, p.x + 1, p.y - 6, 1, 3, P.plantLeaf2);
+        fillRect(ctx, p.x + 2, p.y - 5, 1, 2, P.sageDeep);
+      } else {
+        // stacked book sideways
+        const p = iso(tx + cur + 0.02, ty + d, z + 0.05);
+        fillRect(ctx, p.x, p.y - 3, 4, 1, P.bookB);
+        fillRect(ctx, p.x, p.y - 4, 4, 1, P.bookC);
       }
     }
+    // top decoration: a small cactus or trinket
+    const top = iso(tx + w * 0.4, ty + d * 0.5, h);
+    fillRect(ctx, top.x - 1, top.y - 4, 3, 4, P.plantPot);
+    fillRect(ctx, top.x, top.y - 8, 2, 4, P.plantLeaf);
+    fillRect(ctx, top.x, top.y - 9, 1, 1, P.rose);
   }
 
   function drawDesk(ctx) {
@@ -419,87 +707,158 @@
     isoBox(ctx, tx, ty, w, d, h, {
       top: P.deskWood, front: P.deskWood2, right: P.deskWood2, outline: P.shadow,
     });
-    // monitor
-    const mx = tx + 0.55, my = ty + 0.18, mw = 0.7, md = 0.1, mh = 0.55;
+    // drawer detail on front
+    const drawerY1 = h * 0.2, drawerY2 = h * 0.6;
+    const da = iso(tx + 1.3, ty + d, drawerY1);
+    const db = iso(tx + 1.6, ty + d, drawerY1);
+    const dc = iso(tx + 1.6, ty + d, drawerY2);
+    const dd = iso(tx + 1.3, ty + d, drawerY2);
+    poly(ctx, [da, db, dc, dd], P.deskWood, P.shadow);
+    fillRect(ctx, (da.x + db.x) / 2 - 1, (da.y + dc.y) / 2, 2, 1, P.amber);
+    // monitor (chunkier)
+    const mx = tx + 0.55, my = ty + 0.18, mw = 0.75, md = 0.1, mh = 0.6;
     isoBox(ctx, mx, my, mw, md, mh, {
       top: P.shadow, front: '#161220', right: '#0a0612', outline: P.shadow,
     });
-    // screen glow on front
-    const sa = iso(mx + 0.05, my + md, h + 0.06);
-    const sb = iso(mx + mw - 0.05, my + md, h + 0.06);
+    // screen
+    const sa = iso(mx + 0.05, my + md, h + 0.08);
+    const sb = iso(mx + mw - 0.05, my + md, h + 0.08);
     const sc = iso(mx + mw - 0.05, my + md, h + mh - 0.04);
     const sd = iso(mx + 0.05, my + md, h + mh - 0.04);
     poly(ctx, [sa, sb, sc, sd], P.skyDay);
-    // tiny screen content
+    // screen content (window of code-like blocks)
     ctx.fillStyle = P.amber;
-    ctx.fillRect(sa.x + 1, sd.y + 1, 4, 1);
-    ctx.fillRect(sa.x + 1, sd.y + 3, 6, 1);
-    ctx.fillRect(sa.x + 1, sd.y + 5, 3, 1);
+    ctx.fillRect(sa.x + 1, sd.y + 1, 5, 1);
+    ctx.fillRect(sa.x + 1, sd.y + 3, 7, 1);
+    ctx.fillRect(sa.x + 3, sd.y + 5, 4, 1);
+    ctx.fillStyle = P.rose;
+    ctx.fillRect(sa.x + 1, sd.y + 7, 3, 1);
+    // cursor blink
+    const blink = (Math.floor((window.gameTime?.totalGameSeconds || 0) * 2)) % 2;
+    if (blink) {
+      ctx.fillStyle = P.cream;
+      ctx.fillRect(sa.x + 5, sd.y + 7, 1, 1);
+    }
     // monitor stand
-    const stand_a = iso(mx + 0.3, my + 0.04, h);
+    const stand_a = iso(mx + 0.32, my + 0.04, h);
     fillRect(ctx, stand_a.x, stand_a.y - 4, 2, 4, P.shadow);
-    // notebook
-    poly(ctx, [
-      iso(tx + 1.32, ty + 0.42, h),
-      iso(tx + 1.62, ty + 0.42, h),
-      iso(tx + 1.62, ty + 0.72, h),
-      iso(tx + 1.32, ty + 0.72, h),
-    ], P.bookA);
+    fillRect(ctx, stand_a.x - 1, stand_a.y, 4, 1, P.shadow);
+
+    // pen jar with pens
+    const pj = iso(tx + 0.18, ty + 0.22, h);
+    fillRect(ctx, pj.x - 1, pj.y - 4, 4, 4, P.amberDeep);
+    fillRect(ctx, pj.x - 1, pj.y - 4, 4, 1, P.amber);
+    fillRect(ctx, pj.x, pj.y - 7, 1, 3, P.bookB);
+    fillRect(ctx, pj.x + 1, pj.y - 8, 1, 4, P.sage);
+    fillRect(ctx, pj.x + 2, pj.y - 6, 1, 2, P.amberDeep);
+    // notebook with pen
+    const nb_a = iso(tx + 1.32, ty + 0.42, h);
+    const nb_b = iso(tx + 1.62, ty + 0.42, h);
+    const nb_c = iso(tx + 1.62, ty + 0.72, h);
+    const nb_d = iso(tx + 1.32, ty + 0.72, h);
+    poly(ctx, [nb_a, nb_b, nb_c, nb_d], P.bookA);
+    // notebook lines
+    ctx.strokeStyle = lighten(P.bookA, 0.2);
+    ctx.beginPath();
+    const ml1a = iso(tx + 1.36, ty + 0.5, h + 0.001);
+    const ml1b = iso(tx + 1.58, ty + 0.5, h + 0.001);
+    ctx.moveTo(ml1a.x, ml1a.y); ctx.lineTo(ml1b.x, ml1b.y);
+    ctx.stroke();
+    // pen on notebook
+    const pen_a = iso(tx + 1.4, ty + 0.55, h);
+    fillRect(ctx, pen_a.x, pen_a.y - 1, 5, 1, P.roseDeep);
+    fillRect(ctx, pen_a.x + 5, pen_a.y - 1, 1, 1, P.amber);
+    // small photo frame
+    const ph = iso(tx + 1.18, ty + 0.18, h);
+    fillRect(ctx, ph.x - 2, ph.y - 7, 5, 5, P.deskWood);
+    fillRect(ctx, ph.x - 1, ph.y - 6, 3, 3, P.peach);
+    fillRect(ctx, ph.x, ph.y - 5, 1, 1, P.roseDeep);
     // mug + steam
-    const mug = iso(tx + 0.18, ty + 0.55, h);
+    const mug = iso(tx + 0.4, ty + 0.55, h);
     fillRect(ctx, mug.x - 1, mug.y - 4, 4, 4, P.rose);
     fillRect(ctx, mug.x + 3, mug.y - 3, 1, 2, P.rose);
     fillRect(ctx, mug.x - 1, mug.y - 4, 4, 1, P.cream);
+    fillRect(ctx, mug.x, mug.y - 3, 2, 2, P.creamSoft);
     const t = (window.gameTime?.totalGameSeconds || 0) * 2;
     ctx.fillStyle = 'rgba(255, 248, 236, 0.55)';
     ctx.fillRect(Math.floor(mug.x + Math.sin(t) * 1), mug.y - 7, 1, 1);
     ctx.fillRect(Math.floor(mug.x + 1 + Math.sin(t + 0.6) * 1), mug.y - 9, 1, 1);
-    // small lamp on right edge
-    const lamp = iso(tx + w - 0.18, ty + 0.2, h);
-    fillRect(ctx, lamp.x, lamp.y - 4, 1, 4, P.amberDeep);
-    fillRect(ctx, lamp.x - 2, lamp.y - 7, 5, 3, P.amber);
-    fillRect(ctx, lamp.x - 1, lamp.y - 8, 3, 1, P.amber);
+    // desk lamp (taller, with visible bulb)
+    const lamp = iso(tx + w - 0.18, ty + 0.18, h);
+    fillRect(ctx, lamp.x, lamp.y - 8, 1, 8, P.amberDeep);
+    fillRect(ctx, lamp.x - 3, lamp.y - 11, 7, 4, P.amber);
+    fillRect(ctx, lamp.x - 2, lamp.y - 12, 5, 1, P.amber);
+    fillRect(ctx, lamp.x - 1, lamp.y - 10, 3, 2, P.creamSoft);
+    fillRect(ctx, lamp.x - 4, lamp.y, 7, 1, P.amberDeep);
+    // tiny stack of books beside lamp
+    const sb_a = iso(tx + 1.55, ty + 0.18, h);
+    fillRect(ctx, sb_a.x - 3, sb_a.y - 1, 5, 1, P.bookB);
+    fillRect(ctx, sb_a.x - 3, sb_a.y - 3, 5, 1, P.bookC);
+    fillRect(ctx, sb_a.x - 3, sb_a.y - 5, 5, 1, P.bookA);
   }
 
   function drawChair(ctx) {
     const tx = 3.45, ty = 1.05, w = 0.55, d = 0.55;
-    // base
     const base = iso(tx + w / 2, ty + d / 2, 0);
     fillRect(ctx, base.x - 5, base.y, 10, 2, P.shadow);
     fillRect(ctx, base.x - 1, base.y - 6, 2, 7, P.shadow);
-    // seat
     isoBox(ctx, tx, ty, w, d, 0.4, {
       top: P.cloth, front: P.clothShadow, right: P.clothShadow, outline: P.shadow,
     });
-    // back rest (against ty=ty side, taller)
-    isoBox(ctx, tx, ty, w, 0.1, 1.0, {
+    // back rest taller with cushion shape
+    isoBox(ctx, tx, ty, w, 0.1, 1.1, {
       top: P.cloth, front: P.cloth, right: P.clothShadow, outline: P.shadow,
     });
+    // seat cushion line
+    const sc1 = iso(tx + 0.05, ty + d - 0.05, 0.41);
+    const sc2 = iso(tx + w - 0.05, ty + d - 0.05, 0.41);
+    ctx.strokeStyle = P.shadow;
+    ctx.beginPath();
+    ctx.moveTo(sc1.x, sc1.y);
+    ctx.lineTo(sc2.x, sc2.y);
+    ctx.stroke();
   }
 
   function drawBed(ctx) {
     const tx = 0.2, ty = 2.0, w = 1.4, d = 1.9, h = 0.45;
-    // frame (wood)
+    // frame
     isoBox(ctx, tx, ty, w, d, h, {
       top: P.cream, front: P.deskWood, right: P.deskWood2, outline: P.shadow,
     });
-    // headboard (against back of bed = ty = ty)
-    isoBox(ctx, tx, ty - 0.1, w, 0.1, 0.9, {
+    // headboard
+    isoBox(ctx, tx, ty - 0.1, w, 0.1, 1.0, {
       top: P.deskWood, front: P.deskWood2, right: P.deskWood2, outline: P.shadow,
     });
+    // headboard panel detail
+    const hb_a = iso(tx + 0.15, ty - 0.1, 0.2);
+    const hb_b = iso(tx + w - 0.15, ty - 0.1, 0.2);
+    const hb_c = iso(tx + w - 0.15, ty - 0.1, 0.85);
+    const hb_d = iso(tx + 0.15, ty - 0.1, 0.85);
+    poly(ctx, [hb_a, hb_b, hb_c, hb_d], P.deskWood, P.shadow);
     // mattress
     const mx = tx + 0.05, my = ty + 0.05, mw = w - 0.1, md = d - 0.1, mh = 0.16;
     isoBox(ctx, mx, my, mw, md, mh, {
       top: P.cream, front: P.creamSoft, right: P.creamSoft, outline: P.shadow,
     });
-    // blanket on lower 65%
     const bz = h + mh;
+    // blanket lower 65%
     poly(ctx, [
       iso(mx + 0.03, my + 0.55, bz),
       iso(mx + mw - 0.03, my + 0.55, bz),
       iso(mx + mw - 0.03, my + md - 0.03, bz),
       iso(mx + 0.03, my + md - 0.03, bz),
     ], P.blanket);
+    // blanket pattern stripes
+    ctx.strokeStyle = P.blanket2;
+    for (let i = 0; i < 3; i++) {
+      const yo = 0.62 + i * 0.18;
+      const a = iso(mx + 0.03, my + yo, bz + 0.002);
+      const b = iso(mx + mw - 0.03, my + yo, bz + 0.002);
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    }
     // blanket front edge fold
     poly(ctx, [
       iso(mx + 0.03, my + md - 0.03, bz),
@@ -507,32 +866,87 @@
       iso(mx + mw - 0.03, my + md - 0.03, bz - 0.1),
       iso(mx + 0.03, my + md - 0.03, bz - 0.1),
     ], P.blanket2);
-    // pillow
+    // big pillow
     poly(ctx, [
       iso(mx + 0.08, my + 0.04, bz),
       iso(mx + mw - 0.08, my + 0.04, bz),
-      iso(mx + mw - 0.08, my + 0.45, bz),
-      iso(mx + 0.08, my + 0.45, bz),
+      iso(mx + mw - 0.08, my + 0.42, bz),
+      iso(mx + 0.08, my + 0.42, bz),
     ], P.pillow);
+    // accent pillow on top
+    poly(ctx, [
+      iso(mx + 0.18, my + 0.1, bz + 0.005),
+      iso(mx + mw - 0.18, my + 0.1, bz + 0.005),
+      iso(mx + mw - 0.18, my + 0.32, bz + 0.005),
+      iso(mx + 0.18, my + 0.32, bz + 0.005),
+    ], P.rose);
     // pillow seam
     ctx.strokeStyle = P.shadow;
-    const psa = iso(mx + 0.1, my + 0.08, bz + 0.005);
-    const psb = iso(mx + mw - 0.1, my + 0.08, bz + 0.005);
+    const psa = iso(mx + 0.12, my + 0.08, bz + 0.003);
+    const psb = iso(mx + mw - 0.12, my + 0.08, bz + 0.003);
     ctx.beginPath();
     ctx.moveTo(psa.x, psa.y);
     ctx.lineTo(psb.x, psb.y);
     ctx.stroke();
-    // tiny heart on blanket
-    const heart = iso(mx + mw - 0.35, my + md - 0.4, bz + 0.01);
+    // tiny stuffed bear at head
+    const bear = iso(mx + mw - 0.25, my + 0.15, bz + 0.005);
+    fillRect(ctx, bear.x, bear.y - 5, 4, 4, P.amberDeep);
+    fillRect(ctx, bear.x, bear.y - 7, 2, 2, P.amberDeep);
+    fillRect(ctx, bear.x + 2, bear.y - 7, 2, 2, P.amberDeep);
+    fillRect(ctx, bear.x + 1, bear.y - 4, 1, 1, P.ink);
+    fillRect(ctx, bear.x + 2, bear.y - 4, 1, 1, P.ink);
+    // heart on blanket
+    const heart = iso(mx + mw - 0.4, my + md - 0.4, bz + 0.01);
     ctx.fillStyle = P.roseDeep;
     ctx.fillRect(heart.x - 2, heart.y, 1, 1);
     ctx.fillRect(heart.x, heart.y, 1, 1);
     ctx.fillRect(heart.x - 1, heart.y + 1, 1, 1);
+    // slippers next to bed (in front)
+    drawSlippers(ctx, tx + w + 0.05, ty + d - 0.4);
+  }
+
+  function drawSlippers(ctx, tx, ty) {
+    const a = iso(tx, ty, 0.005);
+    fillRect(ctx, a.x - 2, a.y, 5, 3, P.rose);
+    fillRect(ctx, a.x - 2, a.y, 5, 1, P.roseDeep);
+    fillRect(ctx, a.x + 3, a.y + 2, 5, 3, P.rose);
+    fillRect(ctx, a.x + 3, a.y + 2, 5, 1, P.roseDeep);
+    // soft pom-poms
+    fillRect(ctx, a.x, a.y + 1, 1, 1, P.cream);
+    fillRect(ctx, a.x + 5, a.y + 3, 1, 1, P.cream);
+  }
+
+  function drawNightstand(ctx) {
+    const tx = 1.5, ty = 2.4, w = 0.45, d = 0.5, h = 0.55;
+    isoBox(ctx, tx, ty, w, d, h, {
+      top: P.deskWood, front: P.deskWood2, right: P.deskWood2, outline: P.shadow,
+    });
+    // drawer line
+    const da = iso(tx + 0.05, ty + d, h * 0.5);
+    const db = iso(tx + w - 0.05, ty + d, h * 0.5);
+    ctx.strokeStyle = P.shadow;
+    ctx.beginPath();
+    ctx.moveTo(da.x, da.y);
+    ctx.lineTo(db.x, db.y);
+    ctx.stroke();
+    // knob
+    const kn = iso((tx + tx + w) / 2, ty + d, h * 0.65);
+    fillRect(ctx, kn.x, kn.y, 1, 1, P.amber);
+    // small lamp on top
+    const top = iso(tx + 0.18, ty + 0.3, h);
+    fillRect(ctx, top.x - 1, top.y - 4, 3, 4, P.cream);
+    fillRect(ctx, top.x - 2, top.y - 8, 5, 4, P.amber);
+    fillRect(ctx, top.x - 1, top.y - 9, 3, 1, P.amber);
+    fillRect(ctx, top.x, top.y - 7, 1, 2, P.creamSoft);
+    // alarm clock
+    const ac = iso(tx + 0.32, ty + 0.18, h);
+    fillRect(ctx, ac.x, ac.y - 4, 4, 4, P.bookB);
+    fillRect(ctx, ac.x + 1, ac.y - 3, 2, 2, P.cream);
+    fillRect(ctx, ac.x + 1, ac.y - 3, 1, 1, P.ink);
   }
 
   function drawSofa(ctx) {
     const tx = 1.9, ty = 4.0, w = 2.2, d = 0.95, h = 0.35;
-    // base
     isoBox(ctx, tx, ty, w, d, h, {
       top: P.cloth, front: P.clothShadow, right: P.clothShadow, outline: P.shadow,
     });
@@ -541,24 +955,78 @@
       top: P.cloth, front: P.cloth, right: P.clothShadow, outline: P.shadow,
     });
     // arm rests
-    isoBox(ctx, tx, ty, 0.18, d, h + 0.2, {
+    isoBox(ctx, tx, ty, 0.2, d, h + 0.22, {
       top: P.cloth, front: P.clothShadow, right: P.clothShadow, outline: P.shadow,
     });
-    isoBox(ctx, tx + w - 0.18, ty, 0.18, d, h + 0.2, {
+    isoBox(ctx, tx + w - 0.2, ty, 0.2, d, h + 0.22, {
       top: P.cloth, front: P.clothShadow, right: P.clothShadow, outline: P.shadow,
     });
-    // cushion seam
+    // seam dividers
     ctx.strokeStyle = P.shadow;
-    const s1a = iso(tx + w / 2, ty + 0.25, h);
-    const s1b = iso(tx + w / 2, ty + d - 0.05, h);
+    const s1a = iso(tx + 0.2 + (w - 0.4) / 3, ty + 0.25, h);
+    const s1b = iso(tx + 0.2 + (w - 0.4) / 3, ty + d - 0.05, h);
+    const s2a = iso(tx + 0.2 + 2 * (w - 0.4) / 3, ty + 0.25, h);
+    const s2b = iso(tx + 0.2 + 2 * (w - 0.4) / 3, ty + d - 0.05, h);
     ctx.beginPath();
-    ctx.moveTo(s1a.x, s1a.y);
-    ctx.lineTo(s1b.x, s1b.y);
+    ctx.moveTo(s1a.x, s1a.y); ctx.lineTo(s1b.x, s1b.y);
+    ctx.moveTo(s2a.x, s2a.y); ctx.lineTo(s2b.x, s2b.y);
     ctx.stroke();
-    // throw pillow
-    isoBox(ctx, tx + 0.3, ty + 0.3, 0.35, 0.35, 0.18, {
+    // throw pillow 1 (rose)
+    isoBox(ctx, tx + 0.3, ty + 0.3, 0.32, 0.32, 0.18, {
       top: P.rose, front: P.roseDeep, right: P.roseDeep, outline: P.shadow,
     });
+    // throw pillow 2 (sage)
+    isoBox(ctx, tx + w - 0.62, ty + 0.32, 0.3, 0.3, 0.16, {
+      top: P.sage, front: P.sageDeep, right: P.sageDeep, outline: P.shadow,
+    });
+    // blanket draped over right arm
+    poly(ctx, [
+      iso(tx + w - 0.25, ty + 0.05, h + 0.22),
+      iso(tx + w + 0.05, ty + 0.05, h + 0.22),
+      iso(tx + w + 0.05, ty + 0.7, h + 0.22),
+      iso(tx + w - 0.25, ty + 0.7, h + 0.22),
+    ], P.amber);
+    poly(ctx, [
+      iso(tx + w + 0.05, ty + 0.05, h + 0.22),
+      iso(tx + w + 0.05, ty + 0.7, h + 0.22),
+      iso(tx + w + 0.05, ty + 0.7, h - 0.05),
+      iso(tx + w + 0.05, ty + 0.05, h - 0.05),
+    ], P.amberDeep);
+    // blanket fringe
+    ctx.fillStyle = P.amber;
+    const fra = iso(tx + w + 0.05, ty + 0.05, h - 0.05);
+    for (let i = 0; i < 8; i++) {
+      ctx.fillRect(fra.x, fra.y + i * 1.5, 1, 1);
+    }
+    // sleeping cat on left cushion
+    drawSleepingCat(ctx, tx + 0.5, ty + 0.45, h);
+  }
+
+  function drawSleepingCat(ctx, tx, ty, baseZ) {
+    const c = iso(tx, ty, baseZ);
+    // body curl
+    ctx.fillStyle = P.amberDeep;
+    ctx.fillRect(c.x - 5, c.y - 4, 10, 5);
+    ctx.fillRect(c.x - 4, c.y - 5, 8, 1);
+    ctx.fillRect(c.x - 5, c.y, 9, 1);
+    // stripes
+    ctx.fillStyle = P.shadow;
+    ctx.fillRect(c.x - 3, c.y - 4, 1, 4);
+    ctx.fillRect(c.x, c.y - 4, 1, 4);
+    ctx.fillRect(c.x + 2, c.y - 4, 1, 4);
+    // head tucked
+    ctx.fillStyle = P.amberDeep;
+    ctx.fillRect(c.x + 3, c.y - 6, 4, 4);
+    ctx.fillRect(c.x + 3, c.y - 7, 1, 1); // ear
+    ctx.fillRect(c.x + 5, c.y - 7, 1, 1); // ear
+    // closed eye
+    ctx.fillStyle = P.shadow;
+    ctx.fillRect(c.x + 4, c.y - 4, 1, 1);
+    // tail
+    ctx.fillStyle = P.amberDeep;
+    ctx.fillRect(c.x - 6, c.y - 2, 1, 1);
+    ctx.fillRect(c.x - 7, c.y - 3, 1, 1);
+    ctx.fillRect(c.x - 7, c.y - 5, 1, 2);
   }
 
   function drawCoffeeTable(ctx) {
@@ -566,49 +1034,128 @@
     isoBox(ctx, tx, ty, w, d, h, {
       top: P.deskWood, front: P.deskWood2, right: P.deskWood2, outline: P.shadow,
     });
-    // book
+    // book lying open
     poly(ctx, [
-      iso(tx + 0.1, ty + 0.15, h),
-      iso(tx + 0.45, ty + 0.15, h),
-      iso(tx + 0.45, ty + 0.4, h),
+      iso(tx + 0.1, ty + 0.1, h),
+      iso(tx + 0.5, ty + 0.1, h),
+      iso(tx + 0.5, ty + 0.4, h),
       iso(tx + 0.1, ty + 0.4, h),
     ], P.bookA);
-    // tea cup
-    const cup = iso(tx + 0.7, ty + 0.3, h);
+    // book pages
+    ctx.strokeStyle = lighten(P.bookA, 0.5);
+    const pa = iso(tx + 0.3, ty + 0.1, h + 0.001);
+    const pb = iso(tx + 0.3, ty + 0.4, h + 0.001);
+    ctx.beginPath();
+    ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y); ctx.stroke();
+    const lna = iso(tx + 0.15, ty + 0.18, h + 0.001);
+    const lnb = iso(tx + 0.45, ty + 0.18, h + 0.001);
+    ctx.beginPath();
+    ctx.moveTo(lna.x, lna.y); ctx.lineTo(lnb.x, lnb.y); ctx.stroke();
+    const lna2 = iso(tx + 0.15, ty + 0.25, h + 0.001);
+    const lnb2 = iso(tx + 0.45, ty + 0.25, h + 0.001);
+    ctx.beginPath();
+    ctx.moveTo(lna2.x, lna2.y); ctx.lineTo(lnb2.x, lnb2.y); ctx.stroke();
+    // tea cup with saucer
+    const cup = iso(tx + 0.7, ty + 0.18, h);
+    fillRect(ctx, cup.x - 3, cup.y - 1, 6, 2, P.cream);
     fillRect(ctx, cup.x - 2, cup.y - 4, 4, 4, P.cream);
     fillRect(ctx, cup.x - 2, cup.y - 4, 4, 1, P.peach);
     fillRect(ctx, cup.x + 2, cup.y - 3, 1, 2, P.cream);
+    // candle in jar
+    const cnd = iso(tx + 0.85, ty + 0.4, h);
+    fillRect(ctx, cnd.x - 1, cnd.y - 4, 3, 4, P.creamSoft);
+    fillRect(ctx, cnd.x - 1, cnd.y - 4, 3, 1, P.amber);
+    // flame flicker
+    if ((Math.floor((window.gameTime?.totalGameSeconds || 0) * 4)) % 2) {
+      fillRect(ctx, cnd.x, cnd.y - 6, 1, 2, P.amber);
+    } else {
+      fillRect(ctx, cnd.x, cnd.y - 6, 1, 1, P.peach);
+    }
   }
 
   function drawPlant(ctx) {
     const tx = 6.0, ty = 4.1, w = 0.5, d = 0.45;
-    // pot
-    isoBox(ctx, tx, ty, w, d, 0.45, {
+    // pot with rim
+    isoBox(ctx, tx, ty, w, d, 0.5, {
       top: P.shadow, front: P.plantPot, right: P.amberDeep, outline: P.shadow,
     });
+    // pot rim accent
+    poly(ctx, [
+      iso(tx, ty, 0.5),
+      iso(tx + w, ty, 0.5),
+      iso(tx + w, ty + d, 0.5),
+      iso(tx, ty + d, 0.5),
+    ], null, P.shadow);
     // soil
     poly(ctx, [
-      iso(tx + 0.04, ty + 0.04, 0.45),
-      iso(tx + w - 0.04, ty + 0.04, 0.45),
-      iso(tx + w - 0.04, ty + d - 0.04, 0.45),
-      iso(tx + 0.04, ty + d - 0.04, 0.45),
+      iso(tx + 0.04, ty + 0.04, 0.5),
+      iso(tx + w - 0.04, ty + 0.04, 0.5),
+      iso(tx + w - 0.04, ty + d - 0.04, 0.5),
+      iso(tx + 0.04, ty + d - 0.04, 0.5),
     ], '#3a2a1e');
-    // leaves cluster
-    const center = iso(tx + w / 2, ty + d / 2, 0.45);
+    // leaves cluster — fuller
+    const center = iso(tx + w / 2, ty + d / 2, 0.5);
     const leaves = [
-      [-3, -10, 4, 7, P.plantLeaf],
-      [0, -13, 3, 8, P.plantLeaf2],
-      [-6, -8, 4, 6, P.sageDeep],
-      [3, -8, 4, 7, P.plantLeaf2],
-      [-1, -15, 2, 4, P.plantLeaf],
-      [-7, -5, 3, 5, P.plantLeaf],
-      [4, -4, 4, 4, P.sageDeep],
+      [-4, -10, 5, 8, P.plantLeaf],
+      [-1, -14, 4, 9, P.plantLeaf2],
+      [-7, -7, 5, 7, P.sageDeep],
+      [3, -8, 5, 8, P.plantLeaf2],
+      [-2, -16, 3, 5, P.plantLeaf],
+      [-8, -4, 4, 6, P.plantLeaf],
+      [4, -3, 5, 5, P.sageDeep],
+      [1, -18, 2, 4, P.plantLeaf2],
+      [-5, -13, 3, 5, P.sageDeep],
     ];
     for (const [dx, dy, lw, lh, c] of leaves) {
       ctx.fillStyle = c;
       ctx.fillRect(center.x + dx, center.y + dy, lw, lh);
-      ctx.fillStyle = lighten(c, 0.18);
+      ctx.fillStyle = lighten(c, 0.22);
       ctx.fillRect(center.x + dx, center.y + dy, lw, 1);
+      // mid-leaf vein
+      ctx.fillStyle = lighten(c, 0.1);
+      ctx.fillRect(center.x + dx + Math.floor(lw / 2), center.y + dy, 1, lh);
+    }
+  }
+
+  function drawFloorLamp(ctx) {
+    // tall lamp in front-right corner
+    const tx = 6.4, ty = 3.0;
+    const baseY = iso(tx, ty, 0).y;
+    const cx = iso(tx, ty, 0).x;
+    // base
+    fillRect(ctx, cx - 4, baseY - 1, 9, 2, P.shadow);
+    fillRect(ctx, cx - 3, baseY - 2, 7, 1, P.deskWood2);
+    // pole
+    fillRect(ctx, cx, baseY - 30, 1, 28, P.deskWood2);
+    // cord drape
+    ctx.strokeStyle = P.warmGray;
+    ctx.beginPath();
+    ctx.moveTo(cx + 1, baseY - 14);
+    ctx.bezierCurveTo(cx + 4, baseY - 8, cx + 3, baseY - 4, cx + 2, baseY);
+    ctx.stroke();
+    // shade
+    ctx.fillStyle = P.amber;
+    ctx.beginPath();
+    ctx.moveTo(cx - 5, baseY - 30);
+    ctx.lineTo(cx + 6, baseY - 30);
+    ctx.lineTo(cx + 4, baseY - 38);
+    ctx.lineTo(cx - 3, baseY - 38);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = P.amberDeep;
+    fillRect(ctx, cx - 5, baseY - 30, 12, 1, P.amberDeep);
+    // shade highlight
+    ctx.fillStyle = P.peach;
+    ctx.fillRect(cx - 2, baseY - 36, 1, 5);
+    ctx.fillRect(cx - 1, baseY - 37, 1, 6);
+    // warm halo (only at night)
+    const hour = window.TIME?.getHourInt?.() || 12;
+    if (hour >= 18 || hour < 7) {
+      const grd = ctx.createRadialGradient(cx, baseY - 33, 2, cx, baseY - 33, 28);
+      grd.addColorStop(0, 'rgba(255, 220, 160, 0.45)');
+      grd.addColorStop(1, 'rgba(255, 220, 160, 0)');
+      ctx.fillStyle = grd;
+      ctx.fillRect(cx - 28, baseY - 60, 56, 56);
     }
   }
 
@@ -618,7 +1165,7 @@
     isoBox(ctx, tx, ty, w, d, h, {
       top: P.cream, front: P.cream, right: P.creamSoft, outline: P.shadow,
     });
-    // cabinet doors detail (front)
+    // cabinet doors detail
     const doorY = h * 0.3;
     const da = iso(tx + 0.05, ty + d, doorY);
     const db = iso(tx + w / 2 - 0.04, ty + d, doorY);
@@ -630,7 +1177,12 @@
     const ec = iso(tx + w - 0.05, ty + d, h - 0.05);
     const ed = iso(tx + w / 2 + 0.04, ty + d, h - 0.05);
     poly(ctx, [ea, eb, ec, ed], P.creamSoft, P.shadow);
-    // counter top stripe (slightly darker line at edge)
+    // knobs
+    const k1 = iso(tx + w / 2 - 0.08, ty + d, doorY + 0.1);
+    const k2 = iso(tx + w / 2 + 0.08, ty + d, doorY + 0.1);
+    fillRect(ctx, k1.x, k1.y, 1, 1, P.amber);
+    fillRect(ctx, k2.x, k2.y, 1, 1, P.amber);
+    // counter trim
     ctx.strokeStyle = P.deskWood2;
     const cea = iso(tx, ty + d, h);
     const ceb = iso(tx + w, ty + d, h);
@@ -642,14 +1194,30 @@
     const stoveA = iso(tx + 0.25, ty + 0.32, h);
     fillRect(ctx, stoveA.x - 2, stoveA.y - 1, 5, 2, P.shadow);
     fillRect(ctx, stoveA.x + 5, stoveA.y - 1, 5, 2, P.shadow);
-    // kettle
+    // kettle on stove
     isoBox(ctx, tx + 0.2, ty + 0.28, 0.22, 0.22, 0.28, {
       top: '#5a6c8a', front: '#5a6c8a', right: '#3d4f66', outline: P.shadow,
     });
-    // spout
     const spout = iso(tx + 0.42, ty + 0.36, h + 0.18);
     fillRect(ctx, spout.x, spout.y - 2, 2, 1, '#3d4f66');
-    // upper shelf with jars
+    // tiny steam from kettle
+    const t = (window.gameTime?.totalGameSeconds || 0) * 1.5;
+    ctx.fillStyle = 'rgba(255, 248, 236, 0.55)';
+    ctx.fillRect(Math.floor(spout.x + 1 + Math.sin(t) * 1), spout.y - 5, 1, 1);
+    ctx.fillRect(Math.floor(spout.x + 2 + Math.sin(t + 0.7) * 1), spout.y - 7, 1, 1);
+    // cutting board
+    const cb = iso(tx + 0.62, ty + 0.4, h);
+    fillRect(ctx, cb.x - 2, cb.y - 4, 9, 4, P.deskWood);
+    fillRect(ctx, cb.x - 2, cb.y - 4, 9, 1, P.peach);
+    // tomato on board
+    fillRect(ctx, cb.x, cb.y - 3, 2, 2, P.roseDeep);
+    fillRect(ctx, cb.x, cb.y - 4, 1, 1, P.sage);
+    // bottle
+    const bot = iso(tx + 1.0, ty + 0.3, h);
+    fillRect(ctx, bot.x - 1, bot.y - 8, 2, 8, P.sageDeep);
+    fillRect(ctx, bot.x - 1, bot.y - 6, 2, 2, P.cream);
+    fillRect(ctx, bot.x - 1, bot.y - 8, 2, 1, P.shadow);
+    // upper shelf
     const sh_z = 1.7;
     poly(ctx, [
       iso(tx, 0, sh_z),
@@ -657,18 +1225,36 @@
       iso(tx + w, 0, sh_z + 0.08),
       iso(tx, 0, sh_z + 0.08),
     ], P.deskWood);
-    // jars
+    // jars (more, varied)
     const jars = [
-      [0.15, P.bookB, 0.3],
-      [0.35, P.sage,  0.4],
-      [0.55, P.amberDeep, 0.32],
-      [0.78, P.cream, 0.3],
-      [0.98, P.bookA, 0.36],
+      [0.1, P.bookB, 0.32],
+      [0.25, P.sage,  0.42],
+      [0.42, P.amberDeep, 0.34],
+      [0.58, P.cream, 0.32],
+      [0.72, P.bookA, 0.4],
+      [0.88, P.rose, 0.3],
+      [1.04, P.amber, 0.36],
+      [1.18, P.sageDeep, 0.32],
     ];
     for (const [fx, c, jh] of jars) {
       const j = iso(tx + fx, 0, sh_z + 0.08);
       fillRect(ctx, j.x - 1, j.y - jh * TH, 3, jh * TH, c);
       fillRect(ctx, j.x - 1, j.y - jh * TH, 3, 1, lighten(c, 0.3));
+      // lid
+      fillRect(ctx, j.x - 1, j.y - jh * TH - 1, 3, 1, P.shadow);
+    }
+    // hanging utensils
+    const ut_z = 1.5;
+    for (let i = 0; i < 4; i++) {
+      const u = iso(tx + 0.2 + i * 0.18, 0, ut_z);
+      ctx.strokeStyle = P.shadow;
+      ctx.beginPath();
+      ctx.moveTo(u.x, u.y);
+      ctx.lineTo(u.x, u.y + 5);
+      ctx.stroke();
+      // utensil tip varies
+      ctx.fillStyle = i % 2 === 0 ? P.shadow : P.deskWood;
+      ctx.fillRect(u.x - 1, u.y + 5, 2, 2);
     }
   }
 
@@ -681,51 +1267,74 @@
       iso(tx + w, ty + d, z),
       iso(tx, ty + d, z),
     ], P.rugA, P.shadow);
-    // pattern stripes (along ty)
+    // border ring
+    ctx.strokeStyle = lighten(P.rugA, 0.3);
+    const ba = iso(tx + 0.15, ty + 0.15, z + 0.001);
+    const bb = iso(tx + w - 0.15, ty + 0.15, z + 0.001);
+    const bc = iso(tx + w - 0.15, ty + d - 0.15, z + 0.001);
+    const bd = iso(tx + 0.15, ty + d - 0.15, z + 0.001);
+    ctx.beginPath();
+    ctx.moveTo(ba.x, ba.y); ctx.lineTo(bb.x, bb.y);
+    ctx.lineTo(bc.x, bc.y); ctx.lineTo(bd.x, bd.y);
+    ctx.closePath();
+    ctx.stroke();
+    // pattern stripes
     ctx.strokeStyle = lerpColor(P.rugA, P.rugB, 0.5);
-    ctx.lineWidth = 1;
     for (let i = 1; i < 5; i++) {
       const t = i / 5;
-      const a = iso(tx + t * w, ty, z + 0.001);
-      const b = iso(tx + t * w, ty + d, z + 0.001);
+      const a = iso(tx + t * w, ty + 0.2, z + 0.001);
+      const b = iso(tx + t * w, ty + d - 0.2, z + 0.001);
       ctx.beginPath();
       ctx.moveTo(a.x + 0.5, a.y);
       ctx.lineTo(b.x + 0.5, b.y);
       ctx.stroke();
     }
-    // central diamond accent
+    // central diamond
     const cx = tx + w / 2, cy = ty + d / 2;
     poly(ctx, [
-      iso(cx - 0.5, cy, z + 0.002),
-      iso(cx, cy - 0.4, z + 0.002),
-      iso(cx + 0.5, cy, z + 0.002),
-      iso(cx, cy + 0.4, z + 0.002),
+      iso(cx - 0.55, cy, z + 0.002),
+      iso(cx, cy - 0.42, z + 0.002),
+      iso(cx + 0.55, cy, z + 0.002),
+      iso(cx, cy + 0.42, z + 0.002),
     ], P.rugB);
     poly(ctx, [
-      iso(cx - 0.25, cy, z + 0.003),
-      iso(cx, cy - 0.2, z + 0.003),
-      iso(cx + 0.25, cy, z + 0.003),
-      iso(cx, cy + 0.2, z + 0.003),
+      iso(cx - 0.28, cy, z + 0.003),
+      iso(cx, cy - 0.22, z + 0.003),
+      iso(cx + 0.28, cy, z + 0.003),
+      iso(cx, cy + 0.22, z + 0.003),
     ], P.cream);
+    // tiny diamond center
+    poly(ctx, [
+      iso(cx - 0.1, cy, z + 0.004),
+      iso(cx, cy - 0.08, z + 0.004),
+      iso(cx + 0.1, cy, z + 0.004),
+      iso(cx, cy + 0.08, z + 0.004),
+    ], P.rose);
+    // tassels
+    ctx.fillStyle = P.rugB;
+    for (let i = 0; i < 9; i++) {
+      const xo = tx + (i / 8) * w;
+      const a1 = iso(xo, ty - 0.05, z);
+      const a2 = iso(xo, ty + d + 0.05, z);
+      ctx.fillRect(a1.x, a1.y, 1, 2);
+      ctx.fillRect(a2.x, a2.y, 1, 2);
+    }
   }
 
   function drawDoor(ctx) {
     const ty1 = 4.0, ty2 = 4.85, z1 = 0, z2 = 2.2;
-    // frame
     poly(ctx, [
       iso(0, ty1 - 0.05, z1),
       iso(0, ty2 + 0.05, z1),
       iso(0, ty2 + 0.05, z2 + 0.1),
       iso(0, ty1 - 0.05, z2 + 0.1),
     ], P.deskWood2);
-    // door panel
     poly(ctx, [
       iso(0, ty1, z1),
       iso(0, ty2, z1),
       iso(0, ty2, z2),
       iso(0, ty1, z2),
     ], P.amberDeep);
-    // panel inset
     poly(ctx, [
       iso(0, ty1 + 0.08, z1 + 0.1),
       iso(0, ty2 - 0.08, z1 + 0.1),
@@ -741,13 +1350,19 @@
     // knob
     const knob = iso(0, ty1 + 0.18, 1.05);
     fillRect(ctx, knob.x - 1, knob.y - 1, 2, 2, P.amber);
-    // door mat in front of door
+    // door mat
     poly(ctx, [
       iso(0.05, ty1 - 0.05, 0.005),
       iso(0.65, ty1 - 0.05, 0.005),
       iso(0.65, ty2 + 0.05, 0.005),
       iso(0.05, ty2 + 0.05, 0.005),
     ], P.rugB, P.shadow);
+    // mat fringe
+    ctx.fillStyle = P.cream;
+    for (let i = 0; i < 6; i++) {
+      const a = iso(0.05 + (i / 5) * 0.6, ty1 - 0.07, 0.006);
+      ctx.fillRect(a.x, a.y, 1, 1);
+    }
   }
 
   // ─── CHARACTER ─────────────────────────────────────────────
@@ -755,9 +1370,8 @@
     sx = Math.floor(sx); sy = Math.floor(sy);
     const f = facing >= 0 ? 1 : -1;
 
-    // ground shadow
     if (pose !== 'sleep') {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
       ctx.beginPath();
       ctx.ellipse(sx, sy, 5, 2, 0, 0, Math.PI * 2);
       ctx.fill();
@@ -779,32 +1393,49 @@
   }
 
   function drawCharBody(ctx, x, y, f, mood, mode = 'stand') {
-    // legs (4 px tall)
+    // legs
     fillRect(ctx, x - 2, y - 5, 2, 5, P.pants);
     fillRect(ctx, x,     y - 5, 2, 5, P.pants);
+    fillRect(ctx, x - 2, y - 5, 2, 1, P.pantsShadow);
+    fillRect(ctx, x,     y - 5, 2, 1, P.pantsShadow);
     fillRect(ctx, x - 2, y - 1, 2, 1, P.shoe);
     fillRect(ctx, x,     y - 1, 2, 1, P.shoe);
-    // body — cozy oversized cream sweater
+    // sweater body
     fillRect(ctx, x - 3, y - 12, 6, 7, P.cloth);
     fillRect(ctx, x - 3, y - 6,  6, 1, P.clothShadow);
-    fillRect(ctx, x - 3, y - 12, 6, 1, P.clothShadow); // collar
+    fillRect(ctx, x - 3, y - 12, 6, 1, P.clothShadow);
+    // sweater knit texture (tiny dots)
+    ctx.fillStyle = P.clothShadow;
+    ctx.fillRect(x - 2, y - 10, 1, 1);
+    ctx.fillRect(x + 1, y - 10, 1, 1);
+    ctx.fillRect(x - 2, y - 8, 1, 1);
+    ctx.fillRect(x + 1, y - 8, 1, 1);
+    ctx.fillRect(x, y - 9, 1, 1);
+    // collar accent
+    fillRect(ctx, x - 1, y - 12, 2, 1, P.roseDeep);
     // head
     fillRect(ctx, x - 3, y - 18, 6, 6, P.skin);
     fillRect(ctx, x - 3, y - 13, 6, 1, P.skinShadow);
-    // hair (rose) — frame the face
-    fillRect(ctx, x - 4, y - 19, 8, 4, P.hair);
+    // hair (rose, frames the face) - more shape
+    fillRect(ctx, x - 4, y - 19, 8, 3, P.hair);
+    fillRect(ctx, x - 3, y - 20, 6, 1, P.hair);
     fillRect(ctx, x - 4, y - 19, 8, 1, P.hairLight);
-    fillRect(ctx, x - 4, y - 16, 1, 3, P.hair);
-    fillRect(ctx, x + 3, y - 16, 1, 3, P.hair);
-    // bow accent on hair (right side if facing right)
+    // side strands
+    fillRect(ctx, x - 4, y - 16, 1, 4, P.hair);
+    fillRect(ctx, x + 3, y - 16, 1, 4, P.hair);
+    // bangs
+    fillRect(ctx, x - 2, y - 16, 1, 1, P.hair);
+    fillRect(ctx, x + 1, y - 16, 1, 1, P.hair);
+    // bow accent
     if (f > 0) {
       fillRect(ctx, x + 2, y - 19, 2, 1, P.roseDeep);
       fillRect(ctx, x + 1, y - 20, 1, 1, P.roseDeep);
+      fillRect(ctx, x + 3, y - 20, 1, 1, P.roseDeep);
     } else {
       fillRect(ctx, x - 3, y - 19, 2, 1, P.roseDeep);
-      fillRect(ctx, x + 1, y - 20, 1, 1, P.roseDeep);
+      fillRect(ctx, x - 3, y - 20, 1, 1, P.roseDeep);
+      fillRect(ctx, x - 1, y - 20, 1, 1, P.roseDeep);
     }
-    // face
     drawFace(ctx, x, y - 16, f, mood);
   }
 
@@ -812,7 +1443,6 @@
     const bob = (Math.floor(frame / 30) % 2) ? -1 : 0;
     y += bob;
     drawCharBody(ctx, x, y, f, mood, mode);
-    // arms by mode
     if (mode === 'eat') {
       fillRect(ctx, x - 4, y - 9, 2, 3, P.cloth);
       fillRect(ctx, x + 2, y - 9, 2, 3, P.cloth);
@@ -823,6 +1453,7 @@
       fillRect(ctx, x + 2, y - 9, 2, 3, P.cloth);
       fillRect(ctx, x - 2, y - 9, 5, 3, P.bookB);
       fillRect(ctx, x - 1, y - 8, 1, 1, P.cream);
+      fillRect(ctx, x + 1, y - 8, 1, 1, P.cream);
     } else if (mode === 'stretch') {
       const phase = Math.floor(frame / 24) % 2;
       fillRect(ctx, x - 5, y - 16 - phase, 1, 5, P.cloth);
@@ -847,7 +1478,6 @@
     const phase = Math.floor(frame / 8) % 4;
     const bob = (phase === 1 || phase === 3) ? -1 : 0;
     y += bob;
-    // legs alternate
     if (phase === 0 || phase === 2) {
       fillRect(ctx, x - 2, y - 5, 2, 5, P.pants);
       fillRect(ctx, x,     y - 5, 2, 5, P.pants);
@@ -857,53 +1487,67 @@
     }
     fillRect(ctx, x - 2, y - 1, 2, 1, P.shoe);
     fillRect(ctx, x,     y - 1, 2, 1, P.shoe);
-    // body
     fillRect(ctx, x - 3, y - 12, 6, 7, P.cloth);
     fillRect(ctx, x - 3, y - 6, 6, 1, P.clothShadow);
     fillRect(ctx, x - 3, y - 12, 6, 1, P.clothShadow);
-    // arms swing
+    ctx.fillStyle = P.clothShadow;
+    ctx.fillRect(x - 2, y - 10, 1, 1);
+    ctx.fillRect(x + 1, y - 10, 1, 1);
+    ctx.fillRect(x, y - 9, 1, 1);
+    fillRect(ctx, x - 1, y - 12, 2, 1, P.roseDeep);
     const ao = (phase % 2 === 0) ? 0 : 1;
     fillRect(ctx, x - 4, y - 11 + ao, 2, 5, P.cloth);
     fillRect(ctx, x + 2, y - 11 + (1 - ao), 2, 5, P.cloth);
-    // head/hair
     fillRect(ctx, x - 3, y - 18, 6, 6, P.skin);
     fillRect(ctx, x - 3, y - 13, 6, 1, P.skinShadow);
-    fillRect(ctx, x - 4, y - 19, 8, 4, P.hair);
+    fillRect(ctx, x - 4, y - 19, 8, 3, P.hair);
+    fillRect(ctx, x - 3, y - 20, 6, 1, P.hair);
     fillRect(ctx, x - 4, y - 19, 8, 1, P.hairLight);
-    fillRect(ctx, x - 4, y - 16, 1, 3, P.hair);
-    fillRect(ctx, x + 3, y - 16, 1, 3, P.hair);
+    fillRect(ctx, x - 4, y - 16, 1, 4, P.hair);
+    fillRect(ctx, x + 3, y - 16, 1, 4, P.hair);
+    fillRect(ctx, x - 2, y - 16, 1, 1, P.hair);
+    fillRect(ctx, x + 1, y - 16, 1, 1, P.hair);
     if (f > 0) {
       fillRect(ctx, x + 2, y - 19, 2, 1, P.roseDeep);
+      fillRect(ctx, x + 1, y - 20, 1, 1, P.roseDeep);
     } else {
       fillRect(ctx, x - 3, y - 19, 2, 1, P.roseDeep);
+      fillRect(ctx, x - 1, y - 20, 1, 1, P.roseDeep);
     }
     drawFace(ctx, x, y - 16, f, mood);
   }
 
   function drawCharSit(ctx, x, y, frame, f, mood) {
-    // sitting on sofa — bottom slightly lower, legs forward
     fillRect(ctx, x - 3, y - 4, 6, 4, P.pants);
+    fillRect(ctx, x - 3, y - 4, 6, 1, P.pantsShadow);
     fillRect(ctx, x - 3, y - 1, 6, 1, P.shoe);
     fillRect(ctx, x - 3, y - 11, 6, 7, P.cloth);
     fillRect(ctx, x - 3, y - 5, 6, 1, P.clothShadow);
+    fillRect(ctx, x - 3, y - 11, 6, 1, P.clothShadow);
     fillRect(ctx, x - 4, y - 10, 2, 5, P.cloth);
     fillRect(ctx, x + 2, y - 10, 2, 5, P.cloth);
+    fillRect(ctx, x - 1, y - 11, 2, 1, P.roseDeep);
     fillRect(ctx, x - 3, y - 17, 6, 6, P.skin);
     fillRect(ctx, x - 3, y - 12, 6, 1, P.skinShadow);
-    fillRect(ctx, x - 4, y - 18, 8, 4, P.hair);
+    fillRect(ctx, x - 4, y - 18, 8, 3, P.hair);
+    fillRect(ctx, x - 3, y - 19, 6, 1, P.hair);
     fillRect(ctx, x - 4, y - 18, 8, 1, P.hairLight);
-    fillRect(ctx, x - 4, y - 15, 1, 3, P.hair);
-    fillRect(ctx, x + 3, y - 15, 1, 3, P.hair);
+    fillRect(ctx, x - 4, y - 15, 1, 4, P.hair);
+    fillRect(ctx, x + 3, y - 15, 1, 4, P.hair);
     drawFace(ctx, x, y - 15, f, mood);
   }
 
   function drawCharSitDesk(ctx, x, y, frame, mood, sub = '') {
-    // BACK to camera, sitting at desk; we see hair + back of sweater
-    // body
+    // body (back of sweater)
     fillRect(ctx, x - 4, y - 13, 8, 8, P.cloth);
     fillRect(ctx, x - 4, y - 13, 8, 1, P.creamSoft);
     fillRect(ctx, x - 4, y - 6,  8, 1, P.clothShadow);
-    // arms
+    // back knit dots
+    ctx.fillStyle = P.clothShadow;
+    for (let i = 0; i < 4; i++) {
+      ctx.fillRect(x - 3 + i * 2, y - 11, 1, 1);
+      ctx.fillRect(x - 3 + i * 2, y - 9, 1, 1);
+    }
     if (sub === 'work') {
       const tap = Math.floor(frame / 6) % 2;
       fillRect(ctx, x - 5, y - 11, 2, 5, P.cloth);
@@ -918,23 +1562,23 @@
       fillRect(ctx, x - 5, y - 11, 2, 5, P.cloth);
       fillRect(ctx, x + 3, y - 11, 2, 5, P.cloth);
     }
-    // head from BEHIND — mostly hair, side ears
+    // head from BEHIND
     fillRect(ctx, x - 4, y - 20, 8, 7, P.hair);
     fillRect(ctx, x - 4, y - 20, 8, 1, P.hairLight);
     fillRect(ctx, x - 4, y - 16, 1, 3, P.skin);
     fillRect(ctx, x + 3, y - 16, 1, 3, P.skin);
-    // pony tail bump
-    fillRect(ctx, x - 1, y - 21, 2, 2, P.hair);
-    fillRect(ctx, x - 1, y - 21, 2, 1, P.hairLight);
-    // bow
-    fillRect(ctx, x - 1, y - 22, 2, 1, P.roseDeep);
+    // ponytail bump
+    fillRect(ctx, x - 1, y - 22, 2, 3, P.hair);
+    fillRect(ctx, x - 1, y - 22, 2, 1, P.hairLight);
+    // bow on ponytail
+    fillRect(ctx, x - 2, y - 23, 1, 1, P.roseDeep);
+    fillRect(ctx, x + 1, y - 23, 1, 1, P.roseDeep);
+    fillRect(ctx, x, y - 23, 1, 1, P.rose);
   }
 
   function drawCharSleep(ctx, frame) {
-    // pose drawn at fixed iso position on the bed
     const headPos = iso(1.4, 2.45, 0.65);
     const footPos = iso(0.4, 3.7, 0.65);
-    // body under blanket — slope from head to foot
     const steps = 9;
     for (let s = 1; s < steps; s++) {
       const t = s / (steps - 1);
@@ -942,17 +1586,26 @@
       const cy = Math.round(headPos.y + (footPos.y - headPos.y) * t);
       fillRect(ctx, cx - 5, cy - 1, 12, 4, P.blanket);
       if (s === 1) fillRect(ctx, cx - 5, cy - 1, 12, 1, P.blanket2);
+      // blanket pattern dots
+      if (s % 2 === 0) {
+        ctx.fillStyle = P.blanket2;
+        ctx.fillRect(cx - 2, cy + 1, 1, 1);
+        ctx.fillRect(cx + 2, cy, 1, 1);
+      }
     }
-    // pillow head zone — character face
+    // pillow head zone
     fillRect(ctx, headPos.x - 4, headPos.y - 7, 9, 6, P.skin);
     fillRect(ctx, headPos.x - 5, headPos.y - 8, 11, 4, P.hair);
     fillRect(ctx, headPos.x - 5, headPos.y - 8, 11, 1, P.hairLight);
     // closed eyes
     fillRect(ctx, headPos.x - 1, headPos.y - 4, 1, 1, P.ink);
     fillRect(ctx, headPos.x + 2, headPos.y - 4, 1, 1, P.ink);
-    // mouth small
+    // mouth
     fillRect(ctx, headPos.x, headPos.y - 2, 1, 1, P.shadow);
-    // zzz floating
+    // blush
+    fillRect(ctx, headPos.x - 2, headPos.y - 3, 1, 1, 'rgba(232, 163, 163, 0.6)');
+    fillRect(ctx, headPos.x + 3, headPos.y - 3, 1, 1, 'rgba(232, 163, 163, 0.6)');
+    // zzz
     if (Math.floor(frame / 20) % 2 === 0) {
       ctx.fillStyle = 'rgba(245, 230, 211, 0.85)';
       ctx.font = '5px monospace';
@@ -966,14 +1619,11 @@
     fillRect(ctx, x,     y - 5, 2, 5, P.pants);
     fillRect(ctx, x - 2, y - 1, 2, 1, P.shoe);
     fillRect(ctx, x,     y - 1, 2, 1, P.shoe);
-    // body bent forward
     fillRect(ctx, x - 3, y - 11, 6, 6, P.cloth);
     fillRect(ctx, x - 3, y - 6, 6, 1, P.clothShadow);
-    // head down
     fillRect(ctx, x - 3, y - 16, 6, 5, P.skin);
     fillRect(ctx, x - 4, y - 17, 8, 4, P.hair);
     fillRect(ctx, x - 4, y - 17, 8, 1, P.hairLight);
-    // arms forward
     const armX = (f > 0 ? x + 3 : x - 5);
     fillRect(ctx, armX, y - 9, 2, 4, P.cloth);
     if (sub === 'water') {
@@ -991,9 +1641,11 @@
     const lx = f > 0 ? x - 2 : x - 1;
     const rx = f > 0 ? x + 1 : x + 2;
     // cheeks
-    fillRect(ctx, lx, eyeY + 1, 1, 1, 'rgba(232, 163, 163, 0.7)');
-    fillRect(ctx, rx, eyeY + 1, 1, 1, 'rgba(232, 163, 163, 0.7)');
-    // eyes by mood
+    fillRect(ctx, lx, eyeY + 1, 1, 1, 'rgba(232, 163, 163, 0.85)');
+    fillRect(ctx, rx, eyeY + 1, 1, 1, 'rgba(232, 163, 163, 0.85)');
+    // freckles
+    fillRect(ctx, x, eyeY + 1, 1, 1, 'rgba(180, 130, 100, 0.4)');
+
     if (mood === 'tired' || mood === 'sleepy') {
       fillRect(ctx, lx, eyeY, 1, 1, P.ink);
       fillRect(ctx, rx, eyeY, 1, 1, P.ink);
@@ -1002,9 +1654,12 @@
       fillRect(ctx, rx, eyeY - 1, 1, 1, P.ink);
       fillRect(ctx, x, y + 2, 1, 1, P.shadow);
     } else if (mood === 'happy') {
-      fillRect(ctx, lx, eyeY, 1, 1, P.ink);
-      fillRect(ctx, rx, eyeY, 1, 1, P.ink);
+      // crescent eyes — show closed-curve
+      fillRect(ctx, lx - 1, eyeY, 2, 1, P.ink);
+      fillRect(ctx, rx, eyeY, 2, 1, P.ink);
+      // smile
       fillRect(ctx, x - 1, y + 2, 3, 1, P.roseDeep);
+      fillRect(ctx, x, y + 3, 1, 1, P.roseDeep);
     } else if (mood === 'lonely' || mood === 'sad') {
       fillRect(ctx, lx, eyeY, 1, 1, P.ink);
       fillRect(ctx, rx, eyeY, 1, 1, P.ink);
@@ -1012,18 +1667,22 @@
     } else if (mood === 'inspired') {
       fillRect(ctx, lx, eyeY, 1, 1, P.ink);
       fillRect(ctx, rx, eyeY, 1, 1, P.ink);
+      // sparkle catchlight
       fillRect(ctx, lx, eyeY - 1, 1, 1, P.cream);
+      fillRect(ctx, rx + 1, eyeY - 1, 1, 1, P.cream);
     } else {
+      // normal — eyes with sparkle
       fillRect(ctx, lx, eyeY, 1, 1, P.ink);
       fillRect(ctx, rx, eyeY, 1, 1, P.ink);
+      fillRect(ctx, lx, eyeY - 1, 1, 1, 'rgba(255, 255, 255, 0.7)');
       fillRect(ctx, x, y + 2, 1, 1, P.roseDeep);
     }
   }
 
   // ─── ATMOSPHERE ────────────────────────────────────────────
   function drawDustMotes(ctx, time) {
-    ctx.fillStyle = 'rgba(255, 217, 183, 0.5)';
-    for (let i = 0; i < 12; i++) {
+    ctx.fillStyle = 'rgba(255, 217, 183, 0.55)';
+    for (let i = 0; i < 14; i++) {
       const x = (i * 31 + time * 6) % 320;
       const y = 40 + Math.sin(time * 0.45 + i) * 20 + (i % 4) * 10;
       ctx.fillRect(Math.floor(x), Math.floor(y), 1, 1);
@@ -1069,11 +1728,10 @@
       ctx.fillStyle = `rgba(${color}, ${alpha})`;
       ctx.fillRect(0, 0, 320, 180);
     }
-    // window light beam during day
     if (hour >= 8 && hour < 17 && (weather === 'clear' || weather === 'cloudy')) {
       const win = iso(4.9, 0.5, 2.4);
       const beam = ctx.createLinearGradient(win.x, win.y, win.x - 50, win.y + 90);
-      beam.addColorStop(0, 'rgba(255, 220, 160, 0.20)');
+      beam.addColorStop(0, 'rgba(255, 220, 160, 0.22)');
       beam.addColorStop(1, 'rgba(255, 220, 160, 0)');
       ctx.fillStyle = beam;
       ctx.beginPath();
@@ -1084,7 +1742,6 @@
       ctx.closePath();
       ctx.fill();
     }
-    // desk lamp glow at night
     if (hour >= 18 || hour < 6) {
       const lamp = iso(3.95, 0.25, 0.95);
       const grd = ctx.createRadialGradient(lamp.x, lamp.y, 2, lamp.x, lamp.y, 60);
@@ -1132,17 +1789,14 @@
 
   // ─── EXPORT ────────────────────────────────────────────────
   window.SPR = {
-    // iso helpers
     iso,
     TILE_W: TW, TILE_H: TH, ROOM_W, ROOM_D, WALL_H,
-    // pieces
     drawWall, drawFloor, drawWindow, drawWallDecor, drawStringLights,
     drawBookshelf, drawDesk, drawChair, drawBed, drawSofa,
     drawCoffeeTable, drawPlant, drawKitchen, drawRug, drawDoor,
+    drawNightstand, drawFloorLamp,
     drawCharacter,
-    // atmosphere
     drawDustMotes, drawRain, drawSnow, drawLightingOverlay,
-    // color helpers
     fillRect, lerpColor, clamp,
   };
 })();

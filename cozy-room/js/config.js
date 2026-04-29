@@ -2,12 +2,18 @@
 // Global constants, palette, activity defs, dialogue lines
 
 window.CFG = {
-  // canvas
-  W: 480,
-  H: 270,
-  FLOOR_Y: 200,         // floor line in internal pixels
-  ROOM_LEFT: 24,
-  ROOM_RIGHT: 456,
+  // canvas (chunky pixel-art resolution)
+  W: 320,
+  H: 180,
+
+  // isometric tile system
+  TILE_W: 32,
+  TILE_H: 16,
+  WALL_H_TILES: 4,
+  ROOM_W: 7,
+  ROOM_D: 5,
+  ISO_OX: 144,
+  ISO_OY: 72,
 
   // game time: 1 real second = TIME_SCALE in-game seconds
   // default: 1 real minute = 1 in-game hour, so 24min = 1 day
@@ -35,17 +41,20 @@ window.CFG = {
   // bond progression — hours between organic +1
   BOND_TICK_HOURS: 4,
 
-  // paths/positions in the room (internal px)
+  // tile-coord positions inside the iso room
+  // tx ∈ [0, ROOM_W], ty ∈ [0, ROOM_D]; faceTx/Ty is where the character STANDS
   POS: {
-    bed:       { x:  56, y: 174, faceX:  90 },
-    desk:      { x: 156, y: 178, faceX: 188 },
-    chair:     { x: 188, y: 192 },
-    bookshelf: { x: 246, y: 174, faceX: 262 },
-    plant:     { x: 312, y: 188 },
-    window:    { x: 384, y: 152, faceX: 384 },
-    kitchen:   { x: 432, y: 188, faceX: 414 },
-    rugMid:    { x: 240, y: 220 },
-    door:      { x:  18, y: 184 },
+    bed:       { tx: 0.7, ty: 3.0, faceTx: 1.6, faceTy: 3.4 },
+    desk:      { tx: 3.2, ty: 0.4, faceTx: 3.5, faceTy: 1.4 },
+    chair:     { tx: 3.5, ty: 1.2, faceTx: 3.5, faceTy: 1.2 },
+    bookshelf: { tx: 0.5, ty: 0.3, faceTx: 1.0, faceTy: 1.2 },
+    plant:     { tx: 6.0, ty: 4.1, faceTx: 5.4, faceTy: 4.0 },
+    window:    { tx: 4.7, ty: 0.4, faceTx: 4.8, faceTy: 1.2 },
+    kitchen:   { tx: 6.0, ty: 0.4, faceTx: 5.7, faceTy: 1.2 },
+    rugMid:    { tx: 3.5, ty: 2.7 },
+    door:      { tx: 0.3, ty: 4.4, faceTx: 1.0, faceTy: 4.4 },
+    sofa:      { tx: 3.0, ty: 4.4, faceTx: 3.0, faceTy: 4.0 },
+    table:     { tx: 3.2, ty: 3.6 },
   },
 
   // pixel palette (must match CSS)
@@ -69,13 +78,14 @@ window.CFG = {
     ink:     '#3a2e2a',
     inkSoft: '#6b554a',
 
-    // skin/hair (character)
+    // skin/hair (character) — soft rose hair to match cozy reference art
     skin:    '#f3d5b5',
     skinShadow:'#d8a98a',
-    hair:    '#5a3a2c',
-    hairLight:'#7d4f3a',
-    cloth:   '#a3b3c7',  // soft blue-gray sweater
-    clothShadow:'#7a8ca0',
+    hair:    '#c98088',
+    hairLight:'#e8b4b8',
+    hairAccent:'#fff1de',
+    cloth:   '#fff1de',
+    clothShadow:'#e8b4b8',
     pants:   '#7e6b5a',
     pantsShadow:'#5d4f42',
     shoe:    '#3a2e2a',

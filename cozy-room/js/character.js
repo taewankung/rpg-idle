@@ -1,31 +1,50 @@
 // ─── character.js ──────────────────────────────────────────
-// The little human in the room. Movement, pose, animation frame.
+// Tile-coord character. Movement in (tx, ty) tile space.
+// Screen position is projected each frame via SPR.iso().
 
 (function () {
   const CFG = window.CFG;
 
   const state = {
-    x: 200, y: 192,         // anchor (top-left of sprite, feet at y+24)
-    targetX: 200,
-    facing: 1,              // +1 right, -1 left
+    tx: 3.5, ty: 2.7,
+    targetTx: 3.5, targetTy: 2.7,
+    facing: 1,                // +1 = looking down-right (SE), -1 = down-left (SW)
     pose: 'idle',
-    nextPose: null,
     frame: 0,
-    speed: 22,              // px / sec
-    blinking: false,
-    moodOverride: null,
+    speed: 1.6,               // tiles per second
+    screenX: 0, screenY: 0,
   };
 
-  function setPose(p) {
-    if (state.pose === p) return;
-    state.pose = p;
+  const MIN_TX = 0.6, MIN_TY = 0.6;
+  const MAX_TX = (CFG.ROOM_W - 0.4);
+  const MAX_TY = (CFG.ROOM_D - 0.3);
+
+  function clampTx(v) { return Math.max(MIN_TX, Math.min(MAX_TX, v)); }
+  function clampTy(v) { return Math.max(MIN_TY, Math.min(MAX_TY, v)); }
+
+  function moveTo(tx, ty) {
+    state.targetTx = tx;
+    state.targetTy = ty;
+    if (tx > state.tx + 0.05) state.facing = 1;
+    else if (tx < state.tx - 0.05) state.facing = -1;
   }
 
-  function moveTo(x, snapInstant = false) {
-    state.targetX = Math.floor(x);
-    if (snapInstant) state.x = state.targetX;
-    if (state.targetX > state.x) state.facing = 1;
-    else if (state.targetX < state.x) state.facing = -1;
+  function poseForActivity(key, target) {
+    if (!key) return 'idle';
+    if (key === 'sleep') return 'sleep';
+    if (key === 'work')  return 'work';
+    if (key === 'paint') return 'paint';
+    if (key === 'eat')   return 'eat';
+    if (key === 'read')  return 'read';
+    if (key === 'window' || key === 'idle_window') return 'window';
+    if (key === 'water'  || key === 'idle_water')  return 'water';
+    if (key === 'clean') return 'clean';
+    if (key === 'exercise') return 'stretch';
+    if (key === 'bathe') return 'idle';
+    if (key === 'idle_sit'  ) return target === 'chair' ? 'sit_desk' : 'sit';
+    if (key === 'idle_phone') return 'sit';
+    if (key === 'idle_wander') return 'walk';
+    return 'idle';
   }
 
   function update(realDtSeconds, speed = 1) {
@@ -34,84 +53,90 @@
 
     const cur = window.ACT.state.current;
 
-    // honor active activity: walk to target then assume pose
+    // 1) decide where to walk
+    let goalTx = null, goalTy = null;
     if (cur && cur.target) {
-      const tx = CFG.POS[cur.target]?.faceX ?? CFG.POS[cur.target]?.x ?? state.targetX;
-      const ty = CFG.POS[cur.target]?.y ?? state.y;
-      moveTo(tx);
-      // y "snaps" gently to position y
-      state.y += (ty - state.y) * Math.min(1, dt * 4);
+      const pos = CFG.POS[cur.target];
+      if (pos) {
+        goalTx = pos.faceTx ?? pos.tx;
+        goalTy = pos.faceTy ?? pos.ty;
+      }
+    } else if (cur && cur.key === 'idle_wander') {
+      // pick a new wander spot once we arrive
+      const dx = state.targetTx - state.tx;
+      const dy = state.targetTy - state.ty;
+      if (Math.hypot(dx, dy) < 0.2) {
+        state.targetTx = clampTx(1.2 + Math.random() * (CFG.ROOM_W - 2.0));
+        state.targetTy = clampTy(2.0 + Math.random() * (CFG.ROOM_D - 2.4));
+      }
+      goalTx = state.targetTx;
+      goalTy = state.targetTy;
+    }
 
-      // walk vs final pose
-      if (Math.abs(state.x - state.targetX) > 1) {
-        setPose('walk');
+    if (goalTx !== null) {
+      moveTo(clampTx(goalTx), clampTy(goalTy));
+    }
+
+    // 2) walk toward target
+    const dx = state.targetTx - state.tx;
+    const dy = state.targetTy - state.ty;
+    const dist = Math.hypot(dx, dy);
+    const arrived = dist < 0.06;
+
+    if (!arrived) {
+      const step = state.speed * dt;
+      if (step >= dist) {
+        state.tx = state.targetTx;
+        state.ty = state.targetTy;
       } else {
-        setPose(cur.pose || 'idle');
-        // sleep pose snaps onto bed coords (handled in sprite)
+        state.tx += (dx / dist) * step;
+        state.ty += (dy / dist) * step;
       }
-    } else if (cur && !cur.target) {
-      // idle without target (e.g., wander)
-      if (cur.key === 'idle_wander') {
-        if (Math.abs(state.x - state.targetX) < 2) {
-          // pick a new wander spot
-          const left  = CFG.ROOM_LEFT + 30;
-          const right = CFG.ROOM_RIGHT - 30;
-          state.targetX = Math.floor(left + Math.random() * (right - left));
-          state.facing = state.targetX > state.x ? 1 : -1;
-        }
-        setPose('walk');
-      } else {
-        setPose(cur.pose || 'idle');
-      }
+    }
+
+    // 3) decide pose
+    if (cur && cur.target && !arrived) {
+      state.pose = 'walk';
+    } else if (cur) {
+      state.pose = poseForActivity(cur.key, cur.target);
     } else {
-      // no activity, idle in place
-      setPose('idle');
+      state.pose = 'idle';
     }
 
-    // physically move toward targetX
-    if (Math.abs(state.x - state.targetX) > 0.5) {
-      const dir = Math.sign(state.targetX - state.x);
-      state.x += dir * state.speed * dt;
-      if ((dir > 0 && state.x > state.targetX) ||
-          (dir < 0 && state.x < state.targetX)) {
-        state.x = state.targetX;
-      }
-    }
-
-    // clamp inside room
-    if (state.x < CFG.ROOM_LEFT) state.x = CFG.ROOM_LEFT;
-    if (state.x > CFG.ROOM_RIGHT) state.x = CFG.ROOM_RIGHT;
+    // 4) project to screen
+    const sp = window.SPR.iso(state.tx, state.ty);
+    state.screenX = sp.x;
+    state.screenY = sp.y;
   }
 
   function render(ctx) {
-    const mood = state.moodOverride || (window.STATS?.getMood() || 'normal');
+    const mood = window.STATS?.getMood?.() || 'normal';
     window.SPR.drawCharacter(
-      ctx,
-      state.x - 4,            // center-anchor adjust
-      state.y - 24,           // y is feet baseline; sprite is 26 tall
-      state.pose,
-      Math.floor(state.frame),
-      state.facing,
-      mood
+      ctx, state.screenX, state.screenY,
+      state.pose, Math.floor(state.frame), state.facing, mood
     );
   }
 
   function serialize() {
     return {
-      x: state.x, targetX: state.targetX,
+      tx: state.tx, ty: state.ty,
+      targetTx: state.targetTx, targetTy: state.targetTy,
       facing: state.facing, pose: state.pose,
     };
   }
   function deserialize(d) {
     if (!d) return;
-    state.x       = d.x ?? state.x;
-    state.targetX = d.targetX ?? state.x;
-    state.facing  = d.facing ?? 1;
-    state.pose    = d.pose   ?? 'idle';
+    // accept legacy {x, y} screen-coord saves: drop them, restart at center
+    if (d.tx !== undefined) state.tx = d.tx;
+    if (d.ty !== undefined) state.ty = d.ty;
+    state.targetTx = d.targetTx ?? state.tx;
+    state.targetTy = d.targetTy ?? state.ty;
+    state.facing   = d.facing ?? 1;
+    state.pose     = d.pose   ?? 'idle';
   }
 
   window.CHAR = {
-    state, setPose, moveTo, update, render,
+    state, moveTo, update, render,
     serialize, deserialize,
   };
 })();

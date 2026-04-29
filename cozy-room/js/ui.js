@@ -85,10 +85,10 @@
   function positionSpeech() {
     const stage = $('stage');
     const rect = stage.getBoundingClientRect();
-    const sx = rect.width / 480;
-    const sy = rect.height / 270;
-    const cx = (window.CHAR.state.x) * sx;
-    const cy = (window.CHAR.state.y - 30) * sy;
+    const sx = rect.width / window.CFG.W;
+    const sy = rect.height / window.CFG.H;
+    const cx = (window.CHAR.state.screenX || 0) * sx;
+    const cy = ((window.CHAR.state.screenY || 0) - 28) * sy;
     const speech = $('speech');
     speech.style.left = `${rect.left + cx - 30}px`;
     speech.style.top  = `${rect.top + cy - 60}px`;

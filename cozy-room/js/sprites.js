@@ -1427,49 +1427,56 @@
   }
 
   function drawCharBody(ctx, x, y, f, mood, mode = 'stand') {
-    // legs
+    // legs — chunky chibi (navy denim)
     fillRect(ctx, x - 2, y - 5, 2, 5, P.pants);
     fillRect(ctx, x,     y - 5, 2, 5, P.pants);
     fillRect(ctx, x - 2, y - 5, 2, 1, P.pantsShadow);
     fillRect(ctx, x,     y - 5, 2, 1, P.pantsShadow);
     fillRect(ctx, x - 2, y - 1, 2, 1, P.shoe);
     fillRect(ctx, x,     y - 1, 2, 1, P.shoe);
-    // sweater body
-    fillRect(ctx, x - 3, y - 12, 6, 7, P.cloth);
-    fillRect(ctx, x - 3, y - 6,  6, 1, P.clothShadow);
-    fillRect(ctx, x - 3, y - 12, 6, 1, P.clothShadow);
-    // sweater knit texture (tiny dots)
+    // sweater — oversized 8-wide cozy
+    fillRect(ctx, x - 4, y - 12, 8, 7, P.cloth);
+    fillRect(ctx, x - 4, y - 12, 8, 1, P.clothShadow);
+    fillRect(ctx, x - 4, y - 6,  8, 1, P.clothShadow);
+    // sleeve sides
+    fillRect(ctx, x - 4, y - 11, 1, 5, P.clothShadow);
+    fillRect(ctx, x + 3, y - 11, 1, 5, P.clothShadow);
+    // knit stitch dots scattered
     ctx.fillStyle = P.clothShadow;
     ctx.fillRect(x - 2, y - 10, 1, 1);
     ctx.fillRect(x + 1, y - 10, 1, 1);
-    ctx.fillRect(x - 2, y - 8, 1, 1);
-    ctx.fillRect(x + 1, y - 8, 1, 1);
-    ctx.fillRect(x, y - 9, 1, 1);
-    // collar accent
+    ctx.fillRect(x,     y - 9,  1, 1);
+    ctx.fillRect(x - 3, y - 8,  1, 1);
+    ctx.fillRect(x + 2, y - 8,  1, 1);
+    ctx.fillRect(x - 1, y - 7,  1, 1);
+    // collar bow ribbon
     fillRect(ctx, x - 1, y - 12, 2, 1, P.roseDeep);
-    // head
-    fillRect(ctx, x - 3, y - 18, 6, 6, P.skin);
+    fillRect(ctx, x - 2, y - 13, 4, 1, P.skin);
+    // round head — 6 wide × 6 tall
+    fillRect(ctx, x - 3, y - 19, 6, 6, P.skin);
     fillRect(ctx, x - 3, y - 13, 6, 1, P.skinShadow);
-    // hair (rose, frames the face) - more shape
-    fillRect(ctx, x - 4, y - 19, 8, 3, P.hair);
-    fillRect(ctx, x - 3, y - 20, 6, 1, P.hair);
-    fillRect(ctx, x - 4, y - 19, 8, 1, P.hairLight);
-    // side strands
-    fillRect(ctx, x - 4, y - 16, 1, 4, P.hair);
-    fillRect(ctx, x + 3, y - 16, 1, 4, P.hair);
-    // bangs
-    fillRect(ctx, x - 2, y - 16, 1, 1, P.hair);
-    fillRect(ctx, x + 1, y - 16, 1, 1, P.hair);
-    // bow accent
-    if (f > 0) {
-      fillRect(ctx, x + 2, y - 19, 2, 1, P.roseDeep);
-      fillRect(ctx, x + 1, y - 20, 1, 1, P.roseDeep);
-      fillRect(ctx, x + 3, y - 20, 1, 1, P.roseDeep);
-    } else {
-      fillRect(ctx, x - 3, y - 19, 2, 1, P.roseDeep);
-      fillRect(ctx, x - 3, y - 20, 1, 1, P.roseDeep);
-      fillRect(ctx, x - 1, y - 20, 1, 1, P.roseDeep);
-    }
+    // soften head corners with hair
+    fillRect(ctx, x - 3, y - 19, 1, 1, P.hair);
+    fillRect(ctx, x + 2, y - 19, 1, 1, P.hair);
+    // hair cap (top)
+    fillRect(ctx, x - 4, y - 21, 8, 3, P.hair);
+    fillRect(ctx, x - 4, y - 21, 8, 1, P.hairLight);
+    // bangs (asymmetric, leaving eye gap)
+    fillRect(ctx, x - 3, y - 18, 2, 2, P.hair);
+    fillRect(ctx, x + 1, y - 18, 2, 1, P.hair);
+    // side strands curving
+    fillRect(ctx, x - 4, y - 18, 1, 4, P.hair);
+    fillRect(ctx, x + 3, y - 18, 1, 4, P.hair);
+    // ─── twin side buns (cuteness factor +100) ───
+    fillRect(ctx, x - 6, y - 20, 2, 3, P.hair);
+    fillRect(ctx, x - 6, y - 20, 2, 1, P.hairLight);
+    fillRect(ctx, x + 4, y - 20, 2, 3, P.hair);
+    fillRect(ctx, x + 4, y - 20, 2, 1, P.hairLight);
+    // ribbon bows on each bun
+    fillRect(ctx, x - 6, y - 21, 1, 1, P.roseDeep);
+    fillRect(ctx, x - 5, y - 21, 1, 1, P.rose);
+    fillRect(ctx, x + 4, y - 21, 1, 1, P.rose);
+    fillRect(ctx, x + 5, y - 21, 1, 1, P.roseDeep);
     drawFace(ctx, x, y - 16, f, mood);
   }
 
@@ -1512,6 +1519,7 @@
     const phase = Math.floor(frame / 8) % 4;
     const bob = (phase === 1 || phase === 3) ? -1 : 0;
     y += bob;
+    // legs alternate (one slightly forward each phase)
     if (phase === 0 || phase === 2) {
       fillRect(ctx, x - 2, y - 5, 2, 5, P.pants);
       fillRect(ctx, x,     y - 5, 2, 5, P.pants);
@@ -1521,53 +1529,87 @@
     }
     fillRect(ctx, x - 2, y - 1, 2, 1, P.shoe);
     fillRect(ctx, x,     y - 1, 2, 1, P.shoe);
-    fillRect(ctx, x - 3, y - 12, 6, 7, P.cloth);
-    fillRect(ctx, x - 3, y - 6, 6, 1, P.clothShadow);
-    fillRect(ctx, x - 3, y - 12, 6, 1, P.clothShadow);
+    // sweater (same as body)
+    fillRect(ctx, x - 4, y - 12, 8, 7, P.cloth);
+    fillRect(ctx, x - 4, y - 12, 8, 1, P.clothShadow);
+    fillRect(ctx, x - 4, y - 6,  8, 1, P.clothShadow);
+    fillRect(ctx, x - 4, y - 11, 1, 5, P.clothShadow);
+    fillRect(ctx, x + 3, y - 11, 1, 5, P.clothShadow);
     ctx.fillStyle = P.clothShadow;
     ctx.fillRect(x - 2, y - 10, 1, 1);
     ctx.fillRect(x + 1, y - 10, 1, 1);
     ctx.fillRect(x, y - 9, 1, 1);
+    ctx.fillRect(x - 3, y - 8, 1, 1);
+    ctx.fillRect(x + 2, y - 8, 1, 1);
     fillRect(ctx, x - 1, y - 12, 2, 1, P.roseDeep);
+    // arms swing
     const ao = (phase % 2 === 0) ? 0 : 1;
-    fillRect(ctx, x - 4, y - 11 + ao, 2, 5, P.cloth);
-    fillRect(ctx, x + 2, y - 11 + (1 - ao), 2, 5, P.cloth);
-    fillRect(ctx, x - 3, y - 18, 6, 6, P.skin);
+    fillRect(ctx, x - 5, y - 11 + ao, 2, 5, P.cloth);
+    fillRect(ctx, x + 3, y - 11 + (1 - ao), 2, 5, P.cloth);
+    // head
+    fillRect(ctx, x - 3, y - 19, 6, 6, P.skin);
     fillRect(ctx, x - 3, y - 13, 6, 1, P.skinShadow);
-    fillRect(ctx, x - 4, y - 19, 8, 3, P.hair);
-    fillRect(ctx, x - 3, y - 20, 6, 1, P.hair);
-    fillRect(ctx, x - 4, y - 19, 8, 1, P.hairLight);
-    fillRect(ctx, x - 4, y - 16, 1, 4, P.hair);
-    fillRect(ctx, x + 3, y - 16, 1, 4, P.hair);
-    fillRect(ctx, x - 2, y - 16, 1, 1, P.hair);
-    fillRect(ctx, x + 1, y - 16, 1, 1, P.hair);
-    if (f > 0) {
-      fillRect(ctx, x + 2, y - 19, 2, 1, P.roseDeep);
-      fillRect(ctx, x + 1, y - 20, 1, 1, P.roseDeep);
-    } else {
-      fillRect(ctx, x - 3, y - 19, 2, 1, P.roseDeep);
-      fillRect(ctx, x - 1, y - 20, 1, 1, P.roseDeep);
-    }
+    fillRect(ctx, x - 3, y - 19, 1, 1, P.hair);
+    fillRect(ctx, x + 2, y - 19, 1, 1, P.hair);
+    // hair cap
+    fillRect(ctx, x - 4, y - 21, 8, 3, P.hair);
+    fillRect(ctx, x - 4, y - 21, 8, 1, P.hairLight);
+    fillRect(ctx, x - 3, y - 18, 2, 2, P.hair);
+    fillRect(ctx, x + 1, y - 18, 2, 1, P.hair);
+    fillRect(ctx, x - 4, y - 18, 1, 4, P.hair);
+    fillRect(ctx, x + 3, y - 18, 1, 4, P.hair);
+    // twin side buns
+    fillRect(ctx, x - 6, y - 20, 2, 3, P.hair);
+    fillRect(ctx, x - 6, y - 20, 2, 1, P.hairLight);
+    fillRect(ctx, x + 4, y - 20, 2, 3, P.hair);
+    fillRect(ctx, x + 4, y - 20, 2, 1, P.hairLight);
+    fillRect(ctx, x - 6, y - 21, 1, 1, P.roseDeep);
+    fillRect(ctx, x - 5, y - 21, 1, 1, P.rose);
+    fillRect(ctx, x + 4, y - 21, 1, 1, P.rose);
+    fillRect(ctx, x + 5, y - 21, 1, 1, P.roseDeep);
     drawFace(ctx, x, y - 16, f, mood);
   }
 
   function drawCharSit(ctx, x, y, frame, f, mood) {
+    // legs forward (sitting)
     fillRect(ctx, x - 3, y - 4, 6, 4, P.pants);
     fillRect(ctx, x - 3, y - 4, 6, 1, P.pantsShadow);
     fillRect(ctx, x - 3, y - 1, 6, 1, P.shoe);
-    fillRect(ctx, x - 3, y - 11, 6, 7, P.cloth);
-    fillRect(ctx, x - 3, y - 5, 6, 1, P.clothShadow);
-    fillRect(ctx, x - 3, y - 11, 6, 1, P.clothShadow);
-    fillRect(ctx, x - 4, y - 10, 2, 5, P.cloth);
-    fillRect(ctx, x + 2, y - 10, 2, 5, P.cloth);
+    // sweater (oversized)
+    fillRect(ctx, x - 4, y - 11, 8, 7, P.cloth);
+    fillRect(ctx, x - 4, y - 11, 8, 1, P.clothShadow);
+    fillRect(ctx, x - 4, y - 5,  8, 1, P.clothShadow);
+    fillRect(ctx, x - 4, y - 10, 1, 5, P.clothShadow);
+    fillRect(ctx, x + 3, y - 10, 1, 5, P.clothShadow);
+    ctx.fillStyle = P.clothShadow;
+    ctx.fillRect(x - 2, y - 9, 1, 1);
+    ctx.fillRect(x + 1, y - 9, 1, 1);
+    ctx.fillRect(x, y - 7, 1, 1);
     fillRect(ctx, x - 1, y - 11, 2, 1, P.roseDeep);
-    fillRect(ctx, x - 3, y - 17, 6, 6, P.skin);
+    // arms (slightly forward)
+    fillRect(ctx, x - 5, y - 9, 2, 5, P.cloth);
+    fillRect(ctx, x + 3, y - 9, 2, 5, P.cloth);
+    // head
+    fillRect(ctx, x - 3, y - 18, 6, 6, P.skin);
     fillRect(ctx, x - 3, y - 12, 6, 1, P.skinShadow);
-    fillRect(ctx, x - 4, y - 18, 8, 3, P.hair);
-    fillRect(ctx, x - 3, y - 19, 6, 1, P.hair);
-    fillRect(ctx, x - 4, y - 18, 8, 1, P.hairLight);
-    fillRect(ctx, x - 4, y - 15, 1, 4, P.hair);
-    fillRect(ctx, x + 3, y - 15, 1, 4, P.hair);
+    fillRect(ctx, x - 3, y - 18, 1, 1, P.hair);
+    fillRect(ctx, x + 2, y - 18, 1, 1, P.hair);
+    // hair cap
+    fillRect(ctx, x - 4, y - 20, 8, 3, P.hair);
+    fillRect(ctx, x - 4, y - 20, 8, 1, P.hairLight);
+    fillRect(ctx, x - 3, y - 17, 2, 2, P.hair);
+    fillRect(ctx, x + 1, y - 17, 2, 1, P.hair);
+    fillRect(ctx, x - 4, y - 17, 1, 4, P.hair);
+    fillRect(ctx, x + 3, y - 17, 1, 4, P.hair);
+    // twin side buns
+    fillRect(ctx, x - 6, y - 19, 2, 3, P.hair);
+    fillRect(ctx, x - 6, y - 19, 2, 1, P.hairLight);
+    fillRect(ctx, x + 4, y - 19, 2, 3, P.hair);
+    fillRect(ctx, x + 4, y - 19, 2, 1, P.hairLight);
+    fillRect(ctx, x - 6, y - 20, 1, 1, P.roseDeep);
+    fillRect(ctx, x - 5, y - 20, 1, 1, P.rose);
+    fillRect(ctx, x + 4, y - 20, 1, 1, P.rose);
+    fillRect(ctx, x + 5, y - 20, 1, 1, P.roseDeep);
     drawFace(ctx, x, y - 15, f, mood);
   }
 
@@ -1596,18 +1638,24 @@
       fillRect(ctx, x - 5, y - 11, 2, 5, P.cloth);
       fillRect(ctx, x + 3, y - 11, 2, 5, P.cloth);
     }
-    // head from BEHIND
-    fillRect(ctx, x - 4, y - 20, 8, 7, P.hair);
-    fillRect(ctx, x - 4, y - 20, 8, 1, P.hairLight);
-    fillRect(ctx, x - 4, y - 16, 1, 3, P.skin);
-    fillRect(ctx, x + 3, y - 16, 1, 3, P.skin);
-    // ponytail bump
-    fillRect(ctx, x - 1, y - 22, 2, 3, P.hair);
-    fillRect(ctx, x - 1, y - 22, 2, 1, P.hairLight);
-    // bow on ponytail
-    fillRect(ctx, x - 2, y - 23, 1, 1, P.roseDeep);
-    fillRect(ctx, x + 1, y - 23, 1, 1, P.roseDeep);
-    fillRect(ctx, x, y - 23, 1, 1, P.rose);
+    // head from BEHIND — round, with twin side buns visible
+    fillRect(ctx, x - 3, y - 20, 6, 7, P.hair);
+    fillRect(ctx, x - 3, y - 20, 6, 1, P.hairLight);
+    // little ear nubs
+    fillRect(ctx, x - 4, y - 16, 1, 2, P.skin);
+    fillRect(ctx, x + 3, y - 16, 1, 2, P.skin);
+    // SIDE BUNS (visible from behind too — symmetrical)
+    fillRect(ctx, x - 6, y - 20, 2, 3, P.hair);
+    fillRect(ctx, x - 6, y - 20, 2, 1, P.hairLight);
+    fillRect(ctx, x + 4, y - 20, 2, 3, P.hair);
+    fillRect(ctx, x + 4, y - 20, 2, 1, P.hairLight);
+    // ribbon bows
+    fillRect(ctx, x - 6, y - 21, 1, 1, P.roseDeep);
+    fillRect(ctx, x - 5, y - 21, 1, 1, P.rose);
+    fillRect(ctx, x + 4, y - 21, 1, 1, P.rose);
+    fillRect(ctx, x + 5, y - 21, 1, 1, P.roseDeep);
+    // hair strands at neck nape
+    fillRect(ctx, x - 1, y - 13, 3, 1, P.hair);
   }
 
   function drawCharSleep(ctx, frame) {
@@ -1671,45 +1719,69 @@
   }
 
   function drawFace(ctx, x, y, f, mood = 'normal') {
-    const eyeY = y;
-    const lx = f > 0 ? x - 2 : x - 1;
-    const rx = f > 0 ? x + 1 : x + 2;
-    // cheeks
-    fillRect(ctx, lx, eyeY + 1, 1, 1, 'rgba(232, 163, 163, 0.85)');
-    fillRect(ctx, rx, eyeY + 1, 1, 1, 'rgba(232, 163, 163, 0.85)');
-    // freckles
-    fillRect(ctx, x, eyeY + 1, 1, 1, 'rgba(180, 130, 100, 0.4)');
+    // y = eye top (sparkle row); face center at (x, y+1)
+    // Layout: eyes at columns x-2 and x+1 (1×2 tall ink)
+    // Sparkle pixels above eyes, blush on outer cheek columns
+    const lex = x - 2;        // left eye column
+    const rex = x + 1;        // right eye column
+
+    // BLUSH — wider, more visible (always)
+    ctx.fillStyle = 'rgba(244, 168, 176, 0.9)';
+    ctx.fillRect(x - 3, y + 1, 1, 1);
+    ctx.fillRect(x + 2, y + 1, 1, 1);
+    ctx.fillStyle = 'rgba(244, 168, 176, 0.55)';
+    ctx.fillRect(x - 3, y + 2, 1, 1);
+    ctx.fillRect(x + 2, y + 2, 1, 1);
 
     if (mood === 'tired' || mood === 'sleepy') {
-      fillRect(ctx, lx, eyeY, 1, 1, P.ink);
-      fillRect(ctx, rx, eyeY, 1, 1, P.ink);
+      // half-closed: short horizontal lines
+      fillRect(ctx, lex, y + 1, 1, 1, P.ink);
+      fillRect(ctx, rex, y + 1, 1, 1, P.ink);
+      fillRect(ctx, x, y + 3, 1, 1, P.shadow);
     } else if (mood === 'stressed') {
-      fillRect(ctx, lx, eyeY - 1, 1, 1, P.ink);
-      fillRect(ctx, rx, eyeY - 1, 1, 1, P.ink);
-      fillRect(ctx, x, y + 2, 1, 1, P.shadow);
+      // worried brow + small eyes
+      fillRect(ctx, lex, y - 1, 1, 1, P.ink);
+      fillRect(ctx, rex, y - 1, 1, 1, P.ink);
+      fillRect(ctx, lex, y, 1, 1, P.ink);
+      fillRect(ctx, rex, y, 1, 1, P.ink);
+      fillRect(ctx, x, y + 3, 1, 1, P.shadow);
     } else if (mood === 'happy') {
-      // crescent eyes — show closed-curve
-      fillRect(ctx, lx - 1, eyeY, 2, 1, P.ink);
-      fillRect(ctx, rx, eyeY, 2, 1, P.ink);
-      // smile
-      fillRect(ctx, x - 1, y + 2, 3, 1, P.roseDeep);
-      fillRect(ctx, x, y + 3, 1, 1, P.roseDeep);
+      // happy crescent eyes ^ ^
+      fillRect(ctx, lex - 1, y + 1, 1, 1, P.ink);
+      fillRect(ctx, lex,     y,     1, 1, P.ink);
+      fillRect(ctx, lex + 1, y + 1, 1, 1, P.ink);
+      fillRect(ctx, rex - 1, y + 1, 1, 1, P.ink);
+      fillRect(ctx, rex,     y,     1, 1, P.ink);
+      fillRect(ctx, rex + 1, y + 1, 1, 1, P.ink);
+      // ω smile — open little mouth
+      fillRect(ctx, x - 1, y + 3, 1, 1, P.roseDeep);
+      fillRect(ctx, x + 1, y + 3, 1, 1, P.roseDeep);
+      fillRect(ctx, x,     y + 4, 1, 1, P.roseDeep);
     } else if (mood === 'lonely' || mood === 'sad') {
-      fillRect(ctx, lx, eyeY, 1, 1, P.ink);
-      fillRect(ctx, rx, eyeY, 1, 1, P.ink);
-      fillRect(ctx, x, y + 2, 1, 1, P.shadow);
+      fillRect(ctx, lex, y + 1, 1, 1, P.ink);
+      fillRect(ctx, rex, y + 1, 1, 1, P.ink);
+      // tear drop
+      fillRect(ctx, rex, y + 2, 1, 1, '#9bc4cf');
+      fillRect(ctx, x, y + 3, 1, 1, P.shadow);
     } else if (mood === 'inspired') {
-      fillRect(ctx, lx, eyeY, 1, 1, P.ink);
-      fillRect(ctx, rx, eyeY, 1, 1, P.ink);
-      // sparkle catchlight
-      fillRect(ctx, lx, eyeY - 1, 1, 1, P.cream);
-      fillRect(ctx, rx + 1, eyeY - 1, 1, 1, P.cream);
+      // sparkly tall eyes + floating star sparkles
+      fillRect(ctx, lex, y, 1, 2, P.ink);
+      fillRect(ctx, rex, y, 1, 2, P.ink);
+      fillRect(ctx, lex, y - 1, 1, 1, P.cream);
+      fillRect(ctx, rex, y - 1, 1, 1, P.cream);
+      // floating amber sparkles outside head
+      fillRect(ctx, x - 5, y - 1, 1, 1, P.amber);
+      fillRect(ctx, x + 4, y - 1, 1, 1, P.amber);
+      fillRect(ctx, x, y + 3, 1, 1, P.roseDeep);
     } else {
-      // normal — eyes with sparkle
-      fillRect(ctx, lx, eyeY, 1, 1, P.ink);
-      fillRect(ctx, rx, eyeY, 1, 1, P.ink);
-      fillRect(ctx, lx, eyeY - 1, 1, 1, 'rgba(255, 255, 255, 0.7)');
-      fillRect(ctx, x, y + 2, 1, 1, P.roseDeep);
+      // normal — big sparkle chibi eyes
+      fillRect(ctx, lex, y, 1, 2, P.ink);
+      fillRect(ctx, rex, y, 1, 2, P.ink);
+      // catchlight (top pixel)
+      fillRect(ctx, lex, y, 1, 1, 'rgba(255, 255, 255, 0.95)');
+      fillRect(ctx, rex, y, 1, 1, 'rgba(255, 255, 255, 0.95)');
+      // tiny smile
+      fillRect(ctx, x, y + 3, 1, 1, P.roseDeep);
     }
   }
 

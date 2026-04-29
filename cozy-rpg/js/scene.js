@@ -106,24 +106,36 @@ window.Scene = (function () {
     /* ─── weather ─── */
     drawWeather(zone, dt);
 
-    /* ─── monster ─── */
+    /* ─── monster (now 3× scale for combat visibility) ─── */
     if (game.combat && monsterAlpha > 0.05) {
       const monKey = game.combat.monsterId;
       const sprite = window.Sprites.monster(monKey);
       const flying = window.GameData.MONSTERS[monKey] && window.GameData.MONSTERS[monKey].wings;
-      const my = flying ? H - 50 - Math.sin(time*4)*4 : H - 22 - sprite.height*2;
-      const sx = monsterShake > 0 ? (Math.random()-0.5) * 4 : 0;
+      const monScale = window.GameData.MONSTERS[monKey] && window.GameData.MONSTERS[monKey].boss ? 3 : 3;
+      const monH = sprite.height * monScale;
+      const monW = sprite.width  * monScale;
+      const my = flying ? H - 60 - Math.sin(time*4)*4 : H - 22 - monH;
+      const sx = monsterShake > 0 ? (Math.random()-0.5) * 5 : 0;
       ctx.globalAlpha = monsterAlpha;
       ctx.save();
       ctx.translate(monsterX + sx, my);
-      ctx.scale(-2, 2);  // facing left
+      ctx.scale(-monScale, monScale);  // facing left
       ctx.translate(-sprite.width, 0);
       ctx.drawImage(sprite, 0, 0);
       ctx.restore();
       ctx.globalAlpha = 1;
       // monster shadow
-      ctx.fillStyle = "rgba(0,0,0,0.35)";
-      ctx.beginPath(); ctx.ellipse(monsterX, H-20, sprite.width, 3, 0, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = "rgba(0,0,0,0.4)";
+      ctx.beginPath(); ctx.ellipse(monsterX, H-20, monW*0.5, 4, 0, 0, Math.PI*2); ctx.fill();
+      // ★ Monster HP bar floating above its head
+      drawHpBar(ctx,
+        monsterX - monW * 0.5,
+        my - 12,
+        monW,
+        game.combat.hp / game.combat.maxHp,
+        game.combat.name,
+        "#d04a4a"
+      );
     }
 
     /* ─── hero ─── */
@@ -134,7 +146,8 @@ window.Scene = (function () {
     const hh = heroSprite.height * 2;
     // Subtle bob on frames 0 and 2 (idle bob effect)
     const bob = isMoving && (frame === 0 || frame === 2) ? -1 : 0;
-    const hx = heroX, hy = heroY - hh + 24*2 + bob;
+    // Top of sprite at heroY; feet extend to heroY + hh (size-agnostic)
+    const hx = heroX, hy = heroY + bob;
     // shadow
     ctx.fillStyle = "rgba(0,0,0,0.4)";
     ctx.beginPath(); ctx.ellipse(hx + 16, hy + hh - 2, 14, 3, 0, 0, Math.PI*2); ctx.fill();
@@ -161,6 +174,19 @@ window.Scene = (function () {
     ctx.fillStyle = halo;
     ctx.beginPath(); ctx.arc(lx, ly, 60, 0, Math.PI*2); ctx.fill();
     ctx.globalCompositeOperation = "source-over";
+
+    /* ★ Hero HP bar floating above the head during combat */
+    if (game.combat) {
+      const hpFrac = Math.max(0, game.hp / game.maxHp);
+      drawHpBar(ctx,
+        hx - 4,                         // align over hero
+        hy - 14,
+        heroSprite.width * 2 + 8,
+        hpFrac,
+        game.name || "Ember",
+        "#54d27a"
+      );
+    }
 
     /* ─── damage / loot text ─── */
     for (let i = damageTexts.length - 1; i >= 0; i--) {
@@ -242,6 +268,52 @@ window.Scene = (function () {
     } else if (action === "resting" || action === "returning") {
       heroX += (40 - heroX) * dt * 1.5;
       heroFacing = 1;
+    }
+  }
+
+  /* Floating combat HP bar — name + bordered fill, bright and readable.
+     x, y: top-left of the bar. Width auto-clamped to a min size. */
+  function drawHpBar(ctx, x, y, w, frac, label, color) {
+    w = Math.max(48, w);
+    const h = 6;
+    frac = Math.max(0, Math.min(1, frac));
+
+    // Drop shadow
+    ctx.fillStyle = "rgba(0,0,0,0.5)";
+    ctx.fillRect(x, y + 1, w, h);
+
+    // Black outline
+    ctx.fillStyle = "#1a1010";
+    ctx.fillRect(x - 1, y - 1, w + 2, h + 2);
+
+    // Empty track
+    ctx.fillStyle = "#2a1810";
+    ctx.fillRect(x, y, w, h);
+
+    // Filled portion
+    if (frac > 0) {
+      const fw = Math.max(2, Math.floor(w * frac));
+      // base
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, fw, h);
+      // shine highlight (top half)
+      ctx.fillStyle = "rgba(255,255,255,0.28)";
+      ctx.fillRect(x, y, fw, 2);
+      // shadow (bottom)
+      ctx.fillStyle = "rgba(0,0,0,0.25)";
+      ctx.fillRect(x, y + h - 1, fw, 1);
+    }
+
+    // Label above the bar
+    if (label) {
+      ctx.font = "bold 12px \"VT323\", monospace";
+      ctx.textAlign = "center";
+      // shadow
+      ctx.fillStyle = "rgba(0,0,0,0.85)";
+      ctx.fillText(label, x + w/2 + 1, y - 3 + 1);
+      // main
+      ctx.fillStyle = "#ffe6b0";
+      ctx.fillText(label, x + w/2, y - 3);
     }
   }
 

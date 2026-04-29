@@ -33,97 +33,140 @@ window.Sprites = (function () {
     }
   }
 
-  /* ─────────────────────────────────────────────────────────
-     HERO — 16×24, hooded adventurer with red cloak + lantern.
-     4-frame walk cycle: 0 idle, 1 left-step, 2 idle-bob, 3 right-step.
-     ───────────────────────────────────────────────────────── */
+  /* ═══════════════════════════════════════════════════════════════
+     HERO — 18×28, hooded lantern-bearer (matches concept reference).
+       • Deep purple hood with a visible CRIMSON inner rim around the
+         face cavity.
+       • Single glowing cyan eye floating in the dark.
+       • Gold round clasp at the throat + thin gold band across the chest.
+       • Silver pauldron on the RIGHT shoulder + rune-sword pommel
+         rising directly above it.
+       • Lantern in the LEFT hand (brass frame, warm orange flame).
+       • Cape hem flares wide showing CRIMSON LINING on both sides.
+       • Black tunic, dark plum trousers, leather boots with bright
+         silver toecaps.
+     4-frame walk cycle (legs swap, cape edges sway).
+     ═══════════════════════════════════════════════════════════════ */
   const HERO_PAL = {
-    "K": "#160c12",   // outline
-    "S": "#f6cfa3",   // skin highlight
-    "s": "#d99e72",   // skin midtone
-    "x": "#9c5e3a",   // skin shadow
-    "H": "#3a1c10",   // hair dark
-    "h": "#6a3820",   // hair mid
-    "y": "#c8884a",   // hair gold highlight
-    "C": "#b5402c",   // cloak red
-    "c": "#7a1e16",   // cloak shadow
-    "o": "#3a0c08",   // cloak deepest
-    "W": "#f3e0b0",   // tunic cream
-    "w": "#b8916a",   // tunic shadow
-    "B": "#3a2010",   // belt
-    "b": "#1f1208",   // belt outline
-    "G": "#f3c963",   // gold trim
-    "g": "#8a6020",   // gold dark
-    "P": "#4a2e1a",   // pants
-    "p": "#2a1608",   // pants shadow
-    "M": "#dcdce4",   // metal blade
-    "m": "#7a7a86",   // metal shadow
-    "L": "#fff0a8",   // lantern flame inner
-    "f": "#ffaa44",   // lantern flame outer
-    "Q": "#ffe8b0",   // lantern glass glow
-    "T": "#fff8c8",   // hot bright core
-    "F": "#5a2818",   // boot leather
+    "K": "#0a0610",   // outline
+    // hood / cloak (deep plum-purple)
+    "M": "#3a2050",   // cloak mid
+    "m": "#1f1228",   // cloak shadow
+    "D": "#5a3070",   // cloak highlight
+    // crimson lining
+    "R": "#c84a3a",   // crimson bright
+    "r": "#8a2820",   // crimson mid
+    "o": "#5a1010",   // crimson deep
+    // hood interior face-shadow
+    "H": "#1a0e1f",
+    "h": "#0a0510",
+    // skin
+    "S": "#f6cfa3",
+    "s": "#c89572",
+    "x": "#7a4830",
+    // glowing eye
+    "E": "#5acfff",   // cyan
+    "e": "#c4ecff",   // bright core
+    // silver pauldron
+    "A": "#d4dde6",
+    "a": "#7a8290",
+    "n": "#3e4658",
+    // gold
+    "G": "#f3c963",
+    "Y": "#fff0a8",
+    "g": "#8a6020",
+    // tunic black-purple
+    "T": "#1a1018",
+    "t": "#0a0408",
+    // belt
+    "B": "#5a3010",
+    "b": "#2a1808",
+    // pants
+    "P": "#2a1830",
+    "p": "#150818",
+    // boots
+    "F": "#1a0e08",
+    "f": "#3a2818",
+    "N": "#c8d0d8",
+    // brass lantern + flame
+    "C": "#c8884a",   // brass frame
+    "c": "#5a3a1c",   // brass shadow
+    "L": "#ffaa44",   // flame outer
+    "l": "#fff0a8",   // flame inner
+    "W": "#fff8c8",   // hot core
+    "Q": "#ffd078",   // glass glow
+    // rune blade
+    "U": "#a4d8ff",
+    "u": "#5078c8",
   };
 
-  // Body silhouette is shared; only legs change between walk frames.
-  // 16 wide × 24 tall.
-  function heroFrame(frame) {
-    // top half (rows 0..14) is identical for every frame
-    const top = [
-      "................",  // 0
-      ".....KKKKKK.....",  // 1  hood top arc
-      "....KhhhHHHK....",  // 2  hair outer
-      "...KhyhHHHHHK...",  // 3  hair mid + gold streak
-      "...KhHHHHHHHK...",  // 4
-      "...KSssSSSsK....",  // 5  forehead
-      "..KSSSsSSSSsK...",  // 6  face widens
-      "..KSKxsxKSSsK...",  // 7  eyes (K) inset in skin
-      "..KSsSsSsSsSK...",  // 8  cheek line
-      "...KsSxxxSsK....",  // 9  chin / mouth shadow
-      "....KKHHKK......",  // 10 neck (hair behind)
-      "...KCcCWWCcCK...",  // 11 cloak shoulders frame the white tunic top
-      "..KCcCWWWWCcCK..",  // 12 cloak full width
-      ".KCccCWWWWCccCK.",  // 13 widest
-      ".KCcccCWWCcccCK.",  // 14
-      ".KoCcCCBBCCcCoK.",  // 15 belt (B) at waist; gold accents handled below
+  /* Top half (rows 0..19) is shared across walk frames.
+     Only legs (rows 20..27) change. 18 wide × 28 tall.
+     The hood interior is a deep void — only a single hair-thin crimson
+     line runs along the rim (visible at outer edge of the cavity). */
+  function heroTop() {
+    return [
+      "..................",  // 0
+      "......KKKKKKK.....",  // 1  hood top arc
+      ".....KMMMMMMMMK...",  // 2  hood outer
+      "....KMDMmMMmMDMK..",  // 3  hood depth
+      "....KMmHHHHHHHmK..",  // 4  hood interior — pure dark
+      "....KMRHHHHHHHRK..",  // 5  ★ thin crimson rim (1px each side)
+      "....KmRHHHHHHHRK..",  // 6
+      "....KmRHHEeKHHRK..",  // 7  ★ glowing cyan eye (col 8-9)
+      "....KmRHHHHHHHRK..",  // 8
+      "....KmRHHsxsHHRK..",  // 9  hint of skin at bottom of cavity
+      ".....KRrsSSSsRrK..",  // 10 jaw barely visible — crimson under-rim
+      ".....KKHsSSsHKK...",  // 11 chin/jaw ends
+      "....KmMTTGGGTTMmK.",  // 12 collar w/ thin gold band
+      "....KmMTToGGoTTMmK",  // 13 ★ gold round clasp 'o' col 7 + 10
+      "....KmMTTTTTTTMmAA",  // 14 ★ pauldron RIGHT (col 16-17)
+      "...KMmTTTTTTTTmMAa",  // 15 pauldron
+      "...KMmRTTBBBBTmMAA",  // 16 belt
+      "..KMmRrTBBGGBTmMaK",  // 17 ★ gold belt buckle
+      "..KMmRRrTTTTTrRMmK",  // 18 cloak side w/ crimson lining peek
+      "..KMmRRrTTTTTrRMmK",  // 19
     ];
-    // bottom half (rows 16..23) varies per walk frame
+  }
+
+  function heroFrame(frame) {
+    const top = heroTop();
     let bottom;
     if (frame === 0 || frame === 2) {
-      // feet together, frame 2 has subtle bob (handled by scene.js)
+      // neutral stance — feet planted, cape spread
       bottom = [
-        "..KooCCBBBBCCooK", // 16 cloak hem
-        "...KKPPPPPPPK...", // 17 pants top
-        "....KPpPPPpPK...", // 18
-        "....KPPPpPPPK...", // 19
-        "....KPpPPPPK....", // 20
-        "....KK....KK....", // 21 boot tops
-        "....KF....FK....", // 22 boots
-        "...KKK....KKK...", // 23 boot bases
+        ".KMmRRrPPPPPPrRRMK",  // 20  cape flares — crimson edges
+        ".KMRRRrPPPPPPrRRMK",  // 21
+        ".KMRRrPPpPPPpPRrMK",  // 22  pants visible thru cape opening
+        "..KMRrPpPPPPpPRMK.",  // 23
+        "..KKKKKK..KKKKKK..",  // 24  cape ends, legs emerge
+        ".....KK....KK.....",  // 25  leg split
+        "....KFfK..KFfK....",  // 26  boot leather
+        "....KNNK..KNNK....",  // 27  metal toecaps
       ];
     } else if (frame === 1) {
-      // left leg forward
+      // LEFT leg strides forward
       bottom = [
-        "..KooCCBBBBCCooK", // 16
-        "...KKPPPPPPPK...", // 17
-        "....KPpPPPpPK...", // 18
-        "...KPPPpPPPK....", // 19  left leg shifted left
-        "..KPPpPPPK......", // 20
-        "..KFK..KPPPK....", // 21  left foot forward, right behind
-        "..KFFK..KPPK....", // 22
-        "..KKKK...KKKK...", // 23
+        ".KMmRRrPPPPPPrRRMK",  // 20
+        ".KMRRRrPPPPPPrRRMK",  // 21
+        ".KMRRrPpPPPPpPRrMK",  // 22
+        "..KMRrPPpPPPPpRMK.",  // 23
+        "..KPpPPK....KKKKK.",  // 24  left leg striding forward
+        ".KFfK......KPPPPK.",  // 25  left foot ahead
+        ".KNNK......KFfK...",  // 26
+        "..KK........KNNK..",  // 27
       ];
     } else {
-      // frame 3 — right leg forward
+      // frame 3 — RIGHT leg strides forward
       bottom = [
-        "..KooCCBBBBCCooK",
-        "...KKPPPPPPPK...",
-        "....KPpPPPpPK...",
-        "....KPPPpPPPK...",
-        "......KPPPpPPK..",
-        "....KPPPK..KFK..",
-        "....KPPK..KFFK..",
-        "...KKKK...KKKK..",
+        ".KMmRRrPPPPPPrRRMK",  // 20
+        ".KMRRRrPPPPPPrRRMK",  // 21
+        ".KMRRrPpPPPPpPRrMK",  // 22
+        ".KMRrPPpPPPPpPRMK.",  // 23
+        ".KKKKK....KPpPPPK.",  // 24  right leg striding forward
+        "..KPPPPK....KFfK..",  // 25  right foot ahead
+        "...KFfK......KNNK.",  // 26
+        "...KNNK........KK.",  // 27
       ];
     }
     return top.concat(bottom);
@@ -132,123 +175,195 @@ window.Sprites = (function () {
   function drawHero(ctx, frame) {
     plot(ctx, 0, 0, heroFrame(frame), HERO_PAL);
 
-    // Belt buckle — single gold pixel
-    ctx.fillStyle = HERO_PAL.G;
-    ctx.fillRect(7, 15, 2, 1);
-    ctx.fillStyle = HERO_PAL.g;
-    ctx.fillRect(7, 16, 2, 1);
+    // ─── Eye-glow bloom (small, focused additive halo) ───
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.fillStyle = "rgba(90,207,255,0.55)";
+    ctx.fillRect(8, 7, 2, 1);
+    ctx.fillStyle = "rgba(196,236,255,0.85)";
+    ctx.fillRect(8, 7, 1, 1);
+    ctx.restore();
 
-    // Cloak gold trim — small chevron at hem
-    ctx.fillStyle = HERO_PAL.G;
-    ctx.fillRect(6, 14, 1, 1);
-    ctx.fillRect(9, 14, 1, 1);
+    // ─── Gold round clasps at the throat (two small dots from map 'o') ───
+    ctx.fillStyle = HERO_PAL.G; ctx.fillRect(7, 13, 1, 1);
+    ctx.fillStyle = HERO_PAL.Y; ctx.fillRect(7, 13, 1, 1);
+    ctx.fillStyle = HERO_PAL.G; ctx.fillRect(10, 13, 1, 1);
+    ctx.fillStyle = HERO_PAL.g; ctx.fillRect(10, 13, 1, 1);
 
-    // Sword pommel peeking over right shoulder
-    ctx.fillStyle = HERO_PAL.K;  ctx.fillRect(13, 9, 1, 1);
-    ctx.fillStyle = HERO_PAL.G;  ctx.fillRect(13, 10, 1, 1);
-    ctx.fillStyle = HERO_PAL.M;  ctx.fillRect(13, 11, 1, 2);
-    ctx.fillStyle = HERO_PAL.m;  ctx.fillRect(13, 13, 1, 1);
+    // ─── Gold belt buckle (square, central) ───
+    ctx.fillStyle = HERO_PAL.K; ctx.fillRect(9, 17, 2, 1);
+    ctx.fillStyle = HERO_PAL.G; ctx.fillRect(9, 17, 2, 1);
+    ctx.fillStyle = HERO_PAL.Y; ctx.fillRect(9, 17, 1, 1);
 
-    // Lantern in left hand (held forward)
-    const lx = 1, ly = 13;
-    // chain
-    ctx.fillStyle = HERO_PAL.g;
-    ctx.fillRect(lx + 1, ly - 2, 1, 2);
-    // frame
-    ctx.fillStyle = HERO_PAL.K;  ctx.fillRect(lx, ly, 3, 1);
-    ctx.fillStyle = HERO_PAL.K;  ctx.fillRect(lx, ly + 4, 3, 1);
-    ctx.fillStyle = HERO_PAL.K;  ctx.fillRect(lx, ly + 1, 1, 3);
-    ctx.fillStyle = HERO_PAL.K;  ctx.fillRect(lx + 2, ly + 1, 1, 3);
-    // glass
-    ctx.fillStyle = HERO_PAL.Q;  ctx.fillRect(lx + 1, ly + 1, 1, 3);
-    // flame
-    ctx.fillStyle = HERO_PAL.f;  ctx.fillRect(lx + 1, ly + 2, 1, 1);
-    ctx.fillStyle = HERO_PAL.L;  ctx.fillRect(lx + 1, ly + 1, 1, 1);
-    ctx.fillStyle = HERO_PAL.T;  ctx.fillRect(lx + 1, ly + 1, 1, 1);
+    // ─── Rune-sword rising above the right pauldron (cols 15-17) ───
+    // blade rune (cool blue, very small)
+    ctx.fillStyle = "#cfe7ff";        ctx.fillRect(16, 8,  1, 1);  // tip flare
+    ctx.fillStyle = HERO_PAL.U;       ctx.fillRect(16, 9,  1, 2);  // blade glow
+    // pommel (gold knob)
+    ctx.fillStyle = HERO_PAL.K;       ctx.fillRect(15, 11, 3, 1);
+    ctx.fillStyle = HERO_PAL.G;       ctx.fillRect(15, 11, 3, 1);
+    ctx.fillStyle = HERO_PAL.Y;       ctx.fillRect(15, 11, 1, 1);
+    ctx.fillStyle = HERO_PAL.g;       ctx.fillRect(17, 11, 1, 1);
+    // grip wrap
+    ctx.fillStyle = "#3a2818";        ctx.fillRect(16, 12, 1, 1);
+    // cross-guard
+    ctx.fillStyle = HERO_PAL.G;       ctx.fillRect(15, 13, 3, 1);
+    ctx.fillStyle = HERO_PAL.Y;       ctx.fillRect(15, 13, 1, 1);
+
+    // ─── Pauldron rivet (single bright dot on silver dome) ───
+    ctx.fillStyle = HERO_PAL.K;       ctx.fillRect(17, 15, 1, 1);
+    ctx.fillStyle = HERO_PAL.Y;       ctx.fillRect(17, 15, 1, 1);
+
+    // ─── Brass lantern in left hand ───
+    const lx = 1, ly = 17;
+    // chain (links)
+    ctx.fillStyle = HERO_PAL.c;       ctx.fillRect(lx + 1, ly - 3, 1, 1);
+    ctx.fillStyle = HERO_PAL.C;       ctx.fillRect(lx + 1, ly - 2, 1, 1);
+    ctx.fillStyle = HERO_PAL.c;       ctx.fillRect(lx + 1, ly - 1, 1, 1);
+    // top cap
+    ctx.fillStyle = HERO_PAL.K;       ctx.fillRect(lx,     ly,     3, 1);
+    ctx.fillStyle = HERO_PAL.C;       ctx.fillRect(lx + 1, ly,     1, 1);
+    // body outline
+    ctx.fillStyle = HERO_PAL.K;
+    ctx.fillRect(lx,     ly + 1, 1, 4);
+    ctx.fillRect(lx + 2, ly + 1, 1, 4);
+    ctx.fillRect(lx,     ly + 5, 3, 1);
+    // glass with warm glow
+    ctx.fillStyle = HERO_PAL.Q;       ctx.fillRect(lx + 1, ly + 1, 1, 4);
+    // flame layered
+    ctx.fillStyle = HERO_PAL.L;       ctx.fillRect(lx + 1, ly + 3, 1, 1);
+    ctx.fillStyle = HERO_PAL.l;       ctx.fillRect(lx + 1, ly + 2, 1, 1);
+    ctx.fillStyle = HERO_PAL.W;       ctx.fillRect(lx + 1, ly + 2, 1, 1);
+    // bottom finial
+    ctx.fillStyle = HERO_PAL.C;       ctx.fillRect(lx + 1, ly + 6, 1, 1);
   }
 
   function hero(frame = 0) {
     frame = ((frame % 4) + 4) % 4;
-    return make(`hero-${frame}`, 16, 24, ctx => drawHero(ctx, frame));
+    return make(`hero-${frame}`, 18, 28, ctx => drawHero(ctx, frame));
   }
 
   /* ─────────────────────────────────────────────────────────
-     HERO PORTRAIT — 32×32 bust, more detail than scene sprite.
-     Used in the hero card.
+     HERO PORTRAIT — 36×36 bust, dramatic close-up.
+     Matches the concept reference: deep purple hood with vivid
+     crimson interior rim, glowing cyan eye, gold round clasp
+     at the throat, silver pauldron on right shoulder, ember
+     sparks floating in the dark.
      ───────────────────────────────────────────────────────── */
   const PORTRAIT_PAL = {
-    "K": "#1a1010",
+    "K": "#0a0610",
+    "M": "#3a2050",
+    "m": "#1f1228",
+    "D": "#5a3070",
+    "R": "#c84a3a",
+    "r": "#8a2820",
+    "o": "#5a1010",
+    "H": "#1a0e1f",
+    "h": "#0a0510",
     "S": "#f6cfa3",
-    "s": "#d99e72",
-    "x": "#9c5e3a",
-    "H": "#3a1c10",
-    "h": "#6a3820",
-    "y": "#c8884a",
-    "C": "#b5402c",
-    "c": "#7a1e16",
-    "o": "#3a0c08",
-    "W": "#f3e0b0",
-    "w": "#b8916a",
+    "s": "#c89572",
+    "x": "#7a4830",
+    "E": "#5acfff",
+    "e": "#c4ecff",
+    "A": "#d4dde6",
+    "a": "#7a8290",
+    "n": "#3e4658",
     "G": "#f3c963",
     "g": "#8a6020",
-    "L": "#ffd078",
-    "Q": "#ffe8b0",
-    "M": "#dcdce4",
-    "m": "#7a7a86",
-    "B": "#3a2010",
-    "T": "#fff8c8",
+    "Y": "#fff0a8",
+    "T": "#1a1018",
+    "t": "#0a0408",
+    "U": "#a4d8ff",
+    "W": "#fff8c8",
   };
+
   function drawPortrait(ctx) {
     const M = [
-      "................................",  // 0
-      "................................",  // 1
-      "..........KKKKKKKKK.............",  // 2  hood top
-      "........KKhhhhhhhhhKK...........",  // 3
-      ".......KhyhhhHHHHHHhhK..........",  // 4
-      "......KhyyhhHHHHHHHhhhK.........",  // 5
-      "......KhhhHHHHHHHHHHhhK.........",  // 6
-      "......KhHHSSSSSSSSHHHK..........",  // 7
-      "......KhHSSssssssSSHHK..........",  // 8
-      ".......KSSsSSSSSsSSSK...........",  // 9
-      ".......KSsSsSSSsSSsSK...........",  // 10
-      ".......KSsKxsSxKsSsSK...........",  // 11 eyes
-      ".......KSSsSsSSsSsSSK...........",  // 12 nose
-      ".......KSsSsxxxsSSsSK...........",  // 13 cheek/mouth shadow
-      "........KsSSxsxSSsSK............",  // 14 chin
-      ".........KKKKHHKKKK.............",  // 15 neck (hair sides)
-      "........KhhhhHHHhhhK............",  // 16 collar/hair
-      ".......KCccCWWWWCccK............",  // 17 cloak tops
-      "......KCcccCWWWWCcccK...........",  // 18 cloak shoulders
-      ".....KCccccCWWWWWCcccCK.........",  // 19
-      ".....KCccccCWGGGGCccccK.........",  // 20 gold trim under collar
-      "....KCccccCCWWWWWCCccccK........",  // 21
-      "....KCcccccCWWBWWCccccccK.......",  // 22  amulet B
-      "...KoCccccccCWBWWCcccccccoK.....",  // 23
-      "...KooCcccccCWWWWCcccccccooK....",  // 24
-      "..KoooCcccccCCCCCCCcccccccoooK..",  // 25
-      "..KooooCccccccccccccccccccooooK.",  // 26
-      "..KoooooCcccccccccccccccccooooK.",  // 27
-      "...KooooooCccccccccccccccoooooK.",  // 28
-      "....KKKKKKKKKKKKKKKKKKKKKKKKKK..",  // 29
-      "................................",  // 30
-      "................................",  // 31
+      "....................................",  // 0
+      "....................................",  // 1
+      ".............KKKKKKKKKK.............",  // 2  hood top
+      "...........KKMMMMMMMMMMKK...........",  // 3
+      "..........KMMMDDMDMDDDMMMK..........",  // 4  hood w/ purple highlights
+      ".........KMMMMmMMmMMmMMmMMK.........",  // 5
+      "........KMMmRRRRRRRRRRRRRrK.........",  // 6  ★ CRIMSON RIM begins
+      "........KMmRrrrrrrrrrrrrrRK.........",  // 7  rim continues
+      "........KMRrHHHHHHHHHHHHrRK.........",  // 8  face cavity inside rim
+      "........KMRrHHHHHHHHHHHHrRK.........",  // 9
+      "........KMRrHHHEeKHHHHHHrRK.........",  // 10 ★ glowing cyan eye
+      "........KMRrHHHEeKHHHHHHrRK.........",  // 11
+      "........KMRrHHHHHHHHHHHHrRK.........",  // 12
+      "........KMRrHHsxsSSsxsHHrRK.........",  // 13 jaw partly lit
+      ".........KMRsSSSSSSSSSsRRK..........",  // 14 chin
+      "..........KKsSSsxxxxsSsKK...........",  // 15 jaw narrows
+      "............KKsSSSSsKK..............",  // 16 neck
+      "...........KmMTGYoGTMmK.............",  // 17 ★ collar w/ gold band & round clasp 'o'
+      "..........KmMTtTGGGTtTMmK...........",  // 18 tunic + gold accent
+      ".........KMmMmTtTTTTtTmMmK..........",  // 19
+      "........KMmMmTTtTTTTTTtmMmK.........",  // 20
+      "........KMmMmTtTTTTTTTtmMK..AAAK....",  // 21 ★ silver pauldron — RIGHT
+      ".......KMmRrTTtTTTTTTtTmMKAAaaaAK...",  // 22 crimson left edge of cloak
+      "......KMRRrTtTTTTTTTTTtmMKAaaaaaK...",  // 23 pauldron rivet
+      "......KRRrrTTtTTRTTTTTtmMKAaaanaK...",  // 24 ★ inner crimson lining peek
+      ".....KRRrrrTTtRRRrrRTTTtmMKaanaK....",  // 25
+      ".....KRrrrrTTtRrrrrrRTttmMKaaK......",  // 26
+      ".....KRRrrrTtRRrrrrrRTttmMK.K.......",  // 27
+      "....KKRRrrrTttRRRrrRRTttmMK.........",  // 28
+      "....KKKKKKKKKKKKKKKKKKKKKKKK........",  // 29
+      "....................................",  // 30
+      "....................................",  // 31
+      "....................................",  // 32
+      "....................................",  // 33
+      "....................................",  // 34
+      "....................................",  // 35
     ];
     plot(ctx, 0, 0, M, PORTRAIT_PAL);
 
-    // Lantern hint at bottom-left
-    ctx.fillStyle = "#ffaa44";
-    ctx.fillRect(2, 27, 1, 1);
-    ctx.fillStyle = "#ffe8b0";
-    ctx.fillRect(2, 26, 1, 1);
+    // ─── Eye-glow bloom (additive cyan halo around the eye) ───
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.fillStyle = "rgba(90,207,255,0.45)";
+    ctx.fillRect(13, 9, 6, 4);
+    ctx.fillStyle = "rgba(196,236,255,0.75)";
+    ctx.fillRect(15, 10, 3, 2);
+    ctx.restore();
 
-    // Tiny gold pin on hood
-    ctx.fillStyle = PORTRAIT_PAL.G;
-    ctx.fillRect(15, 6, 1, 1);
-    ctx.fillStyle = PORTRAIT_PAL.T;
-    ctx.fillRect(15, 6, 1, 1);
+    // ─── Gold round clasp at throat (covers 'o' from map) ───
+    ctx.fillStyle = PORTRAIT_PAL.G; ctx.fillRect(18, 17, 2, 1);
+    ctx.fillStyle = PORTRAIT_PAL.Y; ctx.fillRect(18, 17, 1, 1);
+    ctx.fillStyle = PORTRAIT_PAL.g; ctx.fillRect(19, 18, 1, 1);
+
+    // ─── Sword hilt rising over RIGHT shoulder (above pauldron) ───
+    // blade rune glow
+    ctx.fillStyle = "#cfe7ff";        ctx.fillRect(29, 14, 1, 1);
+    ctx.fillStyle = PORTRAIT_PAL.U;   ctx.fillRect(29, 15, 1, 3);
+    // pommel (gold sphere)
+    ctx.fillStyle = PORTRAIT_PAL.K;   ctx.fillRect(28, 18, 3, 1);
+    ctx.fillStyle = PORTRAIT_PAL.G;   ctx.fillRect(28, 18, 3, 1);
+    ctx.fillStyle = PORTRAIT_PAL.Y;   ctx.fillRect(28, 18, 1, 1);
+    ctx.fillStyle = PORTRAIT_PAL.g;   ctx.fillRect(30, 19, 1, 1);
+    // grip wrap
+    ctx.fillStyle = "#3a2818";        ctx.fillRect(29, 19, 1, 1);
+    // cross-guard
+    ctx.fillStyle = PORTRAIT_PAL.G;   ctx.fillRect(28, 20, 3, 1);
+    ctx.fillStyle = PORTRAIT_PAL.Y;   ctx.fillRect(28, 20, 1, 1);
+
+    // ─── Pauldron rivet on right shoulder ───
+    ctx.fillStyle = PORTRAIT_PAL.K;   ctx.fillRect(28, 22, 1, 1);
+    ctx.fillStyle = PORTRAIT_PAL.Y;   ctx.fillRect(28, 22, 1, 1);
+
+    // ─── Floating ember sparks (warm orange, scattered) ───
+    ctx.fillStyle = "rgba(255,180,90,0.85)";
+    ctx.fillRect(3, 17, 1, 1);
+    ctx.fillRect(34, 14, 1, 1);
+    ctx.fillRect(2, 24, 1, 1);
+    ctx.fillRect(33, 25, 1, 1);
+    ctx.fillStyle = "rgba(255,210,140,0.95)";
+    ctx.fillRect(5, 11, 1, 1);
+    ctx.fillRect(31, 9, 1, 1);
   }
+
   function portrait() {
-    return make("hero-portrait-bust", 32, 32, drawPortrait);
+    return make("hero-portrait-bust", 36, 36, drawPortrait);
   }
 
   /* ─────────────────────────────────────────────────────────

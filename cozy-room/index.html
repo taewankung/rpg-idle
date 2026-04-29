@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Room We Share — A Quiet Life</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Caveat:wght@400;600&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="app">
+    <div id="frame">
+      <canvas id="stage" width="480" height="270"></canvas>
+
+      <!-- Atmosphere overlays -->
+      <div id="vignette"></div>
+      <div id="grain"></div>
+
+      <!-- Top bar: time, weather, season, mood -->
+      <header id="topbar">
+        <div class="tb-left">
+          <span id="clock">07:00</span>
+          <span id="dayname">Mon · Spring</span>
+        </div>
+        <div class="tb-center">
+          <span id="weather-icon" aria-hidden="true">☀</span>
+          <span id="weather-name">Clear</span>
+        </div>
+        <div class="tb-right">
+          <span class="coin" aria-hidden="true">◉</span>
+          <span id="money">50</span>
+        </div>
+      </header>
+
+      <!-- Status panel -->
+      <aside id="stats-panel">
+        <h2 class="panel-title">how she feels</h2>
+        <ul id="stat-list"></ul>
+        <div id="bond-block">
+          <div class="bond-label">
+            <span>bond</span>
+            <span id="bond-tier">stranger</span>
+          </div>
+          <div class="bond-bar"><div id="bond-fill"></div></div>
+        </div>
+      </aside>
+
+      <!-- Character name + mood card -->
+      <div id="namecard">
+        <div class="name" id="char-name">Lin</div>
+        <div class="mood" id="char-mood">she seems calm.</div>
+      </div>
+
+      <!-- Bottom activity menu -->
+      <nav id="actions">
+        <button data-action="check"     class="btn" title="Check on her (Q)">
+          <span class="ico">♡</span><span>check in</span>
+        </button>
+        <button data-action="eat"       class="btn" title="Suggest a meal (1)">
+          <span class="ico">⌬</span><span>eat</span>
+        </button>
+        <button data-action="sleep"     class="btn" title="Suggest a nap (2)">
+          <span class="ico">⌒</span><span>sleep</span>
+        </button>
+        <button data-action="bathe"     class="btn" title="Suggest a bath (3)">
+          <span class="ico">≈</span><span>bathe</span>
+        </button>
+        <button data-action="work"      class="btn" title="Take a small job (4)">
+          <span class="ico">▤</span><span>work</span>
+        </button>
+        <button data-action="read"      class="btn" title="Read a book (5)">
+          <span class="ico">▦</span><span>read</span>
+        </button>
+        <button data-action="paint"     class="btn" title="Make some art (6)">
+          <span class="ico">✦</span><span>paint</span>
+        </button>
+        <button data-action="exercise"  class="btn" title="Stretch a little (7)">
+          <span class="ico">↻</span><span>stretch</span>
+        </button>
+        <button data-action="clean"     class="btn" title="Tidy the room (8)">
+          <span class="ico">✧</span><span>tidy</span>
+        </button>
+        <button data-action="window"    class="btn" title="Look outside (9)">
+          <span class="ico">▢</span><span>window</span>
+        </button>
+        <button data-action="diary"     class="btn-soft" title="Open her diary (D)">
+          <span class="ico">✎</span><span>diary</span>
+        </button>
+        <button data-action="settings"  class="btn-soft" title="Settings (Esc)">
+          <span class="ico">⚙</span><span>settings</span>
+        </button>
+      </nav>
+
+      <!-- Speech bubble (Lin to player) -->
+      <div id="speech" class="hidden">
+        <div class="speech-inner">
+          <span id="speech-text"></span>
+        </div>
+        <div class="speech-tail"></div>
+      </div>
+
+      <!-- Activity progress -->
+      <div id="activity-bar" class="hidden">
+        <div class="ab-label" id="ab-label">resting</div>
+        <div class="ab-bar"><div id="ab-fill"></div></div>
+        <button id="ab-cancel" class="ab-cancel">let her stop</button>
+      </div>
+
+      <!-- Diary modal -->
+      <div id="diary-modal" class="modal hidden">
+        <div class="diary">
+          <div class="diary-tab">a small diary</div>
+          <div class="diary-pages" id="diary-pages"></div>
+          <button class="modal-close" data-close="diary-modal">close</button>
+        </div>
+      </div>
+
+      <!-- Settings modal -->
+      <div id="settings-modal" class="modal hidden">
+        <div class="card">
+          <h3>settings</h3>
+          <label class="row">
+            <span>character name</span>
+            <input id="opt-name" maxlength="14" />
+          </label>
+          <label class="row">
+            <span>music volume</span>
+            <input type="range" id="opt-music" min="0" max="100" value="40" />
+          </label>
+          <label class="row">
+            <span>ambient volume</span>
+            <input type="range" id="opt-amb" min="0" max="100" value="60" />
+          </label>
+          <label class="row">
+            <span>game speed</span>
+            <select id="opt-speed">
+              <option value="0.5">slow · gentle</option>
+              <option value="1" selected>normal</option>
+              <option value="2">brisk</option>
+            </select>
+          </label>
+          <label class="row checkbox">
+            <input type="checkbox" id="opt-grain" checked />
+            <span>film grain overlay</span>
+          </label>
+          <div class="row buttons">
+            <button id="btn-newgame" class="warn">begin again</button>
+            <button data-close="settings-modal">close</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Offline progress modal -->
+      <div id="offline-modal" class="modal hidden">
+        <div class="card warm">
+          <h3>while you were away</h3>
+          <p id="offline-text"></p>
+          <ul id="offline-list"></ul>
+          <button data-close="offline-modal">go to her</button>
+        </div>
+      </div>
+
+      <!-- Intro / Naming -->
+      <div id="intro-modal" class="modal hidden">
+        <div class="card warm intro">
+          <h3>hello, you found this room.</h3>
+          <p>someone lives here. she is quiet, a little tired, often kind. she does not need much — only that someone stops by from time to time.</p>
+          <p>what would you like to call her?</p>
+          <input id="intro-name" maxlength="14" placeholder="Lin" />
+          <button id="intro-begin">stay a while</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load order matters -->
+  <script src="js/config.js"></script>
+  <script src="js/sprites.js"></script>
+  <script src="js/timeworld.js"></script>
+  <script src="js/stats.js"></script>
+  <script src="js/relationship.js"></script>
+  <script src="js/dialogue.js"></script>
+  <script src="js/activities.js"></script>
+  <script src="js/character.js"></script>
+  <script src="js/room.js"></script>
+  <script src="js/save.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>

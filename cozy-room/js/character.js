@@ -13,6 +13,7 @@
     frame: 0,
     speed: 1.6,               // tiles per second
     screenX: 0, screenY: 0,
+    variant: 'pink',          // 'pink' | 'brown' (id from CFG.CHAR_VARIANTS)
   };
 
   const MIN_TX = 0.6, MIN_TY = 0.6;
@@ -122,21 +123,26 @@
       tx: state.tx, ty: state.ty,
       targetTx: state.targetTx, targetTy: state.targetTy,
       facing: state.facing, pose: state.pose,
+      variant: state.variant,
     };
   }
   function deserialize(d) {
     if (!d) return;
-    // accept legacy {x, y} screen-coord saves: drop them, restart at center
     if (d.tx !== undefined) state.tx = d.tx;
     if (d.ty !== undefined) state.ty = d.ty;
     state.targetTx = d.targetTx ?? state.tx;
     state.targetTy = d.targetTy ?? state.ty;
-    state.facing   = d.facing ?? 1;
-    state.pose     = d.pose   ?? 'idle';
+    state.facing   = d.facing  ?? 1;
+    state.pose     = d.pose    ?? 'idle';
+    state.variant  = d.variant ?? 'pink';
+  }
+  function setVariant(id) {
+    const valid = (window.CFG.CHAR_VARIANTS || []).some(v => v.id === id);
+    if (valid) state.variant = id;
   }
 
   window.CHAR = {
     state, moveTo, update, render,
-    serialize, deserialize,
+    serialize, deserialize, setVariant,
   };
 })();

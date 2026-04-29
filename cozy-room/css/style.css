@@ -692,6 +692,75 @@ html, body {
   font-style: italic;
 }
 
+/* character picker (intro + settings) */
+.char-picker {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin: 8px 0 12px;
+}
+.char-picker.small {
+  gap: 8px;
+  margin: 4px 0;
+}
+.char-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: var(--cream-soft);
+  border: 2px solid rgba(91, 70, 53, 0.18);
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-family: var(--f-pixel);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  transition: all 200ms ease;
+  width: 92px;
+}
+.char-picker.small .char-card { width: 70px; padding: 5px 6px; font-size: 10px; }
+.char-card canvas {
+  width: 48px;
+  height: 60px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+.char-picker.small .char-card canvas { width: 32px; height: 42px; }
+.char-card .char-name {
+  font-family: var(--f-serif);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--rose-deep);
+  line-height: 1;
+}
+.char-picker.small .char-card .char-name { font-size: 12px; }
+.char-card .char-tag {
+  font-family: var(--f-hand);
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1;
+}
+.char-picker.small .char-card .char-tag { display: none; }
+.char-card:hover {
+  background: var(--peach);
+  border-color: var(--rose-deep);
+  transform: translateY(-1px);
+}
+.char-card.selected {
+  background: linear-gradient(180deg, var(--peach), var(--rose));
+  border-color: var(--rose-deep);
+  color: var(--ivory);
+  box-shadow: 0 6px 14px -6px rgba(201, 128, 136, 0.6);
+}
+.card .row.col {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+
 /* utility */
 .hidden { display: none !important; }
 

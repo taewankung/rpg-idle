@@ -99,6 +99,14 @@ window.CFG = {
     floor2:   '#b27238',          // shadow plank row
     floorBoard:'#3a1f10',         // deep dark plank seams
 
+    // outfit (olive pinafore + cream sweater + yellow bow)
+    olive:        '#6e8a4a',
+    oliveShadow:  '#4a6230',
+    oliveLight:   '#88a560',
+    bow:          '#f0c850',
+    bowShadow:    '#b88a28',
+    daisyYellow:  '#f0bc5e',
+
     // accents
     blanket:  '#f0a0a8',
     blanket2: '#c66070',
@@ -171,6 +179,28 @@ window.CFG = {
     snow: 'snow falling',
     wind: 'breeze',
   },
+
+  // selectable character variants — same outfit, different hair/skin
+  CHAR_VARIANTS: [
+    {
+      id: 'pink',
+      name: 'Lin',
+      tagline: 'soft and dreamy',
+      hair:      '#ec8aa0',
+      hairLight: '#f8c0d0',
+      skin:      '#fcd5b0',
+      skinShadow:'#d89878',
+    },
+    {
+      id: 'brown',
+      name: 'Mira',
+      tagline: 'warm and quiet',
+      hair:      '#7a4a2c',
+      hairLight: '#a06a40',
+      skin:      '#f3d5b5',
+      skinShadow:'#cf9c7a',
+    },
+  ],
 };
 
 // activity definitions (id -> def)

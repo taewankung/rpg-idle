@@ -158,7 +158,65 @@
     openModal('offline-modal');
   }
 
-  function openIntro() { openModal('intro-modal'); }
+  function openIntro() {
+    buildCharPicker('char-picker', (v) => {
+      const nameInput = $('intro-name');
+      if (nameInput && !nameInput.value.trim()) nameInput.placeholder = v.name;
+    });
+    const currentV = (window.CFG.CHAR_VARIANTS || []).find(x => x.id === window.CHAR.state.variant);
+    if (currentV) $('intro-name').placeholder = currentV.name;
+    openModal('intro-modal');
+  }
+
+  // ─── character picker ────────────────────────────────────
+  function renderCharPortrait(canvas, variantId) {
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    canvas.width  = 32;
+    canvas.height = 40;
+    ctx.clearRect(0, 0, 32, 40);
+    ctx.fillStyle = 'rgba(255, 217, 183, 0.35)';
+    ctx.beginPath();
+    ctx.arc(16, 22, 14, 0, Math.PI * 2);
+    ctx.fill();
+    const prev = window.CHAR.state.variant;
+    window.CHAR.state.variant = variantId;
+    window.SPR.drawCharacter(ctx, 16, 38, 'idle', 0, 1, 'happy');
+    window.CHAR.state.variant = prev;
+  }
+
+  function buildCharPicker(rootId, onSelect) {
+    const root = $(rootId);
+    if (!root) return;
+    root.innerHTML = '';
+    const variants = window.CFG.CHAR_VARIANTS || [];
+    const current = window.CHAR.state.variant;
+    for (const v of variants) {
+      const btn = document.createElement('button');
+      btn.className = 'char-card';
+      btn.type = 'button';
+      btn.dataset.variant = v.id;
+      if (v.id === current) btn.classList.add('selected');
+      const canvas = document.createElement('canvas');
+      btn.appendChild(canvas);
+      const nameEl = document.createElement('span');
+      nameEl.className = 'char-name';
+      nameEl.textContent = v.name;
+      btn.appendChild(nameEl);
+      const tag = document.createElement('span');
+      tag.className = 'char-tag';
+      tag.textContent = v.tagline || '';
+      btn.appendChild(tag);
+      btn.addEventListener('click', () => {
+        root.querySelectorAll('.char-card').forEach(c => c.classList.remove('selected'));
+        btn.classList.add('selected');
+        window.CHAR.setVariant(v.id);
+        if (typeof onSelect === 'function') onSelect(v);
+      });
+      root.appendChild(btn);
+      renderCharPortrait(canvas, v.id);
+    }
+  }
 
   function bindButtons() {
     document.querySelectorAll('#actions [data-action]').forEach(btn => {
@@ -226,6 +284,7 @@
   function openModalDiary() { buildDiary(); openModal('diary-modal'); }
   function openSettings()   {
     $('opt-name').value = window.STATS.state.name || 'Lin';
+    buildCharPicker('settings-char-picker', () => {});
     openModal('settings-modal');
   }
 

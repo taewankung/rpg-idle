@@ -124,6 +124,10 @@
       <div id="settings-modal" class="modal hidden">
         <div class="card">
           <h3>settings</h3>
+          <div class="row col">
+            <span>character</span>
+            <div id="settings-char-picker" class="char-picker small"></div>
+          </div>
           <label class="row">
             <span>character name</span>
             <input id="opt-name" maxlength="14" />
@@ -170,7 +174,9 @@
         <div class="card warm intro">
           <h3>hello, you found this room.</h3>
           <p>someone lives here. she is quiet, a little tired, often kind. she does not need much — only that someone stops by from time to time.</p>
-          <p>what would you like to call her?</p>
+          <p class="hint">choose who lives here:</p>
+          <div id="char-picker" class="char-picker"></div>
+          <p class="hint">what would you like to call her?</p>
           <input id="intro-name" maxlength="14" placeholder="Lin" />
           <button id="intro-begin">stay a while</button>
         </div>
